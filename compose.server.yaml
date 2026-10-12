@@ -1,0 +1,12 @@
+# Test-server additions. Use together with compose.yaml on the Ubuntu VM.
+services:
+  nginx:
+    restart: unless-stopped
+  frontend:
+    restart: unless-stopped
+  backend:
+    restart: unless-stopped
+  postgres:
+    restart: unless-stopped
+  minio:
+    restart: unless-stopped

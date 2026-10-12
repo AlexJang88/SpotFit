@@ -159,6 +159,9 @@ Git만으로 모델 파일이 공유되지는 않습니다.
 
 이 초기 구성은 Git 저장소 초기화, 원격 저장소 연결, 커밋·push를 수행하지 않습니다.
 Linux 운영 배포에서 변경할 항목은 [배포 안내](docs/deployment.md)를 참고하세요.
+Windows PC의 VirtualBox Ubuntu VM에서 내부망 테스트 서버로 실행하려면
+[VirtualBox 배포 안내](docs/virtualbox-deployment.md)를 참고하세요. Ubuntu에서는
+`.env.server.example`을 `.env.server`로 복사해 VM 고정 IP와 서버 전용 비밀번호를 설정합니다.
 
 ## 참고 문서
 
