@@ -2,7 +2,7 @@
 
 React + TypeScript, Python FastAPI 기반의 ML/DL 서비스 개발용 초기 구조입니다.
 개발 환경은 Docker Compose로 실행하며, Linux 배포를 위한 소스와 인프라 설정을 분리합니다.
-현재 구현 범위는 기본 화면, API 생존 확인, 개발 컨테이너 설정입니다. DB 모델·연결,
+현재 구현 범위는 기본 화면, API 생존 확인, 개발 컨테이너 설정, MinIO 모델 업로드·다운로드입니다. DB 모델·연결,
 추천·예측 로직, 데이터 파이프라인, 인증은 각 폴더에서 구현할 예정입니다.
 
 ## 디렉토리 구조
@@ -54,6 +54,7 @@ spot_fit/
 │   └── mlflow/                # 선택적 모델 추적 설정 위치
 ├── data/{raw,interim,processed}/ # 로컬 데이터 (Git 제외)
 ├── artifacts/{models,reports}/  # 학습 모델·평가 결과 (Git 제외)
+├── model_registry/             # 모델 버전·저장 위치·해시 JSON (Git 포함)
 ├── scripts/                   # 공통 작업 스크립트
 ├── docs/architecture/         # 아키텍처 문서
 ├── .github/workflows/         # 추후 GitHub Actions 추가
@@ -113,7 +114,7 @@ arm64용으로 각 환경에서 빌드합니다.
 
 포트를 변경하면 표의 접속 포트도 변경합니다. 컨테이너 내부에서는 DB를 `postgres:5432`,
 객체 저장소를 `minio:9000`으로 접근합니다. 프런트엔드 API 호출은 `/api/...` 상대 경로를
-사용합니다. MinIO 버킷은 자동 생성하지 않으며 수집 구현 시 생성합니다.
+사용합니다. 모델 버킷은 아래 모델 관리 명령으로 초기화하며, 수집 데이터 버킷은 별도로 구성합니다.
 `/api/spot_fit`는 API 프로세스 생존만 확인하고 DB·MinIO 연결은 검사하지 않습니다.
 
 소스 코드는 bind mount되어 React HMR과 FastAPI reload가 적용됩니다.
@@ -130,6 +131,20 @@ docker compose down
 `docker compose down`은 DB·MinIO 데이터를 보존합니다. `down -v`는 데이터 볼륨까지
 삭제하므로 초기화가 필요한 경우에만 사용합니다. 기존 DB 볼륨의 비밀번호는 `.env` 변경만으로
 갱신되지 않습니다.
+
+## MinIO로 학습 모델 관리
+
+모델 파일은 MinIO에, 모델명·버전·저장 위치·SHA-256이 담긴 JSON은 `model_registry/`에 저장합니다.
+로컬 저장소를 처음 준비할 때 실행합니다.
+
+```sh
+docker compose --profile tools build model-tools
+docker compose --profile tools run --rm model-tools init
+```
+
+업로드·다운로드 및 백엔드 연동은 [모델 저장 안내](docs/model-storage.md)를 참고하세요.
+현재는 각 PC의 로컬 MinIO를 사용합니다. 맥북·Windows 간 모델 공유에는 공용 MinIO 서버가 필요하며,
+Git만으로 모델 파일이 공유되지는 않습니다.
 
 ## GitHub · macOS · Windows 협업
 

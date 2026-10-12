@@ -1,6 +1,14 @@
 # Development environment. See docs/deployment.md before Linux production deployment.
 name: spot_fit
 
+x-model-storage: &model-storage
+  S3_ENDPOINT_URL: ${S3_ENDPOINT_URL:-http://minio:9000}
+  AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-${MINIO_ROOT_USER:?Set MINIO_ROOT_USER in .env}}
+  AWS_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD in .env}}
+  S3_REGION: ${S3_REGION:-us-east-1}
+  S3_MODEL_BUCKET: ${S3_MODEL_BUCKET:-spot-fit-models}
+  MODEL_REGISTRY_DIR: /model_registry
+
 services:
   nginx:
     image: nginx:stable-alpine
@@ -33,18 +41,19 @@ services:
     build: ./backend
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     environment:
+      <<: *model-storage
       POSTGRES_HOST: postgres
       POSTGRES_PORT: "5432"
       POSTGRES_DB: ${POSTGRES_DB:-spot_fit}
       POSTGRES_USER: ${POSTGRES_USER:-spot_fit}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Copy .env.example to .env first}
-      S3_ENDPOINT_URL: http://minio:9000
-      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:?Copy .env.example to .env first}
-      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:?Copy .env.example to .env first}
+      MODEL_CACHE_DIR: /model-cache
       WATCHFILES_FORCE_POLLING: ${WATCH_USE_POLLING:-true}
     volumes:
       - ./backend:/app
       - ./artifacts:/artifacts:ro
+      - ./model_registry:/model_registry:ro
+      - model_cache:/model-cache
     depends_on:
       postgres:
         condition: service_healthy
@@ -91,7 +100,23 @@ services:
       retries: 10
       start_period: 30s
 
+  model-tools:
+    profiles: ["tools"]
+    build: ./backend
+    entrypoint: ["python", "-m", "app.cli.models"]
+    environment:
+      <<: *model-storage
+      MODEL_CACHE_DIR: /artifacts/models
+    volumes:
+      - ./backend:/app
+      - ./artifacts:/artifacts
+      - ./model_registry:/model_registry
+    depends_on:
+      minio:
+        condition: service_healthy
+
 volumes:
   frontend_node_modules:
   postgres_data:
   minio_data:
+  model_cache:
