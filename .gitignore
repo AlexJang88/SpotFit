@@ -1,0 +1,89 @@
+# macOS
+.DS_Store
+._*
+.AppleDouble/
+.LSOverride
+.Spotlight-V100/
+.Trashes/
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# Editors and local agent settings
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.codex/
+.agents/
+
+# Secrets (templates are tracked)
+.env
+.env.*
+!.env.example
+!.env.*.example
+.aws/
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.python-version
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+*.egg-info/
+.coverage
+.coverage.*
+htmlcov/
+
+# JavaScript / build output (commit dependency lockfiles)
+node_modules/
+dist/
+build/
+.vite/
+coverage/
+*.tsbuildinfo
+.npm/
+.pnpm-store/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime files
+*.log
+*.pid
+*.sqlite
+*.sqlite3
+*.db
+.cache/
+tmp/
+temp/
+.ipynb_checkpoints/
+mlruns/
+mlartifacts/
+wandb/
+
+# Local datasets, model artifacts and persistent infrastructure data
+/data/**
+!/data/**/
+!/data/**/.gitkeep
+/artifacts/**
+!/artifacts/**/
+!/artifacts/**/.gitkeep
+/infra/volumes/
+/infra/nginx/certs/*
+!/infra/nginx/certs/.gitkeep
