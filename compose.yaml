@@ -107,9 +107,10 @@ services:
     entrypoint: ["sh", "-c"]
     command:
       - >-
+        set -eu;
         for database in airflow mlflow; do
-          if ! psql -h postgres -U "$$POSTGRES_USER" -d "$$POSTGRES_DB" -tAc
-          "SELECT 1 FROM pg_database WHERE datname = '$$database'" | grep -q 1; then
+          exists=$$(psql -h postgres -U "$$POSTGRES_USER" -d "$$POSTGRES_DB" -tAc "SELECT 1 FROM pg_database WHERE datname = '$$database'");
+          if [ "$$exists" != "1" ]; then
             createdb -h postgres -U "$$POSTGRES_USER" -O "$$POSTGRES_USER" "$$database";
           fi;
         done

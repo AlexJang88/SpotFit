@@ -136,6 +136,10 @@ docker compose --env-file .env.server -f compose.yaml -f compose.server.yaml ps
 MinIO 컴파일과 Airflow·PyTorch 학습 이미지의 패키지 다운로드 때문에 최초 빌드에는 시간이 걸리고
 여러 GB의 디스크 공간을 사용합니다.
 
+`mlflow` 로그에 `database "mlflow" does not exist`가 나오면 최신 `compose.yaml`을 pull한 뒤
+아래 `up`을 다시 실행합니다. `tracking-db-init`이 기존 PostgreSQL 볼륨 안에 `airflow`와 `mlflow`
+데이터베이스를 생성합니다. 애플리케이션 DB나 볼륨을 삭제할 필요가 없습니다.
+
 ```sh
 docker compose --env-file .env.server -f compose.yaml -f compose.server.yaml logs -f
 ```
