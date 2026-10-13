@@ -10,3 +10,13 @@ services:
     restart: unless-stopped
   minio:
     restart: unless-stopped
+  tracking-db-init:
+    restart: "no"
+  mlflow-init:
+    restart: "no"
+  airflow:
+    restart: unless-stopped
+  mlflow:
+    restart: unless-stopped
+  model-tools:
+    restart: "no"

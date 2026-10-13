@@ -68,8 +68,8 @@ spot_fit/
 React는 전통적인 서버 MVC 프레임워크가 아니므로 역할에 맞춘 MVC 형태로 구성합니다.
 화면은 `frontend/src/views`, API의 JSON 표현은 `backend/app/views`에서 담당합니다.
 컨트롤러는 요청과 응답을 연결하고 실제 처리 로직은 서비스에 둡니다.
-학습 작업은 웹 요청 처리와 분리하여 `ml`에서 실행합니다. Airflow·MLflow·학습 라이브러리는
-폴더만 준비했으며 기본 Compose에는 포함하지 않았습니다.
+학습 작업은 웹 요청 처리와 분리하여 `ml`에서 실행합니다. 기본 Compose에는 Airflow,
+MLflow, Scikit-learn, XGBoost, Pandas, NumPy, PyTorch, Transformers가 포함됩니다.
 
 ## 개발 환경 실행
 
@@ -111,11 +111,19 @@ arm64용으로 각 환경에서 빌드합니다.
 | PostgreSQL + PostGIS | localhost:5432 |
 | MinIO S3 API | http://localhost:9000 |
 | MinIO 콘솔 | http://localhost:9001 |
+| Airflow | http://localhost:8081 (계정은 `.env` 참조) |
+| MLflow | http://localhost:5000 |
 
 포트를 변경하면 표의 접속 포트도 변경합니다. 컨테이너 내부에서는 DB를 `postgres:5432`,
 객체 저장소를 `minio:9000`으로 접근합니다. 프런트엔드 API 호출은 `/api/...` 상대 경로를
 사용합니다. 모델 버킷은 아래 모델 관리 명령으로 초기화하며, 수집 데이터 버킷은 별도로 구성합니다.
 `/api/spot_fit`는 API 프로세스 생존만 확인하고 DB·MinIO 연결은 검사하지 않습니다.
+
+Airflow와 MLflow는 PostgreSQL의 별도 `airflow`, `mlflow` 데이터베이스를 사용합니다.
+Airflow 계정은 `.env`의 `AIRFLOW_ADMIN_USER`이며, 첫 실행 시 생성되는 비밀번호를 확인하려면
+`docker compose exec airflow cat /opt/airflow/simple_auth_manager_passwords.json.generated`를 실행합니다.
+학습 의존성은 [ml/requirements.txt](ml/requirements.txt)에서 관리하고 백엔드와 Airflow 이미지 양쪽에 설치합니다.
+Airflow·MLflow 웹 포트는 호스트의 `127.0.0.1`에만 열립니다.
 
 PostgreSQL 컨테이너는 PostgreSQL 17과 PostGIS 3.5가 포함된 이미지를 사용합니다. 새 DB 볼륨을
 처음 만들 때 `postgis`와 `postgis_topology` 확장을 자동으로 활성화합니다. 기존 PostgreSQL 볼륨을

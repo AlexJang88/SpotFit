@@ -8,7 +8,7 @@
 
 - Ubuntu Server 24.04 LTS, 64-bit
 - CPU 2코어 이상
-- RAM 4GB 이상 (MinIO 최초 소스 빌드에는 4GB 권장)
+- RAM 8GB 이상 권장 (Airflow와 딥러닝 라이브러리 포함)
 - 동적 확장 디스크 60GB 이상
 - 네트워크: **어댑터에 브리지(Bridged Adapter)**
 - Windows의 유선 연결을 사용 중이면 Ethernet, 무선 연결이면 현재 Wi-Fi 어댑터 선택
@@ -82,6 +82,9 @@ chmod 600 .env.server
 nano .env.server
 ```
 
+이미 `.env.server`가 있다면 다시 복사하지 말고 편집만 하세요. 이 파일은 Git에서 제외되므로
+`git pull`을 해도 새 Airflow·MLflow 항목이 자동 추가되지 않습니다.
+
 VM 주소가 `192.168.0.3`일 때 다음처럼 설정합니다.
 
 ```dotenv
@@ -89,9 +92,23 @@ APP_BIND_ADDRESS=192.168.0.3
 APP_PORT=8080
 POSTGRES_PASSWORD=반드시_새로_생성한_값
 POSTGRES_BIND_ADDRESS=192.168.0.3
+AIRFLOW_BIND_ADDRESS=192.168.0.3
+AIRFLOW_ADMIN_USER=spotfit
+AIRFLOW_FERNET_KEY=Fernet_키_생성_명령으로_만든_값
+AIRFLOW_SECRET_KEY=별도_랜덤_값
+MLFLOW_BIND_ADDRESS=192.168.0.3
 MINIO_ROOT_USER=spot_fit_admin
 MINIO_ROOT_PASSWORD=반드시_새로_생성한_값
 ```
+
+Airflow 키는 Ubuntu의 Python과 OpenSSL로 생성합니다.
+
+```sh
+python3 -c 'import base64, os; print(base64.urlsafe_b64encode(os.urandom(32)).decode())'
+openssl rand -hex 32
+```
+
+첫 번째 출력은 `AIRFLOW_FERNET_KEY`, 두 번째 출력은 `AIRFLOW_SECRET_KEY`에 입력합니다.
 
 비밀번호 후보는 아래 명령을 두 번 실행해 서로 다른 값으로 생성합니다.
 
@@ -102,7 +119,7 @@ openssl rand -hex 24
 
 생성한 값을 `POSTGRES_PASSWORD`, `MINIO_ROOT_PASSWORD`에 각각 입력합니다.
 `.env.server`는 Git에 커밋하지 않습니다. `.env.server.example`에는 실제 비밀번호를 넣지 않습니다.
-Nginx와 PostgreSQL은 VM의 내부망 주소에 바인딩됩니다. PostgreSQL은 내부망에서 DBeaver로
+Nginx, PostgreSQL, Airflow, MLflow는 VM의 내부망 주소에 바인딩됩니다. PostgreSQL은 내부망에서 DBeaver로
 접속할 수 있지만 공유기의 포트 포워딩으로 외부에 공개하지 않습니다. MinIO는
 `127.0.0.1:9000-9001`에 유지되어 다른 내부망 PC에서 직접 접근할 수 없습니다.
 
@@ -116,7 +133,8 @@ docker compose --env-file .env.server -f compose.yaml -f compose.server.yaml up 
 docker compose --env-file .env.server -f compose.yaml -f compose.server.yaml ps
 ```
 
-MinIO 최초 컴파일에는 몇 분이 걸릴 수 있습니다.
+MinIO 컴파일과 Airflow·PyTorch 학습 이미지의 패키지 다운로드 때문에 최초 빌드에는 시간이 걸리고
+여러 GB의 디스크 공간을 사용합니다.
 
 ```sh
 docker compose --env-file .env.server -f compose.yaml -f compose.server.yaml logs -f
@@ -142,12 +160,23 @@ Windows와 같은 내부망의 다른 기기에서는 VM 주소로 접속합니�
 sudo ufw allow OpenSSH
 sudo ufw allow from 192.168.0.0/24 to any port 8080 proto tcp
 sudo ufw allow from 192.168.0.0/24 to any port 5432 proto tcp
+sudo ufw allow from 192.168.0.0/24 to any port 8081 proto tcp
+sudo ufw allow from 192.168.0.0/24 to any port 5000 proto tcp
 sudo ufw enable
 ```
 
 Docker의 공개 포트는 호스트 방화벽 동작과 상호작용할 수 있으므로, 접근 제한의 기준은
 `APP_BIND_ADDRESS`를 VM의 내부 IPv4 주소로 지정하는 것입니다. 공유기에서 8080 포트를
 포워딩하지 않습니다.
+
+내부망의 브라우저에서는 Airflow `http://192.168.0.3:8081`, MLflow
+`http://192.168.0.3:5000`으로 접속합니다. Airflow 계정은 `spotfit`이며 최초 생성된 암호는
+다음 명령으로 확인합니다.
+
+```sh
+docker compose --env-file .env.server -f compose.yaml -f compose.server.yaml \
+  exec airflow cat /opt/airflow/simple_auth_manager_passwords.json.generated
+```
 
 ## DBeaver에서 PostgreSQL 접속
 
