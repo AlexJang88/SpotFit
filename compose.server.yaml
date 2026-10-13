@@ -1,4 +1,4 @@
-# Test-server additions. Use together with compose.yaml on the Ubuntu VM.
+﻿# Ubuntu server overrides. Use together with compose.yaml on the Ubuntu VM.
 services:
   nginx:
     restart: unless-stopped

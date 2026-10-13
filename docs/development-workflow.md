@@ -1,45 +1,55 @@
-# SpotFit 개발 워크플로우
+﻿# SpotFit 개발 워크플로우
 
-이 문서는 Windows·macOS 개발 PC에서 작업하고 GitHub로 코드를 공유한 뒤, 내부망 Ubuntu 서버에 반영하는 흐름을 설명합니다. 기본 개발 Compose의 MinIO는 PC마다 별도 저장소입니다. 따라서 GitHub는 코드와 모델 메타데이터를 공유하고, 모델 파일은 사용할 MinIO에 별도로 업로드해야 합니다.
+Windows·macOS 개발 PC에서 앱을 개발하고 같은 내부망 Ubuntu 서버의 PostgreSQL, MinIO, Airflow, MLflow를 함께 쓰는 절차입니다. 개발 PC에서는 프런트엔드·백엔드·Nginx만 Docker로 실행합니다. 개발 PC에 PostgreSQL, MinIO, Airflow, MLflow를 설치하거나 띄울 필요가 없습니다. 서버가 켜져 있고 개발 PC에서 해당 포트로 접속 가능해야 합니다.
+
+## Compose 구성
+
+| 목적 | Compose 명령에 지정하는 파일 | 실행되는 주요 서비스 |
+| --- | --- | --- |
+| 개발 PC에서 공유 Ubuntu 인프라 사용 | `compose.dev.yaml` | Nginx, React/Vite, FastAPI |
+| Ubuntu 테스트 서버 | `compose.yaml` + `compose.server.yaml` | 앱, PostgreSQL/PostGIS, MinIO, Airflow, MLflow |
+| PC만으로 독립적인 전체 개발 스택 실행 | `compose.yaml` | 위 서비스 전체 |
+
+일상적인 공유 서버 개발에는 `compose.dev.yaml`을 사용합니다. `compose.yaml`은 전체 스택을 로컬에서 독립 실행하고 싶을 때 사용합니다.
 
 ## 1. 개발 PC 최초 준비
 
-Docker Desktop(Windows/macOS) 또는 Docker Engine(Linux)과 Compose 플러그인을 설치한 뒤, 저장소를 받습니다.
+Docker Desktop(Windows/macOS) 또는 Docker Engine과 Compose 플러그인을 설치하고 저장소를 받습니다.
 
 ```sh
 git clone https://github.com/AlexJang88/SpotFit.git
 cd SpotFit
 ```
 
-환경 파일은 각 PC에서 따로 만들고 Git에 올리지 않습니다.
+환경 파일을 만들고 `.env.dev`에 Ubuntu 서버의 실제 접속 정보와 자격 증명을 입력합니다. `.env.dev`는 Git에 올라가지 않습니다.
 
 ```powershell
 # Windows PowerShell
-Copy-Item .env.example .env
+Copy-Item .env.dev.example .env.dev
 ```
 
 ```sh
 # macOS / Linux
-cp .env.example .env
+cp .env.dev.example .env.dev
 ```
 
-`.env`에 로컬 개발용 비밀번호와 키를 설정하고, 프로젝트 루트에서 구성을 검사한 뒤 시작합니다.
+`.env.dev`의 `POSTGRES_PASSWORD`는 서버 `.env.server`의 값과 같게 설정합니다. `S3_SECRET_ACCESS_KEY`에는 서버에서 제한된 개발 계정을 만들 때 설정한 `DEV_S3_SECRET_ACCESS_KEY` 값을 넣습니다. 서버 root MinIO 키는 개발 PC로 복사하지 않습니다. 기본 서버 주소가 다르면 `POSTGRES_HOST`, `S3_ENDPOINT_URL`, `MLFLOW_TRACKING_URI`를 실제 Ubuntu IP로 수정합니다.
+
+서버가 실행 중이고 내부망 접속이 허용된 상태에서 구성을 검사하고 개발 앱을 시작합니다.
 
 ```sh
-docker compose config --quiet
-docker compose up --build -d
-docker compose ps
+docker compose --env-file .env.dev -f compose.dev.yaml config --quiet
+docker compose --env-file .env.dev -f compose.dev.yaml up --build -d
+docker compose --env-file .env.dev -f compose.dev.yaml ps
 ```
 
-화면은 `http://localhost:8080`, API 문서는 `http://localhost:8080/api/docs`, Airflow는 `http://localhost:8081`, MLflow는 `http://localhost:5000`에서 확인합니다. MinIO API는 `http://localhost:9000`, 콘솔은 `http://localhost:9001`입니다. 로컬 MinIO 로그인 정보는 해당 PC의 `.env`에 있습니다. Airflow 암호는 다음 명령으로 확인할 수 있습니다.
+개발 PC의 화면은 `http://localhost:8080`, API 문서는 `http://localhost:8080/api/docs`입니다. Airflow와 MLflow는 각각 `http://192.168.0.3:8081`, `http://192.168.0.3:5000`에서 서버에 직접 접속합니다. MinIO S3 API는 `http://192.168.0.3:9000`입니다. MinIO 관리 콘솔은 서버에서 localhost에만 바인딩되어 있으므로 필요한 경우 SSH 터널을 사용합니다. 실제 주소는 `.env.dev`와 [VirtualBox 배포 안내](virtualbox-deployment.md)에 맞춥니다.
 
-```sh
-docker compose exec airflow cat /opt/airflow/simple_auth_manager_passwords.json.generated
-```
+현재 FastAPI에는 PostgreSQL을 실제 조회하는 기능이 아직 구현되어 있지 않습니다. Compose는 DB 접속 환경변수만 전달합니다. DB 연결 코드와 마이그레이션을 구현한 뒤 실제 DB 연동을 검증해야 합니다. `/api/spot_fit` 생존 확인은 DB나 MinIO 연결 검사가 아닙니다.
 
-## 2. 매일 작업할 때
+## 2. 매일 작업과 종료
 
-작업 전 최신 코드를 받고, 기능별 브랜치를 만들어 작업합니다.
+작업 전 최신 코드를 받고 기능 브랜치를 만듭니다.
 
 ```sh
 git switch main
@@ -47,93 +57,82 @@ git pull --ff-only origin main
 git switch -c feature/기능-이름
 ```
 
-소스는 컨테이너에 연결되어 있으므로 프런트엔드는 HMR, 백엔드는 자동 재시작됩니다. 상태와 로그를 보는 명령은 다음과 같습니다.
+소스는 개발 컨테이너에 연결되어 있어 프런트엔드는 HMR, 백엔드는 자동 재시작됩니다. 상태·로그 확인에는 다음 명령을 사용합니다.
 
 ```sh
-docker compose ps
-docker compose logs -f backend
-docker compose logs -f frontend
-docker compose logs -f minio
+docker compose --env-file .env.dev -f compose.dev.yaml ps
+docker compose --env-file .env.dev -f compose.dev.yaml logs -f backend
+docker compose --env-file .env.dev -f compose.dev.yaml logs -f frontend
 ```
 
-`Ctrl+C`는 로그 보기만 종료합니다. 개발 스택을 멈추려면 다음을 실행합니다.
+`Ctrl+C`는 로그 보기만 끝냅니다. 개발 PC의 앱 컨테이너를 중지할 때는 다음 명령을 실행합니다.
 
 ```sh
-docker compose down
+docker compose --env-file .env.dev -f compose.dev.yaml down
 ```
 
-이 명령은 PostgreSQL·MinIO 볼륨을 유지합니다. `docker compose down -v`는 DB와 업로드한 모델을 포함한 데이터 볼륨을 삭제하므로 의도적으로 전체 데이터를 초기화할 때만 사용합니다.
+이 구성은 DB·MinIO·Airflow·MLflow를 내리지 않고 개발 앱만 종료합니다. 공유 서버는 계속 실행됩니다.
 
 ## 3. 라이브러리를 추가할 때
 
-컨테이너 안에서 일회성으로 `pip install`하는 방식은 재생성하면 사라집니다. 패키지 선언 파일을 수정하고 이미지를 다시 빌드해, 다른 개발자와 Ubuntu에서도 같은 의존성을 재현할 수 있게 합니다.
+컨테이너 안에서 일회성으로 설치하지 말고 저장소의 선언 파일을 수정하고 이미지를 다시 빌드합니다.
 
 ### React / TypeScript 패키지
 
-프로젝트 루트에서 실행하며, 패키지 이름은 실제 사용할 패키지로 바꿉니다.
-
 ```sh
-docker compose exec frontend npm install 패키지명
-docker compose exec frontend npm install --save-dev 개발도구명
+docker compose --env-file .env.dev -f compose.dev.yaml exec frontend npm install 패키지명
+docker compose --env-file .env.dev -f compose.dev.yaml exec frontend npm install --save-dev 개발도구명
+docker compose --env-file .env.dev -f compose.dev.yaml exec frontend npm run build
 ```
 
-`frontend/package.json`과 `frontend/package-lock.json`이 갱신됩니다. 둘 다 커밋합니다. 새 브랜치나 다른 PC는 `docker compose up` 시 `npm ci`로 lock 파일 기준 설치합니다. 설치 후에도 해석되지 않으면 프런트엔드 컨테이너를 다시 시작합니다.
-
-```sh
-docker compose restart frontend
-docker compose exec frontend npm run build
-```
+갱신된 `frontend/package.json`과 `frontend/package-lock.json`을 함께 커밋합니다. 새 브랜치나 다른 PC에서는 컨테이너 시작 시 `npm ci`가 lock 파일에 맞춰 설치합니다.
 
 ### FastAPI 전용 Python 패키지
 
-API에서만 사용하는 패키지는 `backend/requirements.txt`에 버전 범위를 적습니다. 예를 들어 `httpx>=0.27,<1.0`을 추가했다면:
+`backend/requirements.txt`에 패키지와 버전 범위를 추가합니다. 예를 들어 `httpx>=0.27,<1.0`을 선언했다면 백엔드 이미지를 다시 빌드합니다.
 
 ```sh
-docker compose up --build -d backend
+docker compose --env-file .env.dev -f compose.dev.yaml up --build -d backend
 ```
 
 ### 학습·데이터 처리 패키지
 
-백엔드 추론과 Airflow 학습 작업이 함께 사용하는 NumPy, Pandas, scikit-learn 등의 패키지는 `ml/requirements.txt`에 추가합니다. 백엔드와 Airflow 이미지가 이 파일을 사용하므로 둘 다 재빌드해야 합니다.
+백엔드와 Airflow가 공유하는 NumPy, Pandas, scikit-learn 등의 패키지는 `ml/requirements.txt`에 선언합니다. 개발 PC의 백엔드 이미지를 빌드하고, Airflow에서 사용하는 패키지는 Ubuntu 서버에서 Airflow 이미지를 다시 빌드해야 적용됩니다.
+
+개발 PC:
 
 ```sh
-docker compose up --build -d backend airflow mlflow
+docker compose --env-file .env.dev -f compose.dev.yaml up --build -d backend
 ```
 
-이후 모델 CLI를 쓸 때는 도구 이미지도 다시 빌드합니다.
+Ubuntu 서버:
 
 ```sh
-docker compose --profile tools build model-tools
+docker compose --env-file .env.server -f compose.yaml -f compose.server.yaml up --build -d airflow
 ```
 
-Airflow 전용 provider처럼 Airflow에만 필요한 의존성은 Airflow 버전과 호환성을 확인해 `infra/airflow/Dockerfile`의 별도 프로젝트 패키지 설치 단계에 추가합니다. Dockerfile 첫 Airflow 설치 단계의 공식 constraints 설정을 제거하거나 프로젝트 패키지 전체에 무심코 적용하지 마세요. Airflow와 ML 패키지의 버전 충돌을 막기 위해 현재 설치 단계가 분리되어 있습니다.
+MLflow가 사용하는 Python 패키지도 바뀌면 서버의 MLflow 이미지를 포함해 재빌드합니다. Airflow 전용 provider는 `infra/airflow/Dockerfile`의 별도 프로젝트 패키지 설치 단계에 추가하고, Airflow 버전과 호환성을 확인합니다.
 
-의존성 선언을 바꾼 뒤에는 함께 작업하는 사람에게 어떤 파일이 바뀌었는지 알려주고 해당 이미지를 재빌드하게 합니다. requirements만 바꾸고 실행 중인 컨테이너에 설치하는 것으로 끝내지 않습니다.
+모델 CLI 패키지는 같은 백엔드 Dockerfile을 사용하므로 필요한 시점에 도구 이미지를 다시 빌드합니다.
 
-## 4. MinIO에 데이터를 저장할 때
+## 4. Ubuntu MinIO에 모델 업로드·다운로드
 
-MinIO는 S3 호환 객체 저장소입니다. 기본 개발 Compose에서는 앱 컨테이너끼리 `http://minio:9000`으로 통신합니다. Ubuntu 저장소를 개발 PC가 사용할 때는 `compose.minio-server.yaml`이 백엔드와 도구의 endpoint를 Ubuntu 내부망 IP로 바꿉니다. 버킷은 데이터 종류별로 나눕니다.
+Ubuntu의 `spot-fit-models` 버킷은 버전 관리가 켜진 모델 저장소입니다. Ubuntu 서버에서 개발 전용 MinIO 계정을 먼저 만들고, `.env.dev`의 S3 키를 그 계정에 맞춥니다. 설정과 내부망 방화벽은 [VirtualBox 배포 안내](virtualbox-deployment.md#개발-pc에서-서버-minio-사용)를 따릅니다. 모델 파일은 MinIO에, 버전·체크섬 manifest는 `model_registry/`에 두고 manifest만 Git으로 공유합니다.
 
-현재 제공된 `model-tools` CLI는 **모델 파일**의 버전 업로드·다운로드를 지원합니다. 임의의 원본 데이터셋을 업로드하는 `data upload` 명령은 아직 없습니다. 원본 데이터는 기본적으로 `data/raw`, 가공 데이터는 `data/interim`·`data/processed`에 로컬로 두며 Git에서 제외됩니다. 데이터셋 공유가 필요하면 콘솔에서 전용 버킷(예: `spot-fit-data`)을 만들고 업로드하거나, 추후 데이터용 CLI/수집 파이프라인을 추가합니다. 모델 버킷에 데이터셋을 섞지 마세요.
-
-### 모델 버킷 초기화
-
-프로젝트 루트에서 도구 이미지를 만들고 한 번 실행합니다. 초기화는 `spot-fit-models` 버킷을 만들고 객체 버전 관리를 활성화합니다.
+도구 이미지를 빌드하고 버킷을 초기화합니다.
 
 ```sh
-docker compose --profile tools build model-tools
-docker compose --profile tools run --rm model-tools init
+docker compose --env-file .env.dev -f compose.dev.yaml --profile tools build model-tools
+docker compose --env-file .env.dev -f compose.dev.yaml --profile tools run --rm model-tools init
 ```
 
-### 모델 파일 업로드와 manifest 커밋
-
-학습 코드가 먼저 파일을 예를 들어 `artifacts/models/recommender.joblib`에 저장해야 합니다. `.pt`, `.onnx` 등도 `--file` 경로를 바꾸면 됩니다. 이 폴더는 컨테이너의 `/artifacts`로 연결되어 있으므로 명령에는 호스트의 Windows 경로 대신 컨테이너 경로를 씁니다.
+학습 결과 파일을 `artifacts/models/recommender.joblib`에 저장한 다음 업로드합니다. 컨테이너에서 보이는 `/artifacts` 경로를 사용합니다.
 
 ```sh
-docker compose --profile tools run --rm model-tools upload --file /artifacts/models/recommender.joblib --name recommender --version v1
+docker compose --env-file .env.dev -f compose.dev.yaml --profile tools run --rm model-tools upload --file /artifacts/models/recommender.joblib --name recommender --version v1
 ```
 
-성공하면 모델 바이트는 MinIO에, 메타데이터 manifest는 `model_registry/recommender/v1.json`에 기록됩니다. manifest에는 버킷·객체 키·객체 버전 ID·크기·SHA-256이 포함됩니다. 새 학습 결과는 기존 버전을 덮어쓰지 말고 `v2`처럼 새 버전으로 올립니다.
+성공하면 모델 바이트는 Ubuntu MinIO에, 메타데이터는 `model_registry/recommender/v1.json`에 기록됩니다. 같은 모델 버전을 덮어쓰지 말고 새 학습 결과는 `v2`처럼 새 버전으로 올립니다.
 
 ```sh
 git add model_registry/recommender/v1.json
@@ -141,54 +140,17 @@ git commit -m "model: register recommender v1"
 git push -u origin feature/기능-이름
 ```
 
-모델 파일(`.joblib`, `.pt` 등)은 Git에 추가하지 않습니다. Git에는 코드와 manifest를 올립니다.
-
-### manifest에 기록된 모델 다운로드
-
-저장소를 받은 개발자는 같은 MinIO에 접근 가능해야 합니다. 버킷 초기화 후 다음 명령을 실행하면 버전 ID를 지정해 내려받고 크기와 SHA-256을 검증합니다.
+다른 개발 PC에서 manifest를 받은 뒤 같은 서버 계정으로 모델 파일을 검증해 내려받습니다.
 
 ```sh
-docker compose --profile tools run --rm model-tools download --manifest /model_registry/recommender/v1.json
+docker compose --env-file .env.dev -f compose.dev.yaml --profile tools run --rm model-tools download --manifest /model_registry/recommender/v1.json
 ```
 
-기본 저장 위치는 `artifacts/models/recommender/v1/recommender.joblib`입니다. MLflow의 `spot-fit-mlflow` 버킷은 학습 실행 기록의 artifact용이며, 위 명령의 `spot-fit-models`와 목적이 다릅니다.
+현재 `model-tools`는 모델 파일 관리 명령을 제공합니다. 임의 데이터셋 업로드 CLI는 아직 없으며, 사용자·공공 데이터는 `data/`에 로컬 보관하거나 별도 데이터 적재 기능을 구현합니다. MLflow 실험 artifact는 Ubuntu MLflow 설정과 그 서버 저장소가 관리합니다.
 
-### 개발 PC에서 Ubuntu MinIO 사용
+## 5. GitHub에서 Ubuntu 서버로 반영
 
-기본 `.env`의 MinIO는 로컬 개발용입니다. Ubuntu MinIO의 모델 버킷을 FastAPI와 CLI에서 사용하려면 Ubuntu에서 내부망의 S3 API 접근을 허용하고 제한된 개발 계정을 만듭니다. 개발 PC `.env`에는 `DEV_S3_*` 값만 설정합니다. 설정 절차와 방화벽 규칙은 [VirtualBox 배포 안내](virtualbox-deployment.md#개발-pc에서-서버-minio-사용)에 있습니다.
-
-다른 터미널에서 프런트엔드와 백엔드를 서버 MinIO 설정으로 실행할 수 있습니다.
-
-```sh
-docker compose -f compose.yaml -f compose.minio-server.yaml up --build -d
-```
-
-이 구성은 개발 PC의 FastAPI 백엔드와 모델 CLI를 Ubuntu의 `spot-fit-models`에 연결합니다. 기본 Compose의 로컬 MinIO는
-Airflow/MLflow artifact 저장을 위해 함께 실행될 수 있습니다. MinIO API는 같은 내부망에서 직접 접속하므로 개발 중 SSH 터널이 필요하지 않습니다. MinIO 관리 콘솔만 기존 SSH 터널로 접속합니다.
-
-별도 터미널에서 Ubuntu MinIO를 지정해 버킷 초기화·업로드·다운로드를 실행합니다. `--no-deps`는 로컬 MinIO를 대신 시작하는 것을 막습니다.
-
-```sh
-docker compose -f compose.yaml -f compose.minio-server.yaml --profile tools build model-tools
-docker compose -f compose.yaml -f compose.minio-server.yaml --profile tools run --rm --no-deps model-tools init
-docker compose -f compose.yaml -f compose.minio-server.yaml --profile tools run --rm --no-deps model-tools upload --file /artifacts/models/recommender.joblib --name recommender --version v1
-docker compose -f compose.yaml -f compose.minio-server.yaml --profile tools run --rm --no-deps model-tools download --manifest /model_registry/recommender/v1.json
-```
-
-개발 서버를 실행할 때도 두 compose 파일을 함께 사용하면 백엔드가 서버의 `spot-fit-models` 버킷을 사용합니다. 기본 Compose가 시작하는 MinIO는 Airflow/MLflow 개발용으로 남아 있을 수 있습니다. Git에는 manifest를 커밋하고 모델 바이트는 Ubuntu MinIO에 저장합니다. 같은 bucket/모델명/version을 여러 개발자가 동시에 쓰지 않도록 새 버전을 조정하세요.
-
-## 5. 변경사항을 GitHub와 Ubuntu에 반영
-
-기능 구현과 필요한 검증을 마치면 변경 파일을 확인해 브랜치에 커밋하고 push합니다.
-
-```sh
-git status
-git add 경로/파일
-git commit -m "feat: 변경 내용"
-git push -u origin feature/기능-이름
-```
-
-GitHub에서 리뷰·병합한 뒤 Ubuntu에서 `main`을 가져옵니다. Ubuntu의 `.env.server`는 Git에 올리지 않으며 서버에 그대로 유지합니다.
+검증한 변경을 브랜치에 push하고 GitHub에서 병합합니다. Ubuntu의 `.env.server`는 서버에만 둡니다. 병합된 새 버전을 서버에서 가져와 빌드·실행합니다.
 
 ```bash
 cd /home/spotfit/SpotFit
@@ -199,17 +161,12 @@ docker compose --env-file .env.server -f compose.yaml -f compose.server.yaml up 
 docker compose --env-file .env.server -f compose.yaml -f compose.server.yaml ps
 ```
 
-의존성을 추가한 변경이면 `up --build -d`가 해당 이미지도 다시 만듭니다. 로그는 다음처럼 확인합니다.
+로그 확인:
 
 ```bash
 docker compose --env-file .env.server -f compose.yaml -f compose.server.yaml logs -f backend
 ```
 
-## 6. Git에 올릴 파일 확인
+## 6. Git에 올릴 파일
 
-커밋 전 `git status`로 다음 기준을 확인합니다.
-
-- 커밋: 애플리케이션 코드, Compose/Dockerfile, `frontend/package.json`과 `package-lock.json`, Python requirements, SQL 마이그레이션, 문서, 모델 manifest JSON
-- 커밋 금지: `.env`, `.env.server`, 비밀번호·키, `data/`의 사용자 데이터, `artifacts/`의 모델 파일, `node_modules`, Docker 볼륨
-
-의존성과 manifest는 플랫폼 간 재현을 위해 함께 공유하고, 데이터·모델 바이트는 MinIO나 별도 승인된 파일 전달 경로로 공유합니다.
+커밋 대상은 앱 코드, Compose/Dockerfile, 프런트 lock 파일, Python requirements, SQL 마이그레이션, 문서, 모델 manifest입니다. `.env.dev`, `.env.server`, 비밀번호·키, `data/` 사용자 데이터, `artifacts/` 모델 파일, `node_modules`, Docker 볼륨은 커밋하지 않습니다.

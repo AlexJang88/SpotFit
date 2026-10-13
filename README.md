@@ -1,4 +1,4 @@
-# spot_fit
+﻿# spot_fit
 
 React + TypeScript, Python FastAPI 기반의 ML/DL 서비스 개발용 초기 구조입니다.
 개발 환경은 Docker Compose로 실행하며, Linux 배포를 위한 소스와 인프라 설정을 분리합니다.
@@ -71,31 +71,32 @@ React는 전통적인 서버 MVC 프레임워크가 아니므로 역할에 맞�
 학습 작업은 웹 요청 처리와 분리하여 `ml`에서 실행합니다. 기본 Compose에는 Airflow,
 MLflow, Scikit-learn, XGBoost, Pandas, NumPy, PyTorch, Transformers가 포함됩니다.
 
-## 개발 환경 실행
+## 공유 Ubuntu 서버를 사용하는 개발 환경
 
-Docker Engine/Desktop와 Docker Compose v2 이상이 필요합니다. Windows는 Docker Desktop의
-Linux 컨테이너 모드를 사용합니다. 호스트에 Node.js와 Python을 설치할 필요는 없습니다.
+일상적인 개발은 개발 PC에서 프런트엔드·백엔드·Nginx만 실행하고 Ubuntu 서버의 PostgreSQL, MinIO, Airflow, MLflow에 연결합니다. 개발 PC에 이 인프라 서비스를 별도로 설치하거나 실행할 필요가 없습니다. Docker Engine/Desktop와 Compose v2 이상, 같은 내부망의 Ubuntu 서버가 필요합니다.
 
-1. 환경 파일을 복사합니다.
+```powershell
+Copy-Item .env.dev.example .env.dev
+```
 
-   Windows PowerShell:
-   ```powershell
-   Copy-Item .env.example .env
-   ```
+macOS/Linux에서는 `cp .env.dev.example .env.dev`를 실행합니다. `.env.dev`에서 Ubuntu IP와 서버 PostgreSQL 암호, 개발 전용 MinIO 계정을 설정한 다음 실행합니다.
 
-   macOS / Linux:
-   ```bash
-   cp .env.example .env
-   ```
+```sh
+docker compose --env-file .env.dev -f compose.dev.yaml config --quiet
+docker compose --env-file .env.dev -f compose.dev.yaml up --build -d
+```
 
-2. `.env`에서 로컬 개발용 비밀번호와 필요한 포트를 설정합니다.
-3. 프로젝트 루트에서 실행합니다.
+개발 화면은 `http://localhost:8080`, API 문서는 `http://localhost:8080/api/docs`입니다. Ubuntu의 Airflow·MLflow·MinIO는 각각 서버의 `8081`, `5000`, `9000` 포트로 사용합니다. 상세한 설정과 명령은 [개발 워크플로우](docs/development-workflow.md)를 참고하세요. 현재 백엔드에는 DB 조회 기능이 아직 구현되어 있지 않아 DB 접속 환경만 준비되어 있습니다.
 
-   ```sh
-   docker compose config --quiet
-   docker compose up --build -d
-   docker compose ps
-   ```
+## 로컬 전체 스택 개발 환경 (선택)
+
+공유 서버를 사용하지 않고 PC에서 모든 인프라를 독립 실행하려면 기본 `compose.yaml`을 사용할 수 있습니다. Windows는 Docker Desktop의 Linux 컨테이너 모드를 사용합니다. 호스트에 Node.js와 Python을 설치할 필요는 없습니다. 먼저 `.env.example`을 `.env`로 복사하고 비밀번호와 키를 채웁니다. 이 로컬 모드의 PostgreSQL·MinIO 데이터는 각 PC에 따로 저장됩니다.
+
+```powershell
+Copy-Item .env.example .env
+```
+
+macOS/Linux에서는 `cp .env.example .env`를 실행합니다.
 
 MinIO 커뮤니티 버전은 [공식 안내](https://github.com/minio/minio#source-only-distribution)에 따라
 `infra/minio/Dockerfile`에서 고정된 공식 소스 태그를 빌드합니다. 최초 빌드는 Go 의존성 다운로드와
@@ -161,8 +162,7 @@ docker compose --profile tools run --rm model-tools init
 ```
 
 업로드·다운로드 및 백엔드 연동은 [모델 저장 안내](docs/model-storage.md)를 참고하세요.
-기본 개발 Compose는 PC별 로컬 MinIO를 사용합니다. Ubuntu MinIO를 개발 PC에서 사용하려면 내부망 S3 API 접근과
-제한된 계정을 구성한 뒤 [개발 PC 공유 저장소 안내](docs/virtualbox-deployment.md#개발-pc에서-서버-minio-사용)를 참고하세요.
+공유 서버 개발 Compose는 Ubuntu MinIO를 사용합니다. 내부망 S3 API 접근과 제한된 계정 구성은 [개발 PC 서버 인프라 안내](docs/virtualbox-deployment.md#개발-pc에서-ubuntu-서버-인프라-사용)를 참고하세요. 로컬 전체 스택 구성은 PC별 저장소를 사용합니다.
 Git에는 manifest만 올라가고 모델 파일은 MinIO에 저장됩니다.
 
 일상적인 브랜치·커밋·Ubuntu 반영 절차, 패키지 추가 위치와 재빌드 명령, 모델을 Ubuntu MinIO에 등록하는 방법은 [개발 워크플로우](docs/development-workflow.md)를 참고하세요.
@@ -170,7 +170,7 @@ Git에는 manifest만 올라가고 모델 파일은 MinIO에 저장됩니다.
 ## GitHub · macOS · Windows 협업
 
 - `.gitignore`는 OS 메타데이터, IDE 설정, 환경변수·개인 키, 의존성, 캐시, 데이터·모델 산출물을 제외합니다.
-- `.env.example`, `frontend/package-lock.json`, Python 의존성 명세와 마이그레이션은 커밋합니다.
+- `.env.example`, `.env.dev.example`, `.env.server.example`, `frontend/package-lock.json`, Python 의존성 명세와 마이그레이션은 커밋합니다.
 - `.gitattributes`로 텍스트 파일은 LF, `.bat`·`.cmd`만 CRLF를 사용합니다.
 - 빈 폴더는 `.gitkeep` 또는 Python `__init__.py`로 유지합니다.
 - 파일명과 import의 대소문자를 정확히 맞춥니다. 대소문자만 다른 파일은 만들지 않습니다.

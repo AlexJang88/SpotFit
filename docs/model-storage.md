@@ -1,4 +1,4 @@
-# MinIO 모델 저장·공유
+﻿# MinIO 모델 저장·공유
 
 학습 코드와 `model_registry/<모델명>/<버전>.json`은 Git에 저장하고, 학습된 파일은
 MinIO의 `spot-fit-models` 버킷에 저장합니다. `artifacts/`의 실제 파일은 계속 Git에서 제외합니다.
@@ -80,30 +80,18 @@ model_file = download_model(
 
 ## Ubuntu MinIO를 개발 PC에서 사용하기
 
-Windows·macOS의 Docker 컨테이너가 Ubuntu MinIO에 연결하도록 하려면 [VirtualBox 배포 안내](virtualbox-deployment.md)의
-“개발 PC에서 서버 MinIO 사용” 순서를 따라 내부망 endpoint와 개발 전용 자격 증명을 설정합니다. 개발 PC의 `.env`에는
-서버 `.env.server` 전체 대신 `DEV_S3_ENDPOINT_URL`, `DEV_S3_MODEL_BUCKET`, `DEV_S3_ACCESS_KEY_ID`,
-`DEV_S3_SECRET_ACCESS_KEY`만 복사합니다. `compose.minio-server.yaml`은 FastAPI 백엔드와 `model-tools`를
-Ubuntu 내부망 endpoint로 지정합니다. MinIO API 포트는 Ubuntu 방화벽에서 신뢰하는 내부망만 허용합니다. 현재
-S3 endpoint는 HTTP이므로 이 방식은 신뢰된 내부망에서만 사용하고 root 자격 증명은 개발 PC에 복사하지 않습니다.
-
-같은 내부망에서 `192.168.0.3:9000` 포트가 열리는지 확인한 뒤 공용 서버 버킷을 준비하고 모델을 관리합니다.
+같은 내부망 개발 PC에서 사용하는 공유 서버 구성은 [개발 워크플로우](development-workflow.md)를 따릅니다. Ubuntu에서 MinIO S3 API를 내부망에 공개하고 개발 전용 자격 증명을 발급한 뒤, 개발 PC에 `.env.dev`를 만듭니다. 서버 `.env.server` 전체나 MinIO root 키는 복사하지 않습니다.
 
 ```sh
-docker compose -f compose.yaml -f compose.minio-server.yaml --profile tools build model-tools
-docker compose -f compose.yaml -f compose.minio-server.yaml --profile tools run --rm --no-deps model-tools init
-docker compose -f compose.yaml -f compose.minio-server.yaml --profile tools run --rm --no-deps model-tools upload --file /artifacts/models/recommender.joblib --name recommender --version v1
-docker compose -f compose.yaml -f compose.minio-server.yaml --profile tools run --rm --no-deps model-tools download --manifest /model_registry/recommender/v1.json
+docker compose --env-file .env.dev -f compose.dev.yaml --profile tools build model-tools
+docker compose --env-file .env.dev -f compose.dev.yaml --profile tools run --rm model-tools init
+docker compose --env-file .env.dev -f compose.dev.yaml --profile tools run --rm model-tools upload --file /artifacts/models/recommender.joblib --name recommender --version v1
+docker compose --env-file .env.dev -f compose.dev.yaml --profile tools run --rm model-tools download --manifest /model_registry/recommender/v1.json
 ```
 
-manifest에는 서버 MinIO의 버킷·객체 키·버전 ID가 기록됩니다. 따라서 다른 개발 PC도 같은 endpoint, 버킷,
-접근 가능한 계정을 사용해야 파일을 검증해 내려받을 수 있습니다. Git에는 manifest만 올라가며 실제 모델 파일은
-서버 MinIO가 보관합니다. FastAPI 컨테이너도 이 override를 적용해 실행하면 동일한 서버 모델 버킷을 사용합니다.
-Airflow/MLflow artifact 저장은 기본 Compose의 MinIO를 계속 사용합니다.
+개발 Compose는 Ubuntu 인프라에 연결할 백엔드와 모델 도구만 실행합니다. MinIO API는 내부망에서 직접 접근하므로 SSH 터널이 필요하지 않습니다. MinIO 관리 콘솔은 Ubuntu의 localhost 전용 바인딩을 유지하므로 콘솔 관리에만 SSH 터널을 씁니다. Ubuntu MinIO 사용 설정과 포트 확인은 [VirtualBox 배포 안내](virtualbox-deployment.md#개발-pc에서-서버-minio-사용)를 참고하세요.
 
-새 개발 PC용 계정을 발급할 때는 Ubuntu에서 server Compose의 `--profile admin run --rm minio-dev-bootstrap`을
-실행하고, 각 PC의 `.env`에 별도 계정을 안전하게 전달합니다. Root 자격 증명을 개발 PC에 복사하지 않습니다.
-
+manifest에는 서버 MinIO의 버킷·객체 키·버전 ID가 기록됩니다. 개발 PC가 같은 endpoint와 권한을 가진 계정을 사용해야 모델을 내려받을 수 있습니다. Git에는 manifest만 올리고 모델 파일은 서버 MinIO에 둡니다.
 ## 통합 검증
 
 ```sh
