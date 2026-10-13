@@ -78,32 +78,31 @@ model_file = download_model(
 백엔드 캐시는 `/model-cache`의 Docker 볼륨에, CLI 다운로드는 로컬 `artifacts/models`에 저장합니다.
 아직 학습된 모델이나 추론 API가 없으므로 서버 시작 시 특정 모델을 자동으로 내려받지는 않습니다.
 
-## 나중에 맥북·Windows 간 공유하기
+## Ubuntu MinIO를 개발 PC에서 사용하기
 
-현재 MinIO는 각 PC의 로컬 저장소입니다. **Git push만으로 모델 파일이 다른 PC에 전송되지는 않습니다.**
-양쪽 PC에서 같은 모델을 받으려면 접근 가능한 공용 MinIO 서버가 필요합니다.
-서버가 준비되면 양쪽 `.env`에 같은 HTTPS 주소·버킷명과 각자의 서비스 계정을 설정합니다.
+Windows·macOS의 Docker 컨테이너가 Ubuntu MinIO에 연결하도록 하려면 [VirtualBox 배포 안내](virtualbox-deployment.md)의
+“개발 PC에서 서버 MinIO 사용” 순서를 따라 내부망 endpoint와 개발 전용 자격 증명을 설정합니다. 개발 PC의 `.env`에는
+서버 `.env.server` 전체 대신 `DEV_S3_ENDPOINT_URL`, `DEV_S3_MODEL_BUCKET`, `DEV_S3_ACCESS_KEY_ID`,
+`DEV_S3_SECRET_ACCESS_KEY`만 복사합니다. `compose.minio-server.yaml`은 FastAPI 백엔드와 `model-tools`를
+Ubuntu 내부망 endpoint로 지정합니다. MinIO API 포트는 Ubuntu 방화벽에서 신뢰하는 내부망만 허용합니다. 현재
+S3 endpoint는 HTTP이므로 이 방식은 신뢰된 내부망에서만 사용하고 root 자격 증명은 개발 PC에 복사하지 않습니다.
 
-```dotenv
-S3_ENDPOINT_URL=https://models.example.com
-S3_MODEL_BUCKET=spot-fit-models
-S3_REGION=us-east-1
-S3_ACCESS_KEY_ID=your-service-access-key
-S3_SECRET_ACCESS_KEY=your-service-secret-key
-```
-
-공용 서버에서는 관리자가 버킷과 버전 관리를 먼저 준비합니다. 다운로드 계정에는 지정한 버킷의
-객체 버전 읽기 권한, 업로드 계정에는 쓰기와 버전 관리 상태 조회 권한이 필요합니다.
-공용 서버를 쓸 때는 로컬 MinIO 실행 없이 다음 명령으로 내려받을 수 있습니다.
+같은 내부망에서 `192.168.0.3:9000` 포트가 열리는지 확인한 뒤 공용 서버 버킷을 준비하고 모델을 관리합니다.
 
 ```sh
-docker compose --profile tools run --rm --no-deps model-tools download --manifest /model_registry/recommender/v1.json
+docker compose -f compose.yaml -f compose.minio-server.yaml --profile tools build model-tools
+docker compose -f compose.yaml -f compose.minio-server.yaml --profile tools run --rm --no-deps model-tools init
+docker compose -f compose.yaml -f compose.minio-server.yaml --profile tools run --rm --no-deps model-tools upload --file /artifacts/models/recommender.joblib --name recommender --version v1
+docker compose -f compose.yaml -f compose.minio-server.yaml --profile tools run --rm --no-deps model-tools download --manifest /model_registry/recommender/v1.json
 ```
 
-로컬에서 공용 서버로 옮길 때 기존 객체 버전 ID는 단순 파일 복사로 보존되지 않습니다.
-원본 파일을 공용 서버에 새 모델 버전으로 업로드하여 JSON을 다시 생성하고 Git에 반영합니다.
-주소를 바꾸는 것만으로 로컬 모델이 이전되지는 않습니다.
-`docker compose down -v`는 로컬 모델 원본이 저장된 MinIO 볼륨까지 삭제하므로 주의하세요.
+manifest에는 서버 MinIO의 버킷·객체 키·버전 ID가 기록됩니다. 따라서 다른 개발 PC도 같은 endpoint, 버킷,
+접근 가능한 계정을 사용해야 파일을 검증해 내려받을 수 있습니다. Git에는 manifest만 올라가며 실제 모델 파일은
+서버 MinIO가 보관합니다. FastAPI 컨테이너도 이 override를 적용해 실행하면 동일한 서버 모델 버킷을 사용합니다.
+Airflow/MLflow artifact 저장은 기본 Compose의 MinIO를 계속 사용합니다.
+
+새 개발 PC용 계정을 발급할 때는 Ubuntu에서 server Compose의 `--profile admin run --rm minio-dev-bootstrap`을
+실행하고, 각 PC의 `.env`에 별도 계정을 안전하게 전달합니다. Root 자격 증명을 개발 PC에 복사하지 않습니다.
 
 ## 통합 검증
 

@@ -99,6 +99,7 @@ AIRFLOW_SECRET_KEY=별도_랜덤_값
 MLFLOW_BIND_ADDRESS=192.168.0.3
 MINIO_ROOT_USER=spot_fit_admin
 MINIO_ROOT_PASSWORD=반드시_새로_생성한_값
+MINIO_API_BIND_ADDRESS=192.168.0.3
 ```
 
 Airflow 키는 Ubuntu의 Python과 OpenSSL로 생성합니다.
@@ -120,8 +121,23 @@ openssl rand -hex 24
 생성한 값을 `POSTGRES_PASSWORD`, `MINIO_ROOT_PASSWORD`에 각각 입력합니다.
 `.env.server`는 Git에 커밋하지 않습니다. `.env.server.example`에는 실제 비밀번호를 넣지 않습니다.
 Nginx, PostgreSQL, Airflow, MLflow는 VM의 내부망 주소에 바인딩됩니다. PostgreSQL은 내부망에서 DBeaver로
-접속할 수 있지만 공유기의 포트 포워딩으로 외부에 공개하지 않습니다. MinIO는
-`127.0.0.1:9000-9001`에 유지되어 다른 내부망 PC에서 직접 접근할 수 없습니다.
+접속할 수 있지만 공유기의 포트 포워딩으로 외부에 공개하지 않습니다. MinIO S3 API `9000`은 VM의 내부망 IP에
+바인딩해 개발 PC에서 직접 사용합니다. 관리 콘솔 `9001`은 localhost 전용으로 두고 SSH 터널로 접근합니다.
+S3 API는 현재 HTTP이므로 내부망의 다른 기기에서 네트워크를 관찰할 수 있으면 요청과 자격 증명이 노출될 수 있습니다.
+신뢰하는 내부망에서만 사용하고, 개발 PC에는 root 계정 대신 모델 버킷만 허용된 개발 계정을 설정합니다.
+
+개발 PC용 MinIO 계정과 전용 버킷은 아래 “개발 PC에서 서버 MinIO 사용” 절차로 초기화합니다. 서버 앱의
+`S3_ACCESS_KEY_ID`/`S3_SECRET_ACCESS_KEY` 값은 비워 두어 서버의 기존 MinIO 계정 사용을 유지합니다.
+
+MinIO API 포트를 내부망에 바인딩하기 전에 Docker `DOCKER-USER` 체인에서 내부망만 허용합니다. 예시는
+서버/개발 PC가 `192.168.0.0/24` 대역일 때이며, 다른 대역이면 CIDR과 서버 IP를 조정합니다.
+
+```sh
+sudo iptables -I DOCKER-USER 1 -p tcp -m conntrack --ctorigdst 192.168.0.3 --ctorigdstport 9000 -s 192.168.0.0/24 -j ACCEPT
+sudo iptables -I DOCKER-USER 2 -p tcp -m conntrack --ctorigdst 192.168.0.3 --ctorigdstport 9000 -j DROP
+sudo apt install -y iptables-persistent
+sudo netfilter-persistent save
+```
 
 ## 실행과 확인
 
@@ -158,7 +174,8 @@ Windows와 같은 내부망의 다른 기기에서는 VM 주소로 접속합니�
 
 접속되지 않으면 Ubuntu에서 `ss -lntp | grep 8080`으로 바인딩을 확인하고, Windows 방화벽,
 공유기의 무선 클라이언트 격리(AP isolation), 회사망 정책을 확인합니다. Ubuntu 방화벽을 사용하는
-경우 실제 내부망 CIDR만 허용합니다. 예시는 내부망이 `192.168.0.0/24`일 때입니다.
+경우 실제 내부망 CIDR만 허용합니다. 예시는 내부망이 `192.168.0.0/24`일 때입니다. Docker의 게시 포트는
+UFW 규칙을 우회할 수 있으므로 MinIO API는 `DOCKER-USER` 체인에서도 내부망만 허용합니다.
 
 ```sh
 sudo ufw allow OpenSSH
@@ -168,6 +185,9 @@ sudo ufw allow from 192.168.0.0/24 to any port 8081 proto tcp
 sudo ufw allow from 192.168.0.0/24 to any port 5000 proto tcp
 sudo ufw enable
 ```
+
+Docker가 게시한 MinIO 포트는 UFW 규칙만으로 차단되지 않을 수 있습니다. `DOCKER-USER` 규칙이 설정되어 있는지
+`sudo iptables -S DOCKER-USER`로 확인하고, 변경하거나 다시 추가할 때는 위 MinIO 내부망 허용 절차를 따르세요.
 
 Docker의 공개 포트는 호스트 방화벽 동작과 상호작용할 수 있으므로, 접근 제한의 기준은
 `APP_BIND_ADDRESS`를 VM의 내부 IPv4 주소로 지정하는 것입니다. 공유기에서 8080 포트를
@@ -226,6 +246,74 @@ ssh -L 9001:127.0.0.1:9001 ubuntu사용자명@192.168.0.3
 ```
 
 브라우저에서 `http://localhost:9001`로 접속합니다. 터널을 닫으면 접근도 종료됩니다.
+
+## 개발 PC에서 서버 MinIO 사용
+
+S3 API는 `http://192.168.0.3:9000`으로 직접 연결합니다. MinIO 콘솔 `9001`은 계속 localhost 전용이므로
+콘솔 관리가 필요할 때만 아래 SSH 터널을 엽니다. 모델 업로드·다운로드에는 SSH 터널이 필요하지 않습니다.
+
+Ubuntu 프로젝트 폴더에서 서버 전용 개발 계정을 생성합니다. `.env.server`의 `DEV_S3_ACCESS_KEY_ID`와
+`DEV_S3_SECRET_ACCESS_KEY`를 먼저 실제 값으로 설정하세요. `.env.server`가 이미 존재한다면 Git pull로 새 설정이
+추가되지 않으니 직접 편집합니다. 예를 들어 아래 access key는 예제 값으로 쓸 수 있고, secret은 별도로 생성합니다.
+
+또한 기존 `.env.server`에는 `MINIO_API_BIND_ADDRESS=192.168.0.3`을 직접 추가합니다. 앞서 설명한 `DOCKER-USER`
+허용 규칙이 적용되어 있는지 확인한 다음 이 설정을 적용하도록 MinIO 컨테이너를 재생성하세요.
+
+```sh
+docker compose --env-file .env.server -f compose.yaml -f compose.server.yaml up -d --force-recreate minio
+```
+
+Windows에서 포트 연결을 확인합니다.
+
+```powershell
+Test-NetConnection 192.168.0.3 -Port 9000
+```
+
+Mac에서는 `nc -vz 192.168.0.3 9000`으로 확인합니다.
+
+```sh
+openssl rand -hex 32
+```
+
+`.env.server`에 다음 줄을 추가하고 secret 자리에 생성한 값을 입력합니다.
+
+```dotenv
+DEV_S3_ACCESS_KEY_ID=spot_fit_dev
+DEV_S3_SECRET_ACCESS_KEY=생성한_랜덤_값
+```
+
+초기화 명령은 `spot-fit-models` 버킷을 준비하고, 그 버킷에만 읽기·쓰기 권한이 있는 개발 계정을 MinIO에
+등록합니다. 다시 실행해도 `.env.server`의 같은 자격 증명이 유지됩니다.
+
+```sh
+docker compose --env-file .env.server -f compose.yaml -f compose.server.yaml --profile admin run --build --rm minio-dev-bootstrap
+```
+
+개발 PC 프로젝트 루트의 `.env`에 아래 값만 설정합니다. 기존 `.env`에도 새 항목은 자동 추가되지 않으므로 직접
+추가합니다. 서버 `.env.server` 전체를 복사하지 않습니다.
+
+```dotenv
+DEV_S3_ENDPOINT_URL=http://192.168.0.3:9000
+DEV_S3_MODEL_BUCKET=spot-fit-models
+DEV_S3_ACCESS_KEY_ID=spot_fit_dev
+DEV_S3_SECRET_ACCESS_KEY=Ubuntu의_DEV_S3_SECRET_ACCESS_KEY와_같은_값
+```
+
+변경 파일을 GitHub에 올린 뒤 개발 PC에서 pull하고, 위 접속 테스트가 성공하는지 확인합니다. 그 다음 `compose.minio-server.yaml`을
+추가로 지정한 `model-tools` 명령은 로컬 MinIO 의존성을 시작하지 않고 Ubuntu 서버에 접속합니다.
+
+```sh
+docker compose -f compose.yaml -f compose.minio-server.yaml --profile tools build model-tools
+docker compose -f compose.yaml -f compose.minio-server.yaml --profile tools run --rm --no-deps model-tools init
+docker compose -f compose.yaml -f compose.minio-server.yaml --profile tools run --rm --no-deps model-tools upload --file /artifacts/models/recommender.joblib --name recommender --version v1
+```
+
+서버에 올린 모델 파일은 공유 버킷에 저장되고 manifest는 개발 PC의 `model_registry/`에 생성됩니다. manifest는 Git에
+커밋해 공유하고 모델 파일은 Git에 커밋하지 않습니다. 내려받기도 동일한 두 Compose 파일과 `--no-deps`를 사용합니다.
+
+```sh
+docker compose -f compose.yaml -f compose.minio-server.yaml --profile tools run --rm --no-deps model-tools download --manifest /model_registry/recommender/v1.json
+```
 
 ## 업데이트와 종료
 

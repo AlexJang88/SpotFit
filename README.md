@@ -161,8 +161,11 @@ docker compose --profile tools run --rm model-tools init
 ```
 
 업로드·다운로드 및 백엔드 연동은 [모델 저장 안내](docs/model-storage.md)를 참고하세요.
-현재는 각 PC의 로컬 MinIO를 사용합니다. 맥북·Windows 간 모델 공유에는 공용 MinIO 서버가 필요하며,
-Git만으로 모델 파일이 공유되지는 않습니다.
+기본 개발 Compose는 PC별 로컬 MinIO를 사용합니다. Ubuntu MinIO를 개발 PC에서 사용하려면 내부망 S3 API 접근과
+제한된 계정을 구성한 뒤 [개발 PC 공유 저장소 안내](docs/virtualbox-deployment.md#개발-pc에서-서버-minio-사용)를 참고하세요.
+Git에는 manifest만 올라가고 모델 파일은 MinIO에 저장됩니다.
+
+일상적인 브랜치·커밋·Ubuntu 반영 절차, 패키지 추가 위치와 재빌드 명령, 모델을 Ubuntu MinIO에 등록하는 방법은 [개발 워크플로우](docs/development-workflow.md)를 참고하세요.
 
 ## GitHub · macOS · Windows 협업
 
