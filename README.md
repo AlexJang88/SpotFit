@@ -108,7 +108,7 @@ arm64용으로 각 환경에서 빌드합니다.
 | React 화면 (Nginx 경유) | http://localhost:8080 |
 | API 문서 | http://localhost:8080/api/docs |
 | API 생존 확인 | http://localhost:8080/api/spot_fit |
-| PostgreSQL | localhost:5432 |
+| PostgreSQL + PostGIS | localhost:5432 |
 | MinIO S3 API | http://localhost:9000 |
 | MinIO 콘솔 | http://localhost:9001 |
 
@@ -116,6 +116,16 @@ arm64용으로 각 환경에서 빌드합니다.
 객체 저장소를 `minio:9000`으로 접근합니다. 프런트엔드 API 호출은 `/api/...` 상대 경로를
 사용합니다. 모델 버킷은 아래 모델 관리 명령으로 초기화하며, 수집 데이터 버킷은 별도로 구성합니다.
 `/api/spot_fit`는 API 프로세스 생존만 확인하고 DB·MinIO 연결은 검사하지 않습니다.
+
+PostgreSQL 컨테이너는 PostgreSQL 17과 PostGIS 3.5가 포함된 이미지를 사용합니다. 새 DB 볼륨을
+처음 만들 때 `postgis`와 `postgis_topology` 확장을 자동으로 활성화합니다. 기존 PostgreSQL 볼륨을
+유지하면서 PostGIS 이미지로 변경한 경우에는 컨테이너를 다시 만든 뒤 DB에서 확장을 한 번 활성화합니다.
+
+```sql
+CREATE EXTENSION IF NOT EXISTS postgis;
+CREATE EXTENSION IF NOT EXISTS postgis_topology;
+SELECT PostGIS_Full_Version();
+```
 
 소스 코드는 bind mount되어 React HMR과 FastAPI reload가 적용됩니다.
 `node_modules`는 Docker named volume에 저장해 macOS·Windows·Linux 네이티브 패키지가
