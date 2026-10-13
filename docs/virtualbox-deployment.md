@@ -24,14 +24,14 @@ hostname -I
 ip -4 addr
 ```
 
-예를 들어 `192.168.0.50`을 받았다면 공유기의 DHCP 예약 기능으로 VM의 MAC 주소에 이 IP를
+예를 들어 `192.168.0.3`을 받았다면 공유기의 DHCP 예약 기능으로 VM의 MAC 주소에 이 IP를
 예약하는 방식을 권장합니다. 예약할 수 없다면 재부팅 후 IP가 바뀔 수 있습니다.
 
 Windows PowerShell에서 연결을 먼저 확인합니다.
 
 ```powershell
-ping 192.168.0.50
-ssh ubuntu사용자명@192.168.0.50
+ping 192.168.0.3
+ssh ubuntu사용자명@192.168.0.3
 ```
 
 ## Docker와 프로젝트 설치
@@ -82,12 +82,13 @@ chmod 600 .env.server
 nano .env.server
 ```
 
-VM 주소가 `192.168.0.50`일 때 다음처럼 설정합니다.
+VM 주소가 `192.168.0.3`일 때 다음처럼 설정합니다.
 
 ```dotenv
-APP_BIND_ADDRESS=192.168.0.50
+APP_BIND_ADDRESS=192.168.0.3
 APP_PORT=8080
 POSTGRES_PASSWORD=반드시_새로_생성한_값
+POSTGRES_BIND_ADDRESS=192.168.0.3
 MINIO_ROOT_USER=spot_fit_admin
 MINIO_ROOT_PASSWORD=반드시_새로_생성한_값
 ```
@@ -101,7 +102,8 @@ openssl rand -hex 24
 
 생성한 값을 `POSTGRES_PASSWORD`, `MINIO_ROOT_PASSWORD`에 각각 입력합니다.
 `.env.server`는 Git에 커밋하지 않습니다. `.env.server.example`에는 실제 비밀번호를 넣지 않습니다.
-Nginx만 VM의 내부망 주소에 바인딩됩니다. PostgreSQL은 `127.0.0.1:5432`, MinIO는
+Nginx와 PostgreSQL은 VM의 내부망 주소에 바인딩됩니다. PostgreSQL은 내부망에서 DBeaver로
+접속할 수 있지만 공유기의 포트 포워딩으로 외부에 공개하지 않습니다. MinIO는
 `127.0.0.1:9000-9001`에 유지되어 다른 내부망 PC에서 직접 접근할 수 없습니다.
 
 ## 실행과 확인
@@ -128,9 +130,9 @@ curl http://127.0.0.1:8080/api/spot_fit
 
 Windows와 같은 내부망의 다른 기기에서는 VM 주소로 접속합니다.
 
-- 화면: `http://192.168.0.50:8080`
-- API 문서: `http://192.168.0.50:8080/api/docs`
-- API 확인: `http://192.168.0.50:8080/api/spot_fit`
+- 화면: `http://192.168.0.3:8080`
+- API 문서: `http://192.168.0.3:8080/api/docs`
+- API 확인: `http://192.168.0.3:8080/api/spot_fit`
 
 접속되지 않으면 Ubuntu에서 `ss -lntp | grep 8080`으로 바인딩을 확인하고, Windows 방화벽,
 공유기의 무선 클라이언트 격리(AP isolation), 회사망 정책을 확인합니다. Ubuntu 방화벽을 사용하는
@@ -139,6 +141,7 @@ Windows와 같은 내부망의 다른 기기에서는 VM 주소로 접속합니�
 ```sh
 sudo ufw allow OpenSSH
 sudo ufw allow from 192.168.0.0/24 to any port 8080 proto tcp
+sudo ufw allow from 192.168.0.0/24 to any port 5432 proto tcp
 sudo ufw enable
 ```
 
@@ -146,12 +149,47 @@ Docker의 공개 포트는 호스트 방화벽 동작과 상호작용할 수 있
 `APP_BIND_ADDRESS`를 VM의 내부 IPv4 주소로 지정하는 것입니다. 공유기에서 8080 포트를
 포워딩하지 않습니다.
 
+## DBeaver에서 PostgreSQL 접속
+
+Ubuntu에서 PostgreSQL 포트가 VM 주소에 공개되었는지 확인합니다.
+
+```sh
+docker compose --env-file .env.server -f compose.yaml -f compose.server.yaml up -d --force-recreate postgres
+docker compose --env-file .env.server -f compose.yaml -f compose.server.yaml ps postgres
+sudo ss -lntp | grep 5432
+```
+
+Windows PowerShell에서 포트 연결을 확인합니다.
+
+```powershell
+Test-NetConnection 192.168.0.3 -Port 5432
+```
+
+DBeaver에서 **새 데이터베이스 연결 → PostgreSQL**을 선택하고 다음 값을 입력합니다.
+
+- Host: `192.168.0.3`
+- Port: `5432`
+- Database: `.env.server`의 `POSTGRES_DB` 값 (`spot_fit`)
+- Username: `.env.server`의 `POSTGRES_USER` 값 (`spot_fit`)
+- Password: `.env.server`의 실제 `POSTGRES_PASSWORD` 값
+- SSL: 내부망 테스트에서는 `disable`
+
+비밀번호가 맞는지 컨테이너 내부에서 TCP 인증으로 확인할 수 있습니다.
+
+```sh
+docker compose --env-file .env.server -f compose.yaml -f compose.server.yaml exec postgres \
+  sh -c 'psql -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -W'
+```
+
+DB 볼륨이 이미 만들어진 뒤 `.env.server`의 비밀번호만 변경했다면 기존 DB 비밀번호는 자동으로
+바뀌지 않습니다. 이 경우 `psql`에서 `\password spot_fit`을 실행하여 같은 비밀번호로 맞춥니다.
+
 ## MinIO 콘솔 접근
 
 MinIO 콘솔은 내부망에 직접 공개하지 않습니다. Windows에서 SSH 터널을 연 상태로 사용합니다.
 
 ```powershell
-ssh -L 9001:127.0.0.1:9001 ubuntu사용자명@192.168.0.50
+ssh -L 9001:127.0.0.1:9001 ubuntu사용자명@192.168.0.3
 ```
 
 브라우저에서 `http://localhost:9001`로 접속합니다. 터널을 닫으면 접근도 종료됩니다.

@@ -72,7 +72,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-spot_fit}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Copy .env.example to .env first}
     ports:
-      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+      - "${POSTGRES_BIND_ADDRESS:-127.0.0.1}:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./infra/postgres/init/20_spot_fit_extensions.sql:/docker-entrypoint-initdb.d/20_spot_fit_extensions.sql:ro
