@@ -5,5 +5,10 @@ COPY --chown=airflow:root ml/requirements.txt /tmp/ml-requirements.txt
 
 RUN pip install --no-cache-dir \
     --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-${AIRFLOW_VERSION}/constraints-3.12.txt" \
+    "apache-airflow==${AIRFLOW_VERSION}"
+
+# Airflow's constraints apply to the Airflow install step only. Install project
+# ML packages separately while pinning Airflow to prevent accidental upgrades.
+RUN pip install --no-cache-dir \
     "apache-airflow==${AIRFLOW_VERSION}" \
     -r /tmp/ml-requirements.txt

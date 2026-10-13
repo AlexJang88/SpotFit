@@ -1,6 +1,5 @@
 # Shared ML runtime for the FastAPI backend and Airflow training tasks.
-# Airflow's supported constraints pin NumPy 1.26.4; current ML packages support it.
-numpy>=1.26,<3.0
+numpy>=2.1,<3.0
 pandas>=2.2,<4.0
 scikit-learn>=1.6,<2.0
 xgboost>=2.1,<4.0
