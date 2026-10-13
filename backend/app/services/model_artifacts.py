@@ -4,6 +4,7 @@ import hashlib
 import os
 import tempfile
 from pathlib import Path
+from minio.error import S3Error
 
 from app.repositories.model_store import ModelStore
 from app.schemas.model_manifest import ModelManifest
@@ -29,7 +30,8 @@ def cache_path(root: Path, manifest: ModelManifest) -> Path:
     return path
 
 
-def upload_model(store: ModelStore, source: Path, name: str, version: str, registry: Path) -> Path:
+def upload_model(store: ModelStore, source: Path, name: str, version: str, registry: Path,
+                 skip_existing: bool = False) -> Path:
     # Validate identifiers before deriving paths or talking to storage.
     draft = ModelManifest(
         name=name, version=version, filename=source.name,
@@ -41,6 +43,15 @@ def upload_model(store: ModelStore, source: Path, name: str, version: str, regis
     if not destination.is_relative_to(registry):
         raise ValueError("Manifest must stay inside the registry directory")
     if destination.exists():
+        if skip_existing:
+            existing = ModelManifest.model_validate_json(destination.read_text(encoding="utf-8"))
+            if (existing.name, existing.version, existing.filename, existing.bucket) != (
+                draft.name, draft.version, draft.filename, store.bucket
+            ) or file_digest(source) != (existing.sha256, existing.size_bytes):
+                raise ValueError(f"Model version already registered with different content: {destination}. Use a new version.")
+            store.client.stat_object(existing.bucket, existing.object_key,
+                                     version_id=existing.object_version_id)
+            return destination
         raise FileExistsError(f"Manifest already exists: {destination}. Use a new model version.")
     store.require_versioning()
     # Snapshot the source so training cannot change bytes between hashing and upload.
@@ -56,10 +67,32 @@ def upload_model(store: ModelStore, source: Path, name: str, version: str, regis
         sha256 = digest.hexdigest()
         key = f"{draft.name}/{draft.version}/{sha256}/{draft.filename}"
         snapshot.seek(0)
-        result = store.client.put_object(
-            store.bucket, key, snapshot, size,
-            content_type="application/octet-stream", metadata={"sha256": sha256},
-        )
+        result = None
+        if skip_existing:
+            try:
+                result = store.client.stat_object(store.bucket, key)
+            except S3Error as error:
+                if error.code != "NoSuchKey":
+                    raise
+            if result is not None:
+                # Recover a missing local manifest only after verifying remote bytes.
+                response = store.client.get_object(store.bucket, key, version_id=result.version_id)
+                try:
+                    remote_digest = hashlib.sha256()
+                    remote_size = 0
+                    for chunk in response.stream(CHUNK_SIZE):
+                        remote_digest.update(chunk)
+                        remote_size += len(chunk)
+                    if (remote_digest.hexdigest(), remote_size) != (sha256, size):
+                        raise ValueError(f"Existing model object does not match local content: {key}")
+                finally:
+                    response.close()
+                    response.release_conn()
+        if result is None:
+            result = store.client.put_object(
+                store.bucket, key, snapshot, size,
+                content_type="application/octet-stream", metadata={"sha256": sha256},
+            )
     manifest = ModelManifest(
         name=draft.name, version=draft.version, filename=draft.filename,
         bucket=store.bucket, object_key=key, object_version_id=result.version_id or "null",

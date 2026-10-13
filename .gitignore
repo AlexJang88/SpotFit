@@ -87,3 +87,8 @@ wandb/
 /infra/volumes/
 /infra/nginx/certs/*
 !/infra/nginx/certs/.gitkeep
+
+# Local versioned model artifacts
+/models/**
+!/models/**/
+!/models/**/.gitkeep

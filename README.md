@@ -120,6 +120,49 @@ arm64용으로 각 환경에서 빌드합니다.
 사용합니다. 모델 버킷은 아래 모델 관리 명령으로 초기화하며, 수집 데이터 버킷은 별도로 구성합니다.
 `/api/spot_fit`는 API 프로세스 생존만 확인하고 DB·MinIO 연결은 검사하지 않습니다.
 
+### 로컬 데이터와 모델을 MinIO에 업로드
+
+Python 의존성을 최초 한 번 설치한 뒤 프로젝트 루트에서 실행합니다. Docker 명령은 필요하지 않습니다.
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python3 -m pip install -r scripts/upload-requirements.txt
+python3 upload_minio.py
+```
+
+`upload_minio.py`는 `.env.dev`의 S3 설정을 읽고 `data` 아래 모든 일반 파일을 업로드합니다.
+`data/raw/a.csv`는 `raw/a.csv`, `data/processed/a.parquet`는 `processed/a.parquet`로 저장됩니다.
+숨김 파일·폴더(`.gitkeep`, `.DS_Store` 등)와 심볼릭 링크는 제외합니다.
+동일한 객체 경로가 이미 존재하면 내용이 달라도 업로드하지 않습니다. 파일 삭제는 원격에 반영하지 않습니다.
+기본 버킷은 `S3_DATA_BUCKET`, 미설정 시 `S3_MODEL_BUCKET`입니다. 버킷은 미리 생성되어 있어야 하며 읽기·쓰기 권한이 필요합니다.
+
+모델은 아래 구조로 넣으면 같은 명령으로 자동 등록합니다. 각 버전 폴더에는 모델 파일 하나를 넣습니다.
+여러 파일이 필요한 모델은 ZIP 등 하나의 아카이브로 묶으세요.
+
+```text
+models/
+└── recommender/
+    ├── v1/model.pkl
+    └── v2/model.pkl
+```
+
+모델 파일은 기존 방식대로 MinIO의 `모델명/버전/SHA-256/파일명`에 저장됩니다.
+JSON은 `model_registry/recommender/v1.json`처럼 생성되며 모델명·버전·버킷·객체 경로·객체 버전 ID·SHA-256·크기를 담습니다.
+모델 버킷은 `.env.dev`의 `S3_MODEL_BUCKET`을 사용하며 MinIO 객체 버전 관리가 활성화되어 있어야 합니다.
+기존 모델 관리 CLI의 `init`으로 초기화할 수 있습니다.
+
+```bash
+docker compose --env-file .env.dev -f compose.dev.yaml run --rm model-tools init
+python3 upload_minio.py
+```
+
+등록된 동일 모델은 건너뛰고, 같은 모델명·버전의 내용이 바뀌면 오류를 내므로 `v2`처럼 새 버전 폴더를 사용하세요.
+MinIO 객체만 있고 로컬 JSON이 없으면 원격 파일의 SHA-256을 검증하고 JSON을 복원하며 다시 업로드하지 않습니다.
+생성된 `model_registry/` JSON은 Git에 커밋하고 모델 파일은 커밋하지 않습니다. 모델 활성화는 별도입니다.
+다른 버킷이나 설정 파일은 `--bucket 버킷이름`, `--env-file .env.server`로 지정할 수 있습니다.
+동일 경로에 대한 동시 실행은 피하세요. 존재 확인과 업로드는 별도 요청이므로 동시 실행 시 덮어쓰기가 발생할 수 있습니다.
+
 Airflow와 MLflow는 PostgreSQL의 별도 `airflow`, `mlflow` 데이터베이스를 사용합니다.
 Airflow 계정은 `.env`의 `AIRFLOW_ADMIN_USER`이며, 첫 실행 시 생성되는 비밀번호를 확인하려면
 `docker compose exec airflow cat /opt/airflow/simple_auth_manager_passwords.json.generated`를 실행합니다.
