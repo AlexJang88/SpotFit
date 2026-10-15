@@ -197,9 +197,53 @@ def h5(level):
     ax[2].set(ylabel='유동인구 변화율 중앙값 (%)', title=f'[{level}] 작년 대비 폐업률 변화별 유동인구 변화 (상관 {r2:.2f})')
     plt.tight_layout(); plt.show()
 
+# H6. 창업률이 높아지면 유동인구도 많아질 것이다 (창업률 = 개업 점포 수 / 전체 점포 수)
+def h6(level):
+    key = f'{level}_코드'
+    yq = '기준_년분기_코드'
+
+    # 1) 분기별·지역별 창업률 (점포 5개 미만은 비율이 튀어서 제외)
+    flow = load(f'길단위인구-{level}').groupby([yq, key])['총_유동인구_수'].sum()
+    store = load(f'점포-{level}').drop_duplicates([yq, key, '서비스_업종_코드'])
+    store = store.groupby([yq, key])[['전체_점포_수', '개업_점포_수']].sum()
+    df = store.join(flow.rename('유동인구'), how='inner').reset_index()
+    df = df[(df['전체_점포_수'] >= 5) & (df['유동인구'] > 0)]
+    df['창업률'] = df['개업_점포_수'] / df['전체_점포_수'] * 100
+
+    # 2) 지역끼리 비교: 평균 창업률이 높은 곳이 유동인구도 많은가
+    avg = df.groupby(key)[['창업률', '유동인구']].mean()
+    r1, p1 = stats.spearmanr(avg['창업률'], avg['유동인구'])
+    print(f'\n[{level}] 평균 창업률 vs 평균 유동인구 상관계수 {r1:.2f} (p={p1:.4f})')
+
+    # 3) 창업률로 5개 그룹 (창업 0%인 곳이 많아 순위로 나눔)
+    avg['창업률 그룹'] = pd.qcut(avg['창업률'].rank(method='first'), 5, labels=['1(낮음)', '2', '3', '4', '5(높음)'])
+    print(f'[{level}] 창업률 그룹별 유동인구 중앙값\n', avg.groupby('창업률 그룹', observed=True)['유동인구'].median().round(0))
+
+    # 4) 시간에 따른 변화: 작년 같은 분기보다 창업률이 높아진 곳은 유동인구도 늘었나
+    wide = df.pivot(index=key, columns=yq, values=['창업률', '유동인구'])
+    chg = pd.concat([pd.DataFrame({
+        '창업률 변화': wide['창업률'][b] - wide['창업률'][a],                         # %p
+        '유동인구 변화율': (wide['유동인구'][b] / wide['유동인구'][a] - 1) * 100,      # %
+    }) for a, b in [(20251, 20261), (20252, 20262)]]).dropna()
+    r2, p2 = stats.spearmanr(chg['창업률 변화'], chg['유동인구 변화율'])
+    chg['창업률'] = pd.cut(chg['창업률 변화'], [-1000, -0.001, 0.001, 1000], labels=['낮아짐', '그대로', '높아짐'])
+    print(f'[{level}] 창업률 변화 vs 유동인구 변화 상관계수 {r2:.2f} (p={p2:.4f})')
+    print(f'[{level}] 창업률 변화별 유동인구 변화율(%) 중앙값\n',
+          chg.groupby('창업률', observed=True)['유동인구 변화율'].agg(['count', 'median']).round(2))
+
+    fig, ax = plt.subplots(1, 3, figsize=(17, 5))
+    sns.scatterplot(data=avg, x='창업률', y='유동인구', s=10, alpha=.4, ax=ax[0])
+    ax[0].set(yscale='log', xlabel='평균 창업률 (%)', title=f'[{level}] 창업률 vs 유동인구 (상관 {r1:.2f})')
+    sns.barplot(data=avg, x='창업률 그룹', y='유동인구', estimator='median', errorbar=None, ax=ax[1])
+    ax[1].set(title=f'[{level}] 창업률 그룹별 유동인구 중앙값')
+    sns.barplot(data=chg, x='창업률', y='유동인구 변화율', estimator='median', errorbar=None, ax=ax[2])
+    ax[2].set(ylabel='유동인구 변화율 중앙값 (%)', title=f'[{level}] 작년 대비 창업률 변화별 유동인구 변화 (상관 {r2:.2f})')
+    plt.tight_layout(); plt.show()
+
 for lv in ['상권', '행정동']:
     h1(lv)
     h2(lv)
     h3(lv)
     h4(lv)
     h5(lv)
+    h6(lv)
