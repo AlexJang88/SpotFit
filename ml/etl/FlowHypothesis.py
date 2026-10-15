@@ -13,7 +13,7 @@ def load(kw):
     df = pd.concat([pd.read_csv(f, encoding='cp949') for f in files])
     return df[df['기준_년분기_코드'].isin(YQ)] if '기준_년분기_코드' in df else df
 
-def run(level):
+def h1(level):
     key = f'{level}_코드'
 
     # 1) 데이터 불러오기
@@ -50,5 +50,35 @@ def run(level):
     sns.boxplot(data=df, x='주력업종', y='유동인구', log_scale=True)
     plt.title(f'[{level}] 주력업종별 유동인구 (p={p:.4f})'); plt.tight_layout(); plt.show()
 
+# H2. 점포 수가 많으면 유동인구도 많아질 것이다
+def h2(level):
+    key = f'{level}_코드'
+
+    # 1) 지역별 평균 유동인구, 평균 점포 수, 면적
+    flow = load(f'길단위인구-{level}').groupby(key)['총_유동인구_수'].mean()
+    store = load(f'점포-{level}').drop_duplicates(['기준_년분기_코드', key, '서비스_업종_코드'])
+    store = store.groupby(['기준_년분기_코드', key])['전체_점포_수'].sum().groupby(key).mean()
+    area = load(f'영역-{level}').drop_duplicates(key).set_index(key)['영역_면적']
+    df = pd.DataFrame({'유동인구': flow, '점포수': store, '면적': area}).dropna()
+    df = df[(df['유동인구'] > 0) & (df['점포수'] > 0)]
+
+    # 2) 상관계수: 그냥 비교 / 면적당으로 비교 (큰 지역이라 둘 다 많은 효과 제거)
+    r1, p1 = stats.spearmanr(df['점포수'], df['유동인구'])
+    r2, p2 = stats.spearmanr(df['점포수'] / df['면적'], df['유동인구'] / df['면적'])
+    print(f'\n[{level}] 점포수 vs 유동인구       상관계수 {r1:.2f} (p={p1:.4f})')
+    print(f'[{level}] 면적당 점포수 vs 면적당 유동인구 상관계수 {r2:.2f} (p={p2:.4f})')
+
+    # 3) 점포 수로 5개 그룹을 나눠서 그룹별 유동인구 중앙값 비교
+    df['점포수 그룹'] = pd.qcut(df['점포수'], 5, labels=['1(적음)', '2', '3', '4', '5(많음)'])
+    print(f'[{level}] 점포수 그룹별 유동인구 중앙값\n', df.groupby('점포수 그룹', observed=True)['유동인구'].median().round(0))
+
+    fig, ax = plt.subplots(1, 2, figsize=(12, 4.5))
+    sns.scatterplot(data=df, x='점포수', y='유동인구', s=10, alpha=.4, ax=ax[0])
+    ax[0].set(xscale='log', yscale='log', title=f'[{level}] 점포수 vs 유동인구 (상관 {r1:.2f})')
+    sns.barplot(data=df, x='점포수 그룹', y='유동인구', estimator='median', errorbar=None, ax=ax[1])
+    ax[1].set(title=f'[{level}] 점포수 그룹별 유동인구 중앙값')
+    plt.tight_layout(); plt.show()
+
 for lv in ['상권', '행정동']:
-    run(lv)
+    h1(lv)
+    h2(lv)
