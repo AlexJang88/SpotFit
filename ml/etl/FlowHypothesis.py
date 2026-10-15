@@ -116,7 +116,46 @@ def h3(level):
     ax[2].set(title=f'[{level}] 시설 종류별 유동인구 상관계수')
     plt.tight_layout(); plt.show()
 
+# H4. 상주인구가 많아지면 유동인구도 많아질 것이다
+def h4(level):
+    key = f'{level}_코드'
+
+    # 1) 지역별 평균 유동인구, 상주인구, 면적 (상주인구 파일에 없는 지역은 0명)
+    flow = load(f'길단위인구-{level}').groupby(key)['총_유동인구_수'].mean()
+    pop = load(f'상주인구-{level}').groupby(key).mean(numeric_only=True).drop(columns='기준_년분기_코드')
+    area = load(f'영역-{level}').drop_duplicates(key).set_index(key)['영역_면적']
+    df = pd.DataFrame({'유동인구': flow, '면적': area}).dropna()
+    df = df[df['유동인구'] > 0].join(pop).fillna(0)
+    df = df.rename(columns={'총_상주인구_수': '상주인구'})
+
+    # 2) 상관계수: 그냥 비교 / 면적당으로 비교
+    r1, p1 = stats.spearmanr(df['상주인구'], df['유동인구'])
+    r2, p2 = stats.spearmanr(df['상주인구'] / df['면적'], df['유동인구'] / df['면적'])
+    print(f'\n[{level}] 상주인구 vs 유동인구       상관계수 {r1:.2f} (p={p1:.4f})')
+    print(f'[{level}] 면적당 상주인구 vs 면적당 유동인구 상관계수 {r2:.2f} (p={p2:.4f})')
+
+    # 3) 상주인구로 5개 그룹 (0명인 곳이 있어 순위로 나눔)
+    df['상주인구 그룹'] = pd.qcut(df['상주인구'].rank(method='first'), 5, labels=['1(적음)', '2', '3', '4', '5(많음)'])
+    print(f'[{level}] 상주인구 그룹별 유동인구 중앙값\n', df.groupby('상주인구 그룹', observed=True)['유동인구'].median().round(0))
+
+    # 4) 어떤 연령대 상주인구가 유동인구와 관련 있나 (연령대별 비율 기준)
+    ages = [c for c in pop.columns if c.startswith('연령대_')]
+    age_ratio = df[ages].div(df['상주인구'], axis=0)
+    corr = age_ratio.corrwith(df['유동인구'], method='spearman').dropna().sort_values()
+    corr.index = [c.split('_')[1] + ('대 이상' if '이상' in c else '대') for c in corr.index]   # 연령대_20_상주인구_수 → 20대
+    print(f'[{level}] 연령대 비율 vs 유동인구 상관계수\n', corr.round(2))
+
+    fig, ax = plt.subplots(1, 3, figsize=(17, 5))
+    sns.scatterplot(data=df, x=df['상주인구'] + 1, y='유동인구', s=10, alpha=.4, ax=ax[0])
+    ax[0].set(xscale='log', yscale='log', xlabel='상주인구 + 1', title=f'[{level}] 상주인구 vs 유동인구 (상관 {r1:.2f})')
+    sns.barplot(data=df, x='상주인구 그룹', y='유동인구', estimator='median', errorbar=None, ax=ax[1])
+    ax[1].set(title=f'[{level}] 상주인구 그룹별 유동인구 중앙값')
+    corr.plot.barh(ax=ax[2], color=['tomato' if c > 0 else 'steelblue' for c in corr])
+    ax[2].set(title=f'[{level}] 상주인구 연령대 비율 vs 유동인구 상관계수')
+    plt.tight_layout(); plt.show()
+
 for lv in ['상권', '행정동']:
     h1(lv)
     h2(lv)
     h3(lv)
+    h4(lv)
