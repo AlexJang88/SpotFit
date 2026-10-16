@@ -1,6 +1,7 @@
-"""가설 1만 분석: 직장인구가 많은 행정동에서 외식업 평일 매출이 높은가?
+"""가설 1(직장인구, 양의 관계) 또는 2(유동인구, 음의 관계)를 하나씩 분석한다.
 
 실행: python data_analyze/weekday_sales/weekday_sales_analyze.py
+가설 2: python data_analyze/weekday_sales/weekday_sales_analyze.py --hypothesis 2
 관광명소/법정동 대응표는 이 가설에 필요하지 않아 결합하지 않는다.
 """
 from pathlib import Path
@@ -58,8 +59,17 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--raw', type=Path, default=root / 'data/raw')
     parser.add_argument('--output', type=Path, default=Path(__file__).resolve().parent / 'results')
+    # 기본값은 기존 가설 1을 보존하고, 명시적으로 선택한 가설만 실행한다.
+    parser.add_argument('--hypothesis', type=int, choices=[1, 2], default=1)
     args = parser.parse_args()
-    workers = read(args.raw / '서울시 상권분석서비스(직장인구-행정동).csv')
+    number = args.hypothesis
+    population = '직장인구' if number == 1 else '유동인구'
+    source = '직장인구' if number == 1 else '길단위인구'
+    WORK = '총_직장_인구_수' if number == 1 else '총_유동인구_수'
+    expected = 1 if number == 1 else -1
+    title = f'가설 {number}: {population}가 많으면 평일 매출이 ' + ('높은가?' if number == 1 else '낮은가?')
+    # 전체 유동인구를 사용하므로 평일 유동인구만의 효과를 뜻하지 않는다.
+    workers = read(args.raw / f'서울시 상권분석서비스({source}-행정동).csv')
     check_unique(workers, KEY)
     files = sorted(args.raw.glob('서울시 상권분석서비스(추정매출-행정동)*.csv'))
     if not files:
@@ -111,7 +121,7 @@ def main():
     summary = valid.groupby('metric').agg(median_rho=('spearman_rho', 'median'),
         min_rho=('spearman_rho', 'min'), max_rho=('spearman_rho', 'max'),
         quarters=('quarter', 'nunique'), min_n=('n', 'min'), max_n=('n', 'max')).reset_index()
-    out = args.output / ('hypothesis1_' + pd.Timestamp.now(tz='Asia/Seoul').strftime('%Y%m%d_%H%M%S_%f'))
+    out = args.output / (f'hypothesis{number}_' + pd.Timestamp.now(tz='Asia/Seoul').strftime('%Y%m%d_%H%M%S_%f'))
     out.mkdir(parents=True, exist_ok=False)
     for name, frame in [('analysis_data', data), ('correlations_by_quarter', result),
                         ('summary', summary), ('selected_industries', industries)]:
@@ -128,7 +138,7 @@ def main():
         fig, ax = plt.subplots(figsize=(17, 5))
         sns.heatmap(valid.pivot(index='metric', columns='quarter', values='spearman_rho'),
                     annot=True, fmt='.2f', vmin=-1, vmax=1, center=0, cmap='RdBu_r', ax=ax)
-        ax.set_title('가설 1: 직장인구와 평일 매출의 분기별 행정동 간 Spearman')
+        ax.set_title(f'가설 {number}: {population}와 평일 매출의 분기별 행정동 간 Spearman')
         fig.tight_layout(); fig.savefig(out / 'heatmap.png', dpi=150); plt.close(fig)
         latest = valid.quarter.max()
         frame = data[data[KEY[0]] == latest]
@@ -137,8 +147,8 @@ def main():
             sns.scatterplot(data=frame, x=WORK, y=metric, alpha=.5, ax=ax)
             ax.set_title(f'{latest} / {metric}')
         fig.tight_layout(); fig.savefig(out / 'scatter_latest.png', dpi=150); plt.close(fig)
-    notes = ('외식업·행정동 기준, 분기별 지역 간 Spearman 탐색 분석. 매출과 직장인구가 모두 관측된 쌍만 사용. '
-             '관광명소·법정동 매핑은 가설 1에 불필요하여 사용하지 않음. '
+    notes = (f'외식업·행정동 기준, 분기별 지역 간 Spearman 탐색 분석. 매출과 {population}가 모두 관측된 쌍만 사용. '
+             '관광명소·법정동 매핑은 가설 1·2에 불필요하여 사용하지 않음. 유동인구 분석은 총 유동인구 기준이며 고유 방문자 수나 평일 전용 유동인구로 해석하지 않음. '
              '총매출은 점포 수·면적·입지 등 상권 규모의 영향을 받으며 인과관계는 검증하지 않음. '
              '평일 매출비중=주중/(주중+주말)×100. 일평균비=평일 하루평균/주말 하루평균으로 1보다 크면 평일이 높음. '
              '일평균은 분기 매출 및 월~금/토~일 구분이라는 가정 아래 달력 일수로 나누며 공휴일은 재분류하지 않음. '
@@ -154,15 +164,23 @@ def main():
         median = sub.spearman_rho.median()
         positive = (sub.spearman_rho > 0).mean()
         # 0.3/80%는 설명용 탐색 기준이며 통계적 가설 채택 기준이 아니다.
-        verdict = '양의 관계 경향 관찰' if median >= .3 and positive >= .8 else '뚜렷한 양의 관계 근거 부족'
-        conclusions.append(f'{metric}: {verdict}. 분기별 ρ 중앙값 {median:+.3f}, 양의 방향 분기 비율 {positive:.0%}.')
-    report = '<!doctype html><meta charset="utf-8"><title>가설 1 직장인구와 평일매출</title>'
-    report += '<h1>가설 1: 직장인구가 많으면 평일 매출이 높은가?</h1><p>' + html.escape(notes) + '</p>'
+        # 반대 방향의 결과도 명시해 예상과 불일치하는 증거를 숨기지 않는다.
+        aligned = (sub.spearman_rho * expected > 0).mean()
+        opposite = (sub.spearman_rho * expected < 0).mean()
+        if median * expected >= .3 and aligned >= .8:
+            verdict = '예상 방향과 일치하는 관계 경향 관찰'
+        elif median * expected <= -.3 and opposite >= .8:
+            verdict = '예상과 반대 방향의 관계 경향 관찰'
+        else:
+            verdict = '예상 관계에 대한 뚜렷한 근거 부족'
+        conclusions.append(f'{metric}: {verdict}. 분기별 ρ 중앙값 {median:+.3f}, 예상 방향 일치 {aligned:.0%}, 양의 방향 {positive:.0%}.')
+    report = '<!doctype html><meta charset="utf-8"><title>' + html.escape(title) + '</title>'
+    report += '<h1>' + html.escape(title) + '</h1><p>' + html.escape(notes) + '</p>'
     report += '<h2>결과 요약</h2><ul>' + ''.join('<li>'+html.escape(c)+'</li>' for c in conclusions) + '</ul>'
-    report += '<p>설명용 기준: ρ 중앙값 ≥0.3 및 양의 방향 분기 ≥80%. 확정적 가설 채택이 아닙니다.</p>'
+    report += '<p>설명용 기준: |ρ 중앙값| ≥0.3 및 해당 방향 분기 ≥80%. 가설 1은 양의 관계, 가설 2는 음의 관계를 예상합니다. 총매출이 낮다는 주장과 매출비중이 낮다는 주장은 구분하며 확정적 가설 채택은 하지 않습니다.</p>'
     report += summary.to_html(index=False) + '<h2>분기별 표본·제외 수</h2>' + result.to_html(index=False)
     report += ''.join(f'<img src="{p.name}" style="max-width:100%">' for p in out.glob('*.png'))
-    report += '<p>2~5번 가설은 실행하지 않았습니다.</p>'
+    report += f'<p>이번 실행은 가설 {number}만 수행했습니다. 다른 가설은 실행하지 않았습니다.</p>'
     (out / 'report.html').write_text(report, encoding='utf-8')
     print(out); print(summary.to_string(index=False))
 
