@@ -1,8 +1,9 @@
-"""가설 1·2(평일) 또는 3(상주인구와 주말 매출)을 하나씩 분석한다.
+"""가설 1~4를 선택하여 하나씩 분석한다. 4번은 시설 비율과 평일/주말 매출이다.
 
 실행: python data_analyze/weekday_sales/weekday_sales_analyze.py
 가설 2: python data_analyze/weekday_sales/weekday_sales_analyze.py --hypothesis 2
 가설 3: python data_analyze/weekday_sales/weekday_sales_analyze.py --hypothesis 3
+가설 4: python data_analyze/weekday_sales/weekday_sales_analyze.py --hypothesis 4
 관광명소/법정동 대응표는 이 가설에 필요하지 않아 결합하지 않는다.
 """
 from pathlib import Path
@@ -61,9 +62,15 @@ def main():
     parser.add_argument('--raw', type=Path, default=root / 'data/raw')
     parser.add_argument('--output', type=Path, default=Path(__file__).resolve().parent / 'results')
     # 기본값은 기존 가설 1을 보존하고, 명시적으로 선택한 가설만 실행한다.
-    parser.add_argument('--hypothesis', type=int, choices=[1, 2, 3], default=1)
+    parser.add_argument('--hypothesis', type=int, choices=[1, 2, 3, 4], default=1)
     args = parser.parse_args()
     number = args.hypothesis
+    if number == 4:
+        # 시설별 다변량 비교는 별도 모듈에서 수행한다.
+        # 바로 반환하므로 기존 인구 가설이나 다음 관광명소 가설을 실행하지 않는다.
+        from facility_sales import run
+        run(args.raw, args.output)
+        return
     # 가설별 입력·예상 방향·매출 요일을 명시해 3번이 평일 지표로 계산되는 것을 막는다.
     population, source, WORK, expected = {
         1: ('직장인구', '직장인구', '총_직장_인구_수', 1),
