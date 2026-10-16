@@ -13,6 +13,7 @@ TITLES = {
     5: '점포 수 ↑ → 집객시설 수 ↑ / 특정 시설 비율 차이',
     6: '창업률 ↑ → 집객시설 수 ↑ / 특정 시설 비율 차이',
     7: '폐업률 ↓ → 집객시설 수 ↑ / 특정 시설 비율 차이',
+    8: '아파트 평균시가/평균면적 ↑ → 집객시설 수 ↓ / 특정 시설 수·비율 차이',
 }
 
 
@@ -37,7 +38,7 @@ def build_hypothesis_summary(results):
                 f"{row['quarters']}분기 [{row['start']}~{row['end']}], "
                 f"분기별 n={row['min_n']}~{row['max_n']}, 중앙값과 방향 일치 {row['consistency']:.0%}")
 
-    blocks = [START, '<section><h2>7개 가설 검토 요약</h2>',
+    blocks = [START, f'<section><h2>{len(TITLES)}개 가설 검토 요약</h2>',
               '<p><b>이 결과는 같은 분기에 서로 다른 행정동을 비교한 탐색 결과입니다.</b> '
               '한 행정동의 인구가 증가하면 시설이 늘어난다는 시간적·인과적 설명은 아닙니다. '
               'ρ는 분기별 Spearman 상관계수이고 아래 중앙값은 통합 상관계수가 아닙니다.</p>',
@@ -54,7 +55,7 @@ def build_hypothesis_summary(results):
         totals = [r for r in rows if r['target'] == '집객시설_수']
         if number != 3:
             for row in totals:
-                expected_sign = -1 if number == 7 else 1
+                expected_sign = -1 if number in (7, 8) else 1
                 if abs(row['median']) < .3 or row['consistency'] < .8:
                     verdict = '예상한 시설 수 관계에 대한 뚜렷한 근거 부족'
                 elif row['median'] * expected_sign > 0:
@@ -68,8 +69,25 @@ def build_hypothesis_summary(results):
             blocks.append('<p>주의: 공식 창업률·폐업률이 아니라 해당 분기 '
                           '개업/폐업 점포 수 ÷ 전체 점포 수로 계산한 대리지표입니다. '
                           '7번 가설은 폐업 지표와 집객시설 수의 음의 상관을 예상합니다.</p>')
+        if number == 8:
+            blocks.append('<p>가격 지표=원본 아파트 평균 시가÷평균 면적. 개별 아파트 면적당 '
+                          '실거래가의 평균이 아니며, 가격·면적이 0 이하인 행은 제외합니다. '
+                          '특정 시설이 많다는 가설은 아래 절대 수 결과로 확인하고 비율과 구분하세요. '
+                          '양의 계수는 가격 지표가 높은 행정동에서 해당 시설 수가 많은 경향, '
+                          '음의 계수는 적은 경향입니다. 공간적 밀도·인과관계는 검증하지 않습니다.</p>')
+            counts = sorted([r for r in rows if r['target'].endswith('_수') and
+                             r['target'] != '집객시설_수'], key=lambda r: abs(r['median']), reverse=True)
+            if counts:
+                count_table = pd.DataFrame([{'시설 수': r['target'], 'ρ 중앙값': round(r['median'], 3),
+                                            'ρ 최솟값': round(r['low'], 3), 'ρ 최댓값': round(r['high'], 3),
+                                            '분기 수': r['quarters'], '최소 n': r['min_n'],
+                                            '최대 n': r['max_n'], '방향 일치': f"{r['consistency']:.0%}"}
+                                           for r in counts])
+                blocks.append('<h4>가격 지표와 시설별 절대 수</h4>' + count_table.to_html(index=False))
+            else:
+                blocks.append('<p>시설별 수의 유효 분석 결과가 없습니다.</p>')
         # 모든 조합을 표로 제공해 상위 몇 개만 선택해서 보여주는 편향을 줄인다.
-        facilities = sorted([r for r in rows if r['target'] != '집객시설_수'],
+        facilities = sorted([r for r in rows if r['target'].endswith('_총계대비비율')],
                             key=lambda r: abs(r['median']), reverse=True)
         notable = [r for r in facilities if abs(r['median']) >= .3 and r['consistency'] >= .8]
         blocks.append(f'<p>시설 비율: 유효 조합 {len(facilities)}개 중 탐색 기준에 해당하는 조합 '

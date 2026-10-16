@@ -89,6 +89,17 @@ def prepare(raw, scope):
             return frame[frame['서비스_업종_코드'].str.startswith('CS1', na=False)].copy()
         return frame.copy()
 
+    # 평균 시가/평균 면적은 개별 아파트의 면적당 가격 평균과 다를 수 있는 대리지표다.
+    # 비율(%)이 아니므로 100을 곱하지 않으며 0 이하·결측값은 분석에서 제외한다.
+    apartments = load('아파트')
+    unique(apartments, KEY, '아파트')
+    price_col = '아파트_평균시가_평균면적대비'
+    price = pd.to_numeric(apartments['아파트_평균_시가'], errors='coerce')
+    area = pd.to_numeric(apartments['아파트_평균_면적'], errors='coerce')
+    apartments[price_col] = price.where(price > 0).div(area.where(area > 0))
+    data = data.merge(apartments[KEY + ['아파트_평균_시가', '아파트_평균_면적', price_col]],
+                      on=KEY, how='left', validate='one_to_one')
+    hypotheses.append((8, price_col, 'negative'))
     shops = select(load('점포'))
     unique(shops, KEY + ['서비스_업종_코드'], '점포')
     selected = shops[['서비스_업종_코드', '서비스_업종_코드_명']].drop_duplicates()
@@ -131,7 +142,11 @@ def correlate(data, targets, hypotheses):
     rows = []
     for quarter, frame in data.groupby(TIME):
         for number, feature, expected in hypotheses:
-            for target in targets:
+            # 8번의 '특정 시설이 많다'는 구성 비율과 달라 시설별 절대 수도 별도로 검증한다.
+            count_targets = [c for c in data if c.endswith('_수') and
+                             c.removesuffix('_수') + '_총계대비비율' in targets]
+            selected_targets = targets + count_targets if number == 8 else targets
+            for target in selected_targets:
                 pair = frame[[feature, target]].replace([np.inf, -np.inf], np.nan).dropna()
                 n = len(pair)
                 reason = 'ok'
