@@ -517,7 +517,125 @@ import seaborn as sns
 
 # 아래는 업종 전체 평균으로 계산한게 아닌 각 업종별로 수치 계산
 #  
-# 가설1-1) 유동인구 수가 적으면 폐업률이 높을것이다(업종 전체 평균으로 계산)
+# # 가설1-1) 유동인구 수가 적으면 폐업률이 높을것이다
+
+# # ---------------------------------------------------------
+# # 0. 한글 폰트 설정 (Windows / Mac 대응)
+# # ---------------------------------------------------------
+# plt.rc('font', family='Malgun Gothic') # Mac 사용 시 'AppleGothic'
+# plt.rc('axes', unicode_minus=False)
+
+# # ---------------------------------------------------------
+# # 1. 원본 폴더 경로 설정
+# # ---------------------------------------------------------
+# DATA_DIR = r"C:\Users\M\Desktop\final_project\1_사전작업\3_상권 추천 서비스\1_상권 데이터\행정동"
+
+# def load_file_by_keyword(data_dir, keyword):
+#     pattern = os.path.join(data_dir, f"*{keyword}*.csv")
+#     files = glob.glob(pattern)
+#     if not files:
+#         raise FileNotFoundError(f"'{keyword}' 파일을 찾을 수 없습니다: {pattern}")
+#     filepath = files[0]
+#     print(f"📖 파일 로드 완료 [{keyword}]: {os.path.basename(filepath)}")
+    
+#     try:
+#         df = pd.read_csv(filepath, encoding='utf-8-sig')
+#     except UnicodeDecodeError:
+#         df = pd.read_csv(filepath, encoding='cp949')
+#     df.columns = df.columns.str.strip()
+#     return df
+
+# # 길단위인구(유동인구) 파일과 점포 파일 로드
+# df_pop = load_file_by_keyword(DATA_DIR, "길단위인구-행정동")
+# df_store = load_file_by_keyword(DATA_DIR, "점포-행정동")
+
+# # ---------------------------------------------------------
+# # 2. 기간(기준_년분기_코드) 데이터 정제 및 동기화
+# # ---------------------------------------------------------
+# df_pop['기준_년분기_코드'] = df_pop['기준_년분기_코드'].astype(str).str.strip()
+# df_pop['행정동_코드'] = df_pop['행정동_코드'].astype(str).str.strip()
+
+# df_store['기준_년분기_코드'] = df_store['기준_년분기_코드'].astype(str).str.strip()
+# df_store['행정동_코드'] = df_store['행정동_코드'].astype(str).str.strip()
+
+# pop_quarters = set(df_pop['기준_년분기_코드'].unique())
+# store_quarters = set(df_store['기준_년분기_코드'].unique())
+
+# common_quarters = sorted(list(pop_quarters.intersection(store_quarters)))
+
+# if not common_quarters:
+#     raise ValueError("⚠️ 두 파일 간에 겹치는 '기준_년분기_코드'가 없습니다. 기간을 확인해 주세요.")
+
+# print(f"🗓️ 동기화된 분석 가능 기간: {common_quarters[0]} ~ {common_quarters[-1]} (총 {len(common_quarters)}개 분기)")
+
+# df_pop = df_pop[df_pop['기준_년분기_코드'].isin(common_quarters)]
+# df_store = df_store[df_store['기준_년분기_코드'].isin(common_quarters)]
+
+# # ---------------------------------------------------------
+# # 3. 데이터 집계 및 병합 (업종별 행 유지)
+# # ---------------------------------------------------------
+# KEYS = ['기준_년분기_코드', '행정동_코드', '행정동_코드_명']
+
+# # 1) 유동인구: 행정동별 총 유동인구 수 합산
+# pop_agg = df_pop.groupby(KEYS, as_index=False)['총_유동인구_수'].sum()
+
+# # 2) 점포 파일: 업종별 행을 유지한 채 필요한 컬럼만 추출
+# store_subset = df_store[KEYS + ['서비스_업종_코드_명', '폐업_률']].copy()
+
+# # 3) 병합
+# merged_df = pd.merge(pop_agg, store_subset, on=KEYS, how='inner')
+# print(f"📊 최종 병합 데이터 크기: {merged_df.shape[0]}건")
+
+# if merged_df.empty:
+#     raise ValueError("병합된 데이터가 없습니다.")
+
+# # ---------------------------------------------------------
+# # 4. 서비스 업종별 유동인구 vs 폐업률 피어슨 상관계수 산출
+# # ---------------------------------------------------------
+# industry_corr = []
+# for industry, group in merged_df.groupby('서비스_업종_코드_명'):
+#     if len(group) > 30: 
+#         corr = group['총_유동인구_수'].corr(group['폐업_률'])
+#         industry_corr.append({'서비스_업종': industry, '상관계수': corr})
+
+# corr_df = pd.DataFrame(industry_corr).sort_values(by='상관계수', ascending=False).reset_index(drop=True)
+
+# print("\n=== 📈 [업종별 유동인구] <-> [폐업률] 상관계수 결과 ===")
+# print(corr_df.to_string(index=False))
+
+# # ---------------------------------------------------------
+# # 5. 컬러 음영 히트맵(Heatmap) 시각화
+# # ---------------------------------------------------------
+# # 히트맵 표현을 위해 DataFrame을 (N x 1) 형태로 변환
+# heatmap_data = corr_df.set_index('서비스_업종')[['상관계수']]
+
+# plt.figure(figsize=(8, max(6, len(corr_df) * 0.4)))
+
+# # diverging 컬러맵(예: coolwarm 또는 RdBu)을 사용하여 양수/음수 음영 구분
+# sns.heatmap(
+#     heatmap_data, 
+#     annot=True, 
+#     fmt=".3f", 
+#     cmap="coolwarm", 
+#     center=0, 
+#     cbar_kws={'label': '피어슨 상관계수 (r)'},
+#     linewidths=0.5,
+#     linecolor='white'
+# )
+
+# plt.title('가설 검증: 업종별 유동인구 수 vs 폐업률 상관계수 (컬러 음영 히트맵)', fontsize=14, fontweight='bold', pad=15)
+# plt.ylabel('서비스 업종', fontsize=12)
+# plt.xlabel('유동인구 vs 폐업률', fontsize=12)
+
+# plt.tight_layout()
+# output_img = os.path.join(DATA_DIR, "가설검증_업종별유동인구_폐업률_히트맵.png")
+# plt.savefig(output_img, dpi=300)
+# print(f"\n🖼️ 히트맵 시각화 이미지 저장 완료: {output_img}")
+# plt.show()
+
+
+
+# 가설2-1) 상주인구 수가 많으면 폐업률이 낮을것이다
 
 # ---------------------------------------------------------
 # 0. 한글 폰트 설정 (Windows / Mac 대응)
@@ -545,8 +663,8 @@ def load_file_by_keyword(data_dir, keyword):
     df.columns = df.columns.str.strip()
     return df
 
-# 길단위인구(유동인구) 파일과 점포 파일 로드
-df_pop = load_file_by_keyword(DATA_DIR, "길단위인구-행정동")
+# 상주인구 파일과 점포 파일 로드
+df_pop = load_file_by_keyword(DATA_DIR, "상주인구-행정동")
 df_store = load_file_by_keyword(DATA_DIR, "점포-행정동")
 
 # ---------------------------------------------------------
@@ -576,42 +694,40 @@ df_store = df_store[df_store['기준_년분기_코드'].isin(common_quarters)]
 # ---------------------------------------------------------
 KEYS = ['기준_년분기_코드', '행정동_코드', '행정동_코드_명']
 
-# 1) 유동인구: 행정동별 총 유동인구 수 합산
-pop_agg = df_pop.groupby(KEYS, as_index=False)['총_유동인구_수'].sum()
+# 1) 상주인구: 행정동별 총 상주인구 수 합산
+pop_agg = df_pop.groupby(KEYS, as_index=False)['총_상주인구_수'].sum()
 
 # 2) 점포 파일: 업종별 행을 유지한 채 필요한 컬럼만 추출
 store_subset = df_store[KEYS + ['서비스_업종_코드_명', '폐업_률']].copy()
 
-# 3) 병합
+# 3) 병합: 행정동 및 분기 기준으로 상주인구 데이터와 업종별 폐업률 결합
 merged_df = pd.merge(pop_agg, store_subset, on=KEYS, how='inner')
 print(f"📊 최종 병합 데이터 크기: {merged_df.shape[0]}건")
 
 if merged_df.empty:
-    raise ValueError("병합된 데이터가 없습니다.")
+    raise ValueError("병합된 데이터가 없습니다. 행정동 코드나 분기 형식을 확인해 주세요.")
 
 # ---------------------------------------------------------
-# 4. 서비스 업종별 유동인구 vs 폐업률 피어슨 상관계수 산출
+# 4. 서비스 업종별 상주인구 vs 폐업률 피어슨 상관계수 산출
 # ---------------------------------------------------------
 industry_corr = []
 for industry, group in merged_df.groupby('서비스_업종_코드_명'):
-    if len(group) > 30: 
-        corr = group['총_유동인구_수'].corr(group['폐업_률'])
+    if len(group) > 30: # 데이터 수가 충분한 업종만 계산
+        corr = group['총_상주인구_수'].corr(group['폐업_률'])
         industry_corr.append({'서비스_업종': industry, '상관계수': corr})
 
 corr_df = pd.DataFrame(industry_corr).sort_values(by='상관계수', ascending=False).reset_index(drop=True)
 
-print("\n=== 📈 [업종별 유동인구] <-> [폐업률] 상관계수 결과 ===")
+print("\n=== 📈 [업종별 상주인구] <-> [폐업률] 상관계수 결과 상위/하위 ===")
 print(corr_df.to_string(index=False))
 
 # ---------------------------------------------------------
 # 5. 컬러 음영 히트맵(Heatmap) 시각화
 # ---------------------------------------------------------
-# 히트맵 표현을 위해 DataFrame을 (N x 1) 형태로 변환
 heatmap_data = corr_df.set_index('서비스_업종')[['상관계수']]
 
 plt.figure(figsize=(8, max(6, len(corr_df) * 0.4)))
 
-# diverging 컬러맵(예: coolwarm 또는 RdBu)을 사용하여 양수/음수 음영 구분
 sns.heatmap(
     heatmap_data, 
     annot=True, 
@@ -623,12 +739,12 @@ sns.heatmap(
     linecolor='white'
 )
 
-plt.title('가설 검증: 업종별 유동인구 수 vs 폐업률 상관계수 (컬러 음영 히트맵)', fontsize=14, fontweight='bold', pad=15)
+plt.title('가설 검증: 업종별 상주인구 수 vs 폐업률 상관계수 (컬러 음영 히트맵)', fontsize=14, fontweight='bold', pad=15)
 plt.ylabel('서비스 업종', fontsize=12)
-plt.xlabel('유동인구 vs 폐업률', fontsize=12)
+plt.xlabel('상주인구 vs 폐업률', fontsize=12)
 
 plt.tight_layout()
-output_img = os.path.join(DATA_DIR, "가설검증_업종별유동인구_폐업률_히트맵.png")
+output_img = os.path.join(DATA_DIR, "가설검증_업종별상주인구_폐업률_히트맵.png")
 plt.savefig(output_img, dpi=300)
 print(f"\n🖼️ 히트맵 시각화 이미지 저장 완료: {output_img}")
 plt.show()
