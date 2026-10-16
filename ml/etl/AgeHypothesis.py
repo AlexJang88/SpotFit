@@ -146,7 +146,46 @@ def h3(level):
     ax[1].set(ylabel='평균 비율 (%)', title=f'[{level}] 평균 연령대 구성')
     plt.tight_layout(); plt.show()
 
+# H4. 유동인구 수가 많으면 매출 연령대가 낮을(어릴) 것이다
+def h4(level):
+    key = f'{level}_코드'
+
+    # 1) 지역별 매출 연령대 비율(%) + 유동인구 + 손님 평균연령 (10대 → 15세 ... 60대+ → 65세)
+    df = sales_age(level) * 100
+    df['평균연령'] = (df['10대'] * 15 + df['20대'] * 25 + df['30대'] * 35
+                     + df['40대'] * 45 + df['50대'] * 55 + df['60대+'] * 65) / 100
+    df['유동인구'] = load(f'길단위인구-{level}').groupby(key)['총_유동인구_수'].mean()
+    df = df[df['유동인구'] > 0]
+
+    # 2) 유동인구와의 상관계수 (음수면 유동인구가 많을수록 그 값이 작아짐)
+    print(f'\n[{level}] 분석 지역 수: {len(df)}')
+    corr = {}
+    for c in df.columns[:-1]:
+        r, p = stats.spearmanr(df['유동인구'], df[c])
+        corr[c] = r
+        print(f'[{level}] 유동인구 vs {c} 상관계수 {r:.2f} (p={p:.4f})')
+    corr = pd.DataFrame({'유동인구': corr})
+
+    # 3) 유동인구로 5개 그룹 → 그룹별 손님 평균연령
+    df['그룹'] = pd.qcut(df['유동인구'], 5, labels=['1(적음)', '2', '3', '4', '5(많음)'])
+    group = df.groupby('그룹', observed=True).mean()
+    print(f'[{level}] 그룹별 손님 평균연령\n', group['평균연령'].round(1))
+
+    # 4) 시각화: 왼쪽 그룹별 손님 평균연령, 오른쪽 상관계수 히트맵
+    fig, ax = plt.subplots(1, 2, figsize=(12, 5.5), width_ratios=[2, 1])
+    group['평균연령'].plot(marker='o', color='#2a78d6', lw=2, ax=ax[0])
+    for i, y in enumerate(group['평균연령']):
+        ax[0].annotate(f'{y:.1f}세', (i, y), textcoords='offset points', xytext=(0, 8), ha='center')
+    ax[0].set(xlabel='유동인구 그룹', ylabel='손님 평균연령 (세)', title=f'[{level}] 유동인구 그룹별 손님 평균연령')
+    ax[0].margins(y=.15)
+
+    sns.heatmap(corr, cmap='RdBu_r', center=0, vmin=-.5, vmax=.5, annot=True, fmt='.2f', ax=ax[1])
+    ax[1].set(title=f'[{level}] 유동인구와의 상관계수')
+    ax[1].tick_params(axis='y', rotation=0)
+    plt.tight_layout(); plt.show()
+
 for lv in ['상권', '행정동']:
     h1(lv)
     h2(lv)
     h3(lv)
+    h4(lv)
