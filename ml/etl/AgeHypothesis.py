@@ -102,6 +102,51 @@ def h2(level):
     plt.ylabel('')
     plt.tight_layout(); plt.show()
 
+# H3. 거주(상주)인구 연령대와 그 지역 매출 연령대는 비슷할 것이다
+POP = {'연령대_10_상주인구_수': '10대', '연령대_20_상주인구_수': '20대', '연령대_30_상주인구_수': '30대',
+       '연령대_40_상주인구_수': '40대', '연령대_50_상주인구_수': '50대', '연령대_60_이상_상주인구_수': '60대+'}
+
+def h3(level):
+    key = f'{level}_코드'
+
+    # 1) 지역별 매출 연령대 비율
+    age = sales_age(level)
+
+    # 2) 지역별 상주인구 연령대 비율
+    pop = load(f'상주인구-{level}')
+    pop = pop.groupby(key)[list(POP)].mean()
+    pop = pop.rename(columns=POP)
+    pop = pop[pop.sum(axis=1) >= 100]                     # 상주인구 100명 미만 지역 제외
+    pop = pop.div(pop.sum(axis=1), axis=0)
+
+    # 3) 두 데이터에 모두 있는 지역만
+    both = pop.index.intersection(age.index)
+    pop = pop.loc[both]
+    age = age.loc[both]
+    print(f'\n[{level}] 분석 지역 수: {len(both)}')
+
+    # 4) 상주 연령대 x 매출 연령대 상관계수 (대각선 = 같은 연령대끼리)
+    corr = pd.DataFrame(index=pop.columns, columns=age.columns, dtype=float)
+    for a in pop.columns:
+        for b in age.columns:
+            corr.loc[a, b] = stats.spearmanr(pop[a], age[b])[0]
+
+    for a in pop.columns:
+        print(f'[{level}] 상주 {a} 비율 vs 매출 {a} 비율 상관계수 {corr.loc[a, a]:.2f}')
+
+    # 5) 평균 연령대 구성 비교
+    avg = pd.DataFrame({'상주인구': pop.mean() * 100, '매출 건수': age.mean() * 100})
+    print(f'[{level}] 평균 연령대 구성(%)\n', avg.round(1))
+
+    # 6) 시각화: 왼쪽 상관계수 히트맵, 오른쪽 평균 연령대 구성
+    fig, ax = plt.subplots(1, 2, figsize=(15, 6))
+    sns.heatmap(corr, cmap='RdBu_r', center=0, vmin=-.6, vmax=.6, annot=True, fmt='.2f', ax=ax[0])
+    ax[0].set(xlabel='매출 연령대', ylabel='상주인구 연령대', title=f'[{level}] 상주 vs 매출 연령대 비율 상관계수')
+    avg.plot.bar(rot=0, ax=ax[1])
+    ax[1].set(ylabel='평균 비율 (%)', title=f'[{level}] 평균 연령대 구성')
+    plt.tight_layout(); plt.show()
+
 for lv in ['상권', '행정동']:
     h1(lv)
     h2(lv)
+    h3(lv)
