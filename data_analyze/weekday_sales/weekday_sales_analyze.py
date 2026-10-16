@@ -62,9 +62,13 @@ def main():
     parser.add_argument('--raw', type=Path, default=root / 'data/raw')
     parser.add_argument('--output', type=Path, default=Path(__file__).resolve().parent / 'results')
     # 기본값은 기존 가설 1을 보존하고, 명시적으로 선택한 가설만 실행한다.
-    parser.add_argument('--hypothesis', type=int, choices=[1, 2, 3, 4], default=1)
+    parser.add_argument('--hypothesis', type=int, choices=[1, 2, 3, 4, 5], default=1)
     args = parser.parse_args()
     number = args.hypothesis
+    if number == 5:
+        from tourism_sales import run
+        run(args.raw, args.output)
+        return
     if number == 4:
         # 시설별 다변량 비교는 별도 모듈에서 수행한다.
         # 바로 반환하므로 기존 인구 가설이나 다음 관광명소 가설을 실행하지 않는다.
