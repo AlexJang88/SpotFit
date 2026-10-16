@@ -139,6 +139,63 @@ def h2(level):
     ax[1].legend(loc='lower right', ncol=6, fontsize=9)
     plt.tight_layout(); plt.show()
 
+# H3. 거주(상주)인구 연령대와 그 지역 유동인구 연령대는 비슷할 것이다
+def h3(level):
+    key = f'{level}_코드'
+
+    # 1) 지역별 유동인구 연령대 비율 (H1과 동일)
+    flow = load(f'길단위인구-{level}')
+    flow = flow.groupby(key)[list(AGES)].mean()
+    flow = flow.rename(columns=AGES)
+    flow = flow.div(flow.sum(axis=1), axis=0)
+
+    # 2) 지역별 상주인구 연령대 비율 (연령대_20_상주인구_수 → 20대)
+    POP = {}
+    for col, name in AGES.items():
+        POP[col.replace('유동', '상주')] = name
+    pop = load(f'상주인구-{level}')
+    pop = pop.groupby(key)[list(POP)].mean()
+    pop = pop.rename(columns=POP)
+    pop = pop[pop.sum(axis=1) >= 100]                     # 상주인구 100명 미만 지역 제외 (비율이 튐)
+    pop = pop.div(pop.sum(axis=1), axis=0)
+
+    # 3) 두 데이터에 모두 있는 지역만 남기기
+    both = pop.index.intersection(flow.index)
+    pop = pop.loc[both]
+    flow = flow.loc[both]
+    print(f'\n[{level}] 분석 지역 수: {len(both)}')
+
+    # 4) 상주 연령대 비율 x 유동 연령대 비율 상관계수 표 (대각선 = 같은 연령대끼리)
+    corr = pd.DataFrame(index=pop.columns, columns=flow.columns, dtype=float)
+    for a in pop.columns:
+        for b in flow.columns:
+            corr.loc[a, b] = stats.spearmanr(pop[a], flow[b])[0]
+
+    for a in pop.columns:
+        r, p = stats.spearmanr(pop[a], flow[a])
+        print(f'[{level}] 상주 {a} 비율 vs 유동 {a} 비율 상관계수 {r:.2f} (p={p:.4f})')
+
+    # 5) 지역마다 두 구성이 얼마나 다른가 = 연령대별 비율 차이의 합 / 2 (0%p면 완전히 같음)
+    diff = (pop - flow).abs().sum(axis=1) / 2 * 100
+    print(f'[{level}] 상주 vs 유동 연령 구성 차이(%p) 중앙값 {diff.median():.1f}, 10%p 이하인 지역 비율 {(diff <= 10).mean() * 100:.0f}%')
+
+    # 6) 서울 전체 평균 연령대 구성 비교
+    avg = pd.DataFrame({'상주인구': pop.mean() * 100, '유동인구': flow.mean() * 100})
+    print(f'[{level}] 평균 연령대 구성(%)\n', avg.round(1))
+
+    # 7) 시각화: 상관계수 히트맵 / 평균 연령대 구성 / 지역별 구성 차이 분포
+    fig, ax = plt.subplots(1, 3, figsize=(19, 5.5))
+    sns.heatmap(corr, cmap='RdBu_r', center=0, vmin=-.6, vmax=.6, annot=True, fmt='.2f', ax=ax[0])
+    ax[0].set(xlabel='유동인구 연령대', ylabel='상주인구 연령대', title=f'[{level}] 상주 vs 유동 연령대 비율 상관계수')
+    avg.plot.bar(rot=0, ax=ax[1])
+    ax[1].set(ylabel='평균 비율 (%)', title=f'[{level}] 평균 연령대 구성')
+    sns.histplot(diff, bins=40, ax=ax[2])
+    ax[2].axvline(diff.median(), color='tomato', ls='--', label=f'중앙값 {diff.median():.1f}%p')
+    ax[2].set(xlabel='상주 vs 유동 연령 구성 차이 (%p)', ylabel='지역 수', title=f'[{level}] 지역별 연령 구성 차이')
+    ax[2].legend()
+    plt.tight_layout(); plt.show()
+
 for lv in ['상권', '행정동']:
     h1(lv)
     h2(lv)
+    h3(lv)
