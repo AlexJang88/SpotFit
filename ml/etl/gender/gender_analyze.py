@@ -612,7 +612,182 @@ import seaborn as sns
 
 
 
-# 가설5) 직장인 남녀인구 수에 따른 업종별 성별이 달라질 것이다
+# # 가설5) 직장인 남녀인구 수에 따른 업종별 성별이 달라질 것이다
+
+# # ---------------------------------------------------------
+# # 0. 한글 폰트 설정 (Windows / Mac 대응)
+# # ---------------------------------------------------------
+# plt.rc('font', family='Malgun Gothic') # Mac 사용 시 'AppleGothic'
+# plt.rc('axes', unicode_minus=False)
+
+# # ---------------------------------------------------------
+# # 1. 원본 폴더 경로 설정 및 파일 로드
+# # ---------------------------------------------------------
+# DATA_DIR = r"C:\Users\M\Desktop\final_project\1_사전작업\3_상권 추천 서비스\1_상권 데이터\행정동"
+
+# # 1) 통합 추정매출 파일 로드
+# sales_filename = "서울시_상권분석서비스_추정매출_행정동_통합.csv"
+# sales_filepath = os.path.join(DATA_DIR, sales_filename)
+
+# if not os.path.exists(sales_filepath):
+#     raise FileNotFoundError(f"통합 추정매출 파일을 찾을 수 없습니다: {sales_filepath}")
+
+# print(f"📖 파일 로드 완료 [통합 추정매출]: {sales_filename}")
+# try:
+#     df_sales = pd.read_csv(sales_filepath, encoding='utf-8-sig')
+# except UnicodeDecodeError:
+#     df_sales = pd.read_csv(sales_filepath, encoding='cp949')
+# df_sales.columns = df_sales.columns.str.strip()
+
+# # 2) 직장인구 파일 로드 함수
+# def load_file_by_keyword(data_dir, keyword):
+#     pattern = os.path.join(data_dir, f"*{keyword}*.csv")
+#     files = glob.glob(pattern)
+#     if not files:
+#         raise FileNotFoundError(f"'{keyword}' 파일을 찾을 수 없습니다: {pattern}")
+#     filepath = files[0]
+#     print(f"📖 파일 로드 완료 [{keyword}]: {os.path.basename(filepath)}")
+    
+#     try:
+#         df = pd.read_csv(filepath, encoding='utf-8-sig')
+#     except UnicodeDecodeError:
+#         df = pd.read_csv(filepath, encoding='cp949')
+#     df.columns = df.columns.str.strip()
+#     return df
+
+# df_worker = load_file_by_keyword(DATA_DIR, "직장인구-행정동")
+
+# # 🔍 직장인구 파일의 실제 컬럼 확인 및 매핑 (실제 컬럼명 반영)
+# print("📋 직장인구 파일 컬럼 목록:", df_worker.columns.tolist())
+
+# male_col_candidates = ['남성_직장_인구_수', '남성_직장인구_수', '남성_직장인구', '남성직장인구수']
+# female_col_candidates = ['여성_직장_인구_수', '여성_직장인구_수', '여성_직장인구', '여성직장인구수']
+
+# male_worker_col = next((c for c in male_col_candidates if c in df_worker.columns), None)
+# female_worker_col = next((c for c in female_col_candidates if c in df_worker.columns), None)
+
+# if not male_worker_col or not female_worker_col:
+#     male_worker_col = male_worker_col or next((c for c in df_worker.columns if '남성' in c and '직장' in c), None)
+#     female_worker_col = female_worker_col or next((c for c in df_worker.columns if '여성' in c and '직장' in c), None)
+
+# if not male_worker_col or not female_worker_col:
+#     raise KeyError(f"⚠️ 직장인구 파일에서 남녀 직장인구 컬럼을 찾을 수 없습니다. (확인된 컬럼: {df_worker.columns.tolist()})")
+
+# print(f"✅ 감지된 직장인구 컬럼 - 남성: '{male_worker_col}', 여성: '{female_worker_col}'")
+
+# # ---------------------------------------------------------
+# # 2. 기간(기준_년분기_코드) 데이터 정제 및 20211 ~ 20254 동기화
+# # ---------------------------------------------------------
+# df_sales['기준_년분기_코드'] = df_sales['기준_년분기_코드'].astype(str).str.strip()
+# df_sales['행정동_코드'] = df_sales['행정동_코드'].astype(str).str.strip()
+
+# df_worker['기준_년분기_코드'] = df_worker['기준_년분기_코드'].astype(str).str.strip()
+# df_worker['행정동_코드'] = df_worker['행정동_코드'].astype(str).str.strip()
+
+# sales_quarters = set(df_sales['기준_년분기_코드'].unique())
+# worker_quarters = set(df_worker['기준_년분기_코드'].unique())
+
+# common_quarters = sorted(list(sales_quarters.intersection(worker_quarters)))
+# target_quarters = [q for q in common_quarters if '20211' <= q <= '20254']
+
+# if not target_quarters:
+#     raise ValueError("⚠️ 지정한 기간(20211 ~ 20254) 내에 겹치는 데이터가 없습니다.")
+
+# print(f"🗓️ 최종 동기화 및 반영된 분석 기간: {target_quarters[0]} ~ {target_quarters[-1]} (총 {len(target_quarters)}개 분기)")
+
+# df_sales = df_sales[df_sales['기준_년분기_코드'].isin(target_quarters)]
+# df_worker = df_worker[df_worker['기준_년분기_코드'].isin(target_quarters)]
+
+# # ---------------------------------------------------------
+# # 3. 변수 가공 (남녀 직장인구 수 및 업종별 소비 성별 비율 산출)
+# # ---------------------------------------------------------
+# KEYS = ['기준_년분기_코드', '행정동_코드', '행정동_코드_명']
+
+# # 1) 직장인구 파일에서 행정동별 남성/여성 직장인구 합산
+# worker_agg = df_worker.groupby(KEYS, as_index=False)[[male_worker_col, female_worker_col]].sum()
+# worker_agg = worker_agg.rename(columns={male_worker_col: '남성_직장인구_수', female_worker_col: '여성_직장인구_수'})
+# worker_subset = worker_agg[KEYS + ['남성_직장인구_수', '여성_직장인구_수']].copy()
+
+# # 2) 통합 추정매출 파일에서 업종별 남성/여성 매출 비율 산출
+# sales_agg = df_sales.groupby(KEYS + ['서비스_업종_코드_명'], as_index=False)[['남성_매출_금액', '여성_매출_금액']].sum()
+# sales_agg['총_성별매출'] = sales_agg['남성_매출_금액'] + sales_agg['여성_매출_금액']
+
+# sales_agg = sales_agg[sales_agg['총_성별매출'] > 0].copy()
+# sales_agg['남성_매출_비율'] = sales_agg['남성_매출_금액'] / sales_agg['총_성별매출'] * 100
+# sales_agg['여성_매출_비율'] = sales_agg['여성_매출_금액'] / sales_agg['총_성별매출'] * 100
+
+# sales_subset = sales_agg[KEYS + ['서비스_업종_코드_명', '남성_매출_비율', '여성_매출_비율']]
+
+# # 3) 데이터 병합 (행정동 및 분기 기준)
+# merged_df = pd.merge(worker_subset, sales_subset, on=KEYS, how='inner')
+# print(f"📊 최종 병합 데이터 크기: {merged_df.shape[0]}건")
+
+# if merged_df.empty:
+#     raise ValueError("병합된 데이터가 없습니다.")
+
+# # ---------------------------------------------------------
+# # 4. [남녀 직장인구 수 x 업종별 성별 매출비율] 서비스 업종별 상관계수 매트릭스 산출
+# # ---------------------------------------------------------
+# worker_vars = ['남성_직장인구_수', '여성_직장인구_수']
+# sales_gender_vars = ['남성_매출_비율', '여성_매출_비율']
+
+# matrix_rows = []
+# industries = []
+
+# for industry, group in merged_df.groupby('서비스_업종_코드_명'):
+#     if len(group) > 2: # 충분한 표본이 있는 업종만 대상
+#         row_vals = []
+#         for w_var in worker_vars:
+#             for s_var in sales_gender_vars:
+#                 if group[w_var].std() == 0 or group[s_var].std() == 0 or pd.isna(group[w_var].std()):
+#                     corr_val = 0.0
+#                 else:
+#                     corr_val = group[w_var].corr(group[s_var])
+#                     if pd.isna(corr_val):
+#                         corr_val = 0.0
+#                 row_vals.append(corr_val)
+#         matrix_rows.append(row_vals)
+#         industries.append(industry)
+
+# col_names = ['남성직장수-남성매출', '남성직장수-여성매출', '여성직장수-남성매출', '여성직장수-여성매출']
+# corr_matrix = pd.DataFrame(matrix_rows, index=industries, columns=col_names)
+# corr_matrix = corr_matrix.dropna(how='all')
+# corr_matrix = corr_matrix.fillna(0)
+
+# print(f"\n=== 📈 [남녀 직장인구 수 x 업종별 소비 성별 비율] 상관계수 매트릭스 생성 완료 (크기: {corr_matrix.shape}) ===")
+
+# # ---------------------------------------------------------
+# # 5. 컬러 음영 히트맵(Heatmap) 시각화 (숫자 표시 포함)
+# # ---------------------------------------------------------
+# plt.figure(figsize=(10, max(10, len(corr_matrix) * 0.4)))
+
+# sns.heatmap(
+#     corr_matrix, 
+#     annot=True,            # 숫자를 함께 표시
+#     fmt=".3f",             # 소수점 3자리까지 표시
+#     annot_kws={"size": 9}, # 숫자 폰트 크기
+#     cmap="coolwarm", 
+#     center=0, 
+#     cbar_kws={'label': '피어슨 상관계수 (r)'},
+#     linewidths=0.3,
+#     linecolor='white'
+# )
+
+# plt.title('가설 검증: 남녀 직장인구 수 vs 업종별 소비 성별 비율 상관계수 매트릭스 (2021~2025 통합)', fontsize=13, fontweight='bold', pad=15)
+# plt.xlabel('직장인구 성별 수 vs 소비 성별 비율 조합', fontsize=12)
+# plt.ylabel('서비스 업종', fontsize=12)
+# plt.xticks(rotation=45, ha='right')
+# plt.yticks(rotation=0)
+
+# plt.tight_layout()
+# output_img = os.path.join(DATA_DIR, "가설검증_남녀직장인구수_소비성별_통합히트맵.png")
+# plt.savefig(output_img, dpi=300)
+# print(f"\n🖼️ 히트맵 시각화 이미지 저장 완료: {output_img}")
+# plt.show()
+
+
+
+# 가설6) 1인가구 성별 수에 따른 업종별 소비 성별이 달라질 것이다
 
 # ---------------------------------------------------------
 # 0. 한글 폰트 설정 (Windows / Mac 대응)
@@ -621,13 +796,14 @@ plt.rc('font', family='Malgun Gothic') # Mac 사용 시 'AppleGothic'
 plt.rc('axes', unicode_minus=False)
 
 # ---------------------------------------------------------
-# 1. 원본 폴더 경로 설정 및 파일 로드
+# 1. 파일 경로 설정 및 데이터 로드
 # ---------------------------------------------------------
-DATA_DIR = r"C:\Users\M\Desktop\final_project\1_사전작업\3_상권 추천 서비스\1_상권 데이터\행정동"
+SALES_DIR = r"C:\Users\M\Desktop\final_project\1_사전작업\3_상권 추천 서비스\1_상권 데이터\행정동"
+SINGLE_DIR = r"C:\Users\M\Desktop\final_project\1_사전작업\3_상권 추천 서비스\1_상권 데이터"
 
 # 1) 통합 추정매출 파일 로드
 sales_filename = "서울시_상권분석서비스_추정매출_행정동_통합.csv"
-sales_filepath = os.path.join(DATA_DIR, sales_filename)
+sales_filepath = os.path.join(SALES_DIR, sales_filename)
 
 if not os.path.exists(sales_filepath):
     raise FileNotFoundError(f"통합 추정매출 파일을 찾을 수 없습니다: {sales_filepath}")
@@ -639,76 +815,73 @@ except UnicodeDecodeError:
     df_sales = pd.read_csv(sales_filepath, encoding='cp949')
 df_sales.columns = df_sales.columns.str.strip()
 
-# 2) 직장인구 파일 로드 함수
-def load_file_by_keyword(data_dir, keyword):
-    pattern = os.path.join(data_dir, f"*{keyword}*.csv")
-    files = glob.glob(pattern)
-    if not files:
-        raise FileNotFoundError(f"'{keyword}' 파일을 찾을 수 없습니다: {pattern}")
-    filepath = files[0]
-    print(f"📖 파일 로드 완료 [{keyword}]: {os.path.basename(filepath)}")
-    
-    try:
-        df = pd.read_csv(filepath, encoding='utf-8-sig')
-    except UnicodeDecodeError:
-        df = pd.read_csv(filepath, encoding='cp949')
-    df.columns = df.columns.str.strip()
-    return df
+# 2) 1인가구_전체 파일 로드
+single_filename = "1인가구_전체.csv"
+single_filepath = os.path.join(SINGLE_DIR, single_filename)
 
-df_worker = load_file_by_keyword(DATA_DIR, "직장인구-행정동")
+if not os.path.exists(single_filepath):
+    raise FileNotFoundError(f"1인가구 파일을 찾을 수 없습니다: {single_filepath}")
 
-# 🔍 직장인구 파일의 실제 컬럼 확인 및 매핑 (실제 컬럼명 반영)
-print("📋 직장인구 파일 컬럼 목록:", df_worker.columns.tolist())
-
-male_col_candidates = ['남성_직장_인구_수', '남성_직장인구_수', '남성_직장인구', '남성직장인구수']
-female_col_candidates = ['여성_직장_인구_수', '여성_직장인구_수', '여성_직장인구', '여성직장인구수']
-
-male_worker_col = next((c for c in male_col_candidates if c in df_worker.columns), None)
-female_worker_col = next((c for c in female_col_candidates if c in df_worker.columns), None)
-
-if not male_worker_col or not female_worker_col:
-    male_worker_col = male_worker_col or next((c for c in df_worker.columns if '남성' in c and '직장' in c), None)
-    female_worker_col = female_worker_col or next((c for c in df_worker.columns if '여성' in c and '직장' in c), None)
-
-if not male_worker_col or not female_worker_col:
-    raise KeyError(f"⚠️ 직장인구 파일에서 남녀 직장인구 컬럼을 찾을 수 없습니다. (확인된 컬럼: {df_worker.columns.tolist()})")
-
-print(f"✅ 감지된 직장인구 컬럼 - 남성: '{male_worker_col}', 여성: '{female_worker_col}'")
+print(f"📖 파일 로드 완료 [1인가구_전체]: {single_filename}")
+try:
+    df_single = pd.read_csv(single_filepath, encoding='utf-8-sig')
+except UnicodeDecodeError:
+    df_single = pd.read_csv(single_filepath, encoding='cp949')
+df_single.columns = df_single.columns.str.strip()
 
 # ---------------------------------------------------------
-# 2. 기간(기준_년분기_코드) 데이터 정제 및 20211 ~ 20254 동기화
+# 2. 기간(기준_년분기_코드) 데이터 정제 및 동기화
 # ---------------------------------------------------------
 df_sales['기준_년분기_코드'] = df_sales['기준_년분기_코드'].astype(str).str.strip()
-df_sales['행정동_코드'] = df_sales['행정동_코드'].astype(str).str.strip()
 
-df_worker['기준_년분기_코드'] = df_worker['기준_년분기_코드'].astype(str).str.strip()
-df_worker['행정동_코드'] = df_worker['행정동_코드'].astype(str).str.strip()
+# 1인가구 데이터의 '기준_년월' (예: 202201)을 분기 코드로 변환 (예: 20221)
+df_single['기준_년월'] = df_single['기준_년월'].astype(str).str.strip()
+df_single['연도'] = df_single['기준_년월'].str[:4]
+df_single['월'] = df_single['기준_년월'].str[4:].astype(int)
 
-sales_quarters = set(df_sales['기준_년분기_코드'].unique())
-worker_quarters = set(df_worker['기준_년분기_코드'].unique())
+def month_to_quarter(m):
+    if m in [1, 2, 3]: return '1'
+    elif m in [4, 5, 6]: return '2'
+    elif m in [7, 8, 9]: return '3'
+    elif m in [10, 11, 12]: return '4'
+    return '1'
 
-common_quarters = sorted(list(sales_quarters.intersection(worker_quarters)))
-target_quarters = [q for q in common_quarters if '20211' <= q <= '20254']
+df_single['분기'] = df_single['월'].apply(month_to_quarter)
+df_single['기준_년분기_코드'] = df_single['연도'] + df_single['분기']
 
-if not target_quarters:
-    raise ValueError("⚠️ 지정한 기간(20211 ~ 20254) 내에 겹치는 데이터가 없습니다.")
+# 기간 동기화 (20211 ~ 20254 범위 내)
+target_quarters = [str(y) + str(q) for y in range(2021, 2026) for q in range(1, 5)]
 
-print(f"🗓️ 최종 동기화 및 반영된 분석 기간: {target_quarters[0]} ~ {target_quarters[-1]} (총 {len(target_quarters)}개 분기)")
+df_sales = df_sales[df_sales['기준_년분기_코드'].isin(target_quarters)].copy()
+df_single = df_single[df_single['기준_년분기_코드'].isin(target_quarters)].copy()
 
-df_sales = df_sales[df_sales['기준_년분기_코드'].isin(target_quarters)]
-df_worker = df_worker[df_worker['기준_년분기_코드'].isin(target_quarters)]
+print(f"🗓️ 반영된 분석 기간 동기화 완료")
 
 # ---------------------------------------------------------
-# 3. 변수 가공 (남녀 직장인구 수 및 업종별 소비 성별 비율 산출)
+# 3. 변수 가공 및 행정동 명칭(행정동_코드_명 / 행정동명) 기준 병합
 # ---------------------------------------------------------
-KEYS = ['기준_년분기_코드', '행정동_코드', '행정동_코드_명']
+# 1인가구 데이터 성별 정제 (1: 남성, 2: 여성)
+df_single['성별_명'] = df_single['성별'].map({1: '남성_1인가구_수', 2: '여성_1인가구_수', '1': '남성_1인가구_수', '2': '여성_1인가구_수'})
 
-# 1) 직장인구 파일에서 행정동별 남성/여성 직장인구 합산
-worker_agg = df_worker.groupby(KEYS, as_index=False)[[male_worker_col, female_worker_col]].sum()
-worker_agg = worker_agg.rename(columns={male_worker_col: '남성_직장인구_수', female_worker_col: '여성_직장인구_수'})
-worker_subset = worker_agg[KEYS + ['남성_직장인구_수', '여성_직장인구_수']].copy()
+# 행정동명, 분기, 성별별 1인가구수 합산 (코드 대신 공통된 행정동 이름 기준 활용)
+single_agg = df_single.groupby(['기준_년분기_코드', '행정동명', '성별_명'], as_index=False)['1인가구수'].sum()
 
-# 2) 통합 추정매출 파일에서 업종별 남성/여성 매출 비율 산출
+# 기준4 반영: 반올림해서 정수로 치환
+single_agg['1인가구수'] = np.round(single_agg['1인가구수']).astype(int)
+
+# 남성과 여성 컬럼을 가로로 펼치기 (Pivot)
+single_pivot = single_agg.pivot_table(
+    index=['기준_년분기_코드', '행정동명'], 
+    columns='성별_명', 
+    values='1인가구수', 
+    fill_value=0
+).reset_index()
+
+if '남성_1인가구_수' not in single_pivot.columns: single_pivot['남성_1인가구_수'] = 0
+if '여성_1인가구_수' not in single_pivot.columns: single_pivot['여성_1인가구_수'] = 0
+
+# 추정매출 파일에서 업종별 남성/여성 매출 비율 산출 (행정동_코드_명 기준)
+KEYS = ['기준_년분기_코드', '행정동_코드_명']
 sales_agg = df_sales.groupby(KEYS + ['서비스_업종_코드_명'], as_index=False)[['남성_매출_금액', '여성_매출_금액']].sum()
 sales_agg['총_성별매출'] = sales_agg['남성_매출_금액'] + sales_agg['여성_매출_금액']
 
@@ -718,17 +891,23 @@ sales_agg['여성_매출_비율'] = sales_agg['여성_매출_금액'] / sales_ag
 
 sales_subset = sales_agg[KEYS + ['서비스_업종_코드_명', '남성_매출_비율', '여성_매출_비율']]
 
-# 3) 데이터 병합 (행정동 및 분기 기준)
-merged_df = pd.merge(worker_subset, sales_subset, on=KEYS, how='inner')
+# 데이터 병합 (기준_년분기_코드 및 행정동 이름 기준)
+merged_df = pd.merge(
+    single_pivot, 
+    sales_subset, 
+    left_on=['기준_년분기_코드', '행정동명'], 
+    right_on=['기준_년분기_코드', '행정동_코드_명'], 
+    how='inner'
+)
 print(f"📊 최종 병합 데이터 크기: {merged_df.shape[0]}건")
 
 if merged_df.empty:
-    raise ValueError("병합된 데이터가 없습니다.")
+    raise ValueError("병합된 데이터가 없습니다. 행정동 이름(행정동명 vs 행정동_코드_명)이나 기간을 확인해 주세요.")
 
 # ---------------------------------------------------------
-# 4. [남녀 직장인구 수 x 업종별 성별 매출비율] 서비스 업종별 상관계수 매트릭스 산출
+# 4. [1인가구 성별 수 x 업종별 소비 성별 비율] 상관계수 매트릭스 산출
 # ---------------------------------------------------------
-worker_vars = ['남성_직장인구_수', '여성_직장인구_수']
+single_vars = ['남성_1인가구_수', '여성_1인가구_수']
 sales_gender_vars = ['남성_매출_비율', '여성_매출_비율']
 
 matrix_rows = []
@@ -737,35 +916,35 @@ industries = []
 for industry, group in merged_df.groupby('서비스_업종_코드_명'):
     if len(group) > 2: # 충분한 표본이 있는 업종만 대상
         row_vals = []
-        for w_var in worker_vars:
-            for s_var in sales_gender_vars:
-                if group[w_var].std() == 0 or group[s_var].std() == 0 or pd.isna(group[w_var].std()):
+        for s_var in single_vars:
+            for g_var in sales_gender_vars:
+                if group[s_var].std() == 0 or group[g_var].std() == 0 or pd.isna(group[s_var].std()):
                     corr_val = 0.0
                 else:
-                    corr_val = group[w_var].corr(group[s_var])
+                    corr_val = group[s_var].corr(group[g_var])
                     if pd.isna(corr_val):
                         corr_val = 0.0
                 row_vals.append(corr_val)
         matrix_rows.append(row_vals)
         industries.append(industry)
 
-col_names = ['남성직장수-남성매출', '남성직장수-여성매출', '여성직장수-남성매출', '여성직장수-여성매출']
+col_names = ['남성1인가구수-남성매출', '남성1인가구수-여성매출', '여성1인가구수-남성매출', '여성1인가구수-여성매출']
 corr_matrix = pd.DataFrame(matrix_rows, index=industries, columns=col_names)
 corr_matrix = corr_matrix.dropna(how='all')
 corr_matrix = corr_matrix.fillna(0)
 
-print(f"\n=== 📈 [남녀 직장인구 수 x 업종별 소비 성별 비율] 상관계수 매트릭스 생성 완료 (크기: {corr_matrix.shape}) ===")
+print(f"\n=== 📈 [1인가구 성별 수 x 업종별 소비 성별 비율] 상관계수 매트릭스 생성 완료 (크기: {corr_matrix.shape}) ===")
 
 # ---------------------------------------------------------
-# 5. 컬러 음영 히트맵(Heatmap) 시각화 (숫자 표시 포함)
+# 5. 컬러 음영 히트맵(Heatmap) 시각화
 # ---------------------------------------------------------
 plt.figure(figsize=(10, max(10, len(corr_matrix) * 0.4)))
 
 sns.heatmap(
     corr_matrix, 
-    annot=True,            # 숫자를 함께 표시
-    fmt=".3f",             # 소수점 3자리까지 표시
-    annot_kws={"size": 9}, # 숫자 폰트 크기
+    annot=True,            # 숫자 표시
+    fmt=".3f",             # 소수점 3자리
+    annot_kws={"size": 9}, 
     cmap="coolwarm", 
     center=0, 
     cbar_kws={'label': '피어슨 상관계수 (r)'},
@@ -773,14 +952,14 @@ sns.heatmap(
     linecolor='white'
 )
 
-plt.title('가설 검증: 남녀 직장인구 수 vs 업종별 소비 성별 비율 상관계수 매트릭스 (2021~2025 통합)', fontsize=13, fontweight='bold', pad=15)
-plt.xlabel('직장인구 성별 수 vs 소비 성별 비율 조합', fontsize=12)
+plt.title('가설 검증: 1인가구 성별 수 vs 업종별 소비 성별 비율 상관계수 매트릭스 (2021~2025 통합)', fontsize=13, fontweight='bold', pad=15)
+plt.xlabel('1인가구 성별 수 vs 소비 성별 비율 조합', fontsize=12)
 plt.ylabel('서비스 업종', fontsize=12)
 plt.xticks(rotation=45, ha='right')
 plt.yticks(rotation=0)
 
 plt.tight_layout()
-output_img = os.path.join(DATA_DIR, "가설검증_남녀직장인구수_소비성별_통합히트맵.png")
+output_img = os.path.join(SALES_DIR, "가설검증_1인가구성별수_소비성별_통합히트맵.png")
 plt.savefig(output_img, dpi=300)
 print(f"\n🖼️ 히트맵 시각화 이미지 저장 완료: {output_img}")
 plt.show()
