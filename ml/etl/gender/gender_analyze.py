@@ -969,7 +969,109 @@ import seaborn as sns
 # ============================== 성별 비율이 아닌 성별 금액으로 가설 1~6 다시 코드 실행!! =========================
 
 
-# 가설1-1) 업종 수에 따라 업종별 소비 성별이 달라질 것이다(금액)
+# # 가설1-1) 업종 수에 따라 업종별 소비 성별이 달라질 것이다(금액)
+
+# # ---------------------------------------------------------
+# # 0. 한글 폰트 설정 (Windows / Mac 대응)
+# # ---------------------------------------------------------
+# plt.rc('font', family='Malgun Gothic')
+# plt.rc('axes', unicode_minus=False)
+
+# DATA_DIR = r"C:\Users\M\Desktop\final_project\1_사전작업\3_상권 추천 서비스\1_상권 데이터\행정동"
+
+# # 파일 안전하게 읽어오는 함수 (UTF-8 실패 시 CP949 자동 시도)
+# def safe_read_csv(filepath):
+#     try:
+#         return pd.read_csv(filepath, encoding='utf-8-sig')
+#     except UnicodeDecodeError:
+#         return pd.read_csv(filepath, encoding='cp949')
+
+# # 1) 통합 추정매출 파일 로드
+# sales_filepath = os.path.join(DATA_DIR, "서울시_상권분석서비스_추정매출_행정동_통합.csv")
+# df_sales = safe_read_csv(sales_filepath)
+# df_sales.columns = df_sales.columns.str.strip()
+
+# # 2) 점포 파일 로드
+# store_files = glob.glob(os.path.join(DATA_DIR, "*점포*.csv"))
+# if not store_files:
+#     raise FileNotFoundError("점포 파일을 찾을 수 없습니다.")
+# df_store = safe_read_csv(store_files[0])
+# df_store.columns = df_store.columns.str.strip()
+
+# print(f"📖 점포 파일 로드 완료: {os.path.basename(store_files[0])}")
+# print(f"📋 점포 파일 전체 컬럼: {df_store.columns.tolist()}")
+
+# # 🔍 점포 수 컬럼 자동 감지 로직
+# store_col_candidates = ['점포_수', '점포수', '개소수']
+# store_col = next((c for c in store_col_candidates if c in df_store.columns), None)
+
+# if not store_col:
+#     store_col = next((c for c in df_store.columns if '점포' in c), None)
+
+# if not store_col:
+#     raise KeyError(f"⚠️ 점포 파일에서 점포 수 관련 컬럼을 찾을 수 없습니다. (확인된 컬럼: {df_store.columns.tolist()})")
+
+# print(f"✅ 감지된 점포 수 컬럼: '{store_col}'")
+
+# # ---------------------------------------------------------
+# # 2. 기간 동기화 및 데이터 정제
+# # ---------------------------------------------------------
+# df_sales['기준_년분기_코드'] = df_sales['기준_년분기_코드'].astype(str).str.strip()
+# df_sales['행정동_코드'] = df_sales['행정동_코드'].astype(str).str.strip()
+# df_store['기준_년분기_코드'] = df_store['기준_년분기_코드'].astype(str).str.strip()
+# df_store['행정동_코드'] = df_store['행정동_코드'].astype(str).str.strip()
+
+# target_quarters = [str(y) + str(q) for y in range(2021, 2026) for q in range(1, 5)]
+# df_sales = df_sales[df_sales['기준_년분기_코드'].isin(target_quarters)]
+# df_store = df_store[df_store['기준_년분기_코드'].isin(target_quarters)]
+
+# KEYS = ['기준_년분기_코드', '행정동_코드', '서비스_업종_코드_명']
+# store_agg = df_store.groupby(KEYS, as_index=False)[store_col].sum()
+# store_agg = store_agg.rename(columns={store_col: '점포_수'})
+
+# sales_agg = df_sales.groupby(KEYS, as_index=False)[['남성_매출_금액', '여성_매출_금액']].sum()
+
+# merged_df = pd.merge(store_agg, sales_agg, on=KEYS, how='inner')
+
+# # ---------------------------------------------------------
+# # 3. 상관계수 계산 및 히트맵 시각화
+# # ---------------------------------------------------------
+# matrix_rows, industries = [], []
+# for industry, group in merged_df.groupby('서비스_업종_코드_명'):
+#     if len(group) > 2:
+#         r_male = group['점포_수'].corr(group['남성_매출_금액'])
+#         r_female = group['점포_수'].corr(group['여성_매출_금액'])
+#         matrix_rows.append([0 if pd.isna(r_male) else r_male, 0 if pd.isna(r_female) else r_female])
+#         industries.append(industry)
+
+# corr_matrix = pd.DataFrame(matrix_rows, index=industries, columns=['점포수-남성매출금액', '점포수-여성매출금액']).fillna(0)
+
+# plt.figure(figsize=(8, max(8, len(corr_matrix) * 0.4)))
+# sns.heatmap(
+#     corr_matrix, 
+#     annot=True, 
+#     fmt=".3f", 
+#     cmap="coolwarm", 
+#     center=0, 
+#     cbar_kws={'label': '피어슨 상관계수 (r)'}, 
+#     linewidths=0.2, 
+#     linecolor='white'
+# )
+# plt.title('가설1 검증: 업종별 점포 수 vs 남녀 소비 금액 (2021~2025)', fontsize=13, fontweight='bold', pad=15)
+# plt.xlabel('점포 수 vs 남녀 소비 금액 조합', fontsize=11)
+# plt.ylabel('서비스 업종', fontsize=11)
+# plt.xticks(rotation=45, ha='right')
+# plt.yticks(rotation=0)
+
+# plt.tight_layout()
+# output_img = os.path.join(DATA_DIR, "가설1_점포수_소비금액_히트맵.png")
+# plt.savefig(output_img, dpi=300)
+# print(f"🖼️ 히트맵 이미지 저장 완료: {output_img}")
+# plt.show()
+
+
+
+# 가설2-1) 성별 유동인구 수에 따라 업종별 소비 성별이 달라질 것이다(금액)
 
 # ---------------------------------------------------------
 # 0. 한글 폰트 설정 (Windows / Mac 대응)
@@ -986,67 +1088,83 @@ def safe_read_csv(filepath):
     except UnicodeDecodeError:
         return pd.read_csv(filepath, encoding='cp949')
 
+# ---------------------------------------------------------
+# 1. 파일 로드 및 컬럼 자동 감지
+# ---------------------------------------------------------
 # 1) 통합 추정매출 파일 로드
 sales_filepath = os.path.join(DATA_DIR, "서울시_상권분석서비스_추정매출_행정동_통합.csv")
 df_sales = safe_read_csv(sales_filepath)
 df_sales.columns = df_sales.columns.str.strip()
 
-# 2) 점포 파일 로드
-store_files = glob.glob(os.path.join(DATA_DIR, "*점포*.csv"))
-if not store_files:
-    raise FileNotFoundError("점포 파일을 찾을 수 없습니다.")
-df_store = safe_read_csv(store_files[0])
-df_store.columns = df_store.columns.str.strip()
+# 2) 유동인구 파일 로드
+pop_files = glob.glob(os.path.join(DATA_DIR, "*길단위인구-행정동*.csv"))
+if not pop_files:
+    raise FileNotFoundError("길단위인구-행정동 파일을 찾을 수 없습니다.")
+df_pop = safe_read_csv(pop_files[0])
+df_pop.columns = df_pop.columns.str.strip()
 
-print(f"📖 점포 파일 로드 완료: {os.path.basename(store_files[0])}")
-print(f"📋 점포 파일 전체 컬럼: {df_store.columns.tolist()}")
+print(f"📖 유동인구 파일 로드 완료: {os.path.basename(pop_files[0])}")
+print(f"📋 유동인구 파일 전체 컬럼: {df_pop.columns.tolist()}")
 
-# 🔍 점포 수 컬럼 자동 감지 로직
-store_col_candidates = ['점포_수', '점포수', '개소수']
-store_col = next((c for c in store_col_candidates if c in df_store.columns), None)
+# 유동인구 남녀 컬럼 자동 감지 로직
+male_pop_candidates = ['남성_유동인구_수', '남성_유동인구', '남성유동인구수']
+female_pop_candidates = ['여성_유동인구_수', '여성_유동인구', '여성유동인구수']
 
-if not store_col:
-    store_col = next((c for c in df_store.columns if '점포' in c), None)
+male_pop_col = next((c for c in male_pop_candidates if c in df_pop.columns), None)
+female_pop_col = next((c for c in female_pop_candidates if c in df_pop.columns), None)
 
-if not store_col:
-    raise KeyError(f"⚠️ 점포 파일에서 점포 수 관련 컬럼을 찾을 수 없습니다. (확인된 컬럼: {df_store.columns.tolist()})")
+if not male_pop_col:
+    male_pop_col = next((c for c in df_pop.columns if '남성' in c and '유동' in c), None)
+if not female_pop_col:
+    female_pop_col = next((c for c in df_pop.columns if '여성' in c and '유동' in c), None)
 
-print(f"✅ 감지된 점포 수 컬럼: '{store_col}'")
+if not male_pop_col or not female_pop_col:
+    raise KeyError(f"⚠️ 유동인구 파일에서 남녀 유동인구 수 컬럼을 찾을 수 없습니다. (확인된 컬럼: {df_pop.columns.tolist()})")
+
+print(f"✅ 감지된 유동인구 컬럼 - 남성: '{male_pop_col}', 여성: '{female_pop_col}'")
 
 # ---------------------------------------------------------
 # 2. 기간 동기화 및 데이터 정제
 # ---------------------------------------------------------
 df_sales['기준_년분기_코드'] = df_sales['기준_년분기_코드'].astype(str).str.strip()
 df_sales['행정동_코드'] = df_sales['행정동_코드'].astype(str).str.strip()
-df_store['기준_년분기_코드'] = df_store['기준_년분기_코드'].astype(str).str.strip()
-df_store['행정동_코드'] = df_store['행정동_코드'].astype(str).str.strip()
+df_pop['기준_년분기_코드'] = df_pop['기준_년분기_코드'].astype(str).str.strip()
+df_pop['행정동_코드'] = df_pop['행정동_코드'].astype(str).str.strip()
 
 target_quarters = [str(y) + str(q) for y in range(2021, 2026) for q in range(1, 5)]
 df_sales = df_sales[df_sales['기준_년분기_코드'].isin(target_quarters)]
-df_store = df_store[df_store['기준_년분기_코드'].isin(target_quarters)]
+df_pop = df_pop[df_pop['기준_년분기_코드'].isin(target_quarters)]
 
-KEYS = ['기준_년분기_코드', '행정동_코드', '서비스_업종_코드_명']
-store_agg = df_store.groupby(KEYS, as_index=False)[store_col].sum()
-store_agg = store_agg.rename(columns={store_col: '점포_수'})
+KEYS = ['기준_년분기_코드', '행정동_코드', '행정동_코드_명']
 
-sales_agg = df_sales.groupby(KEYS, as_index=False)[['남성_매출_금액', '여성_매출_금액']].sum()
+pop_agg = df_pop.groupby(KEYS, as_index=False)[[male_pop_col, female_pop_col]].sum()
+pop_agg = pop_agg.rename(columns={male_pop_col: '남성_유동인구_수', female_pop_col: '여성_유동인구_수'})
 
-merged_df = pd.merge(store_agg, sales_agg, on=KEYS, how='inner')
+sales_agg = df_sales.groupby(KEYS + ['서비스_업종_코드_명'], as_index=False)[['남성_매출_금액', '여성_매출_금액']].sum()
+
+merged_df = pd.merge(pop_agg, sales_agg, on=KEYS, how='inner')
 
 # ---------------------------------------------------------
 # 3. 상관계수 계산 및 히트맵 시각화
 # ---------------------------------------------------------
 matrix_rows, industries = [], []
+pop_vars = ['남성_유동인구_수', '여성_유동인구_수']
+sales_vars = ['남성_매출_금액', '여성_매출_금액']
+
 for industry, group in merged_df.groupby('서비스_업종_코드_명'):
     if len(group) > 2:
-        r_male = group['점포_수'].corr(group['남성_매출_금액'])
-        r_female = group['점포_수'].corr(group['여성_매출_금액'])
-        matrix_rows.append([0 if pd.isna(r_male) else r_male, 0 if pd.isna(r_female) else r_female])
+        row = []
+        for p_var in pop_vars:
+            for s_var in sales_vars:
+                val = group[p_var].corr(group[s_var])
+                row.append(0 if pd.isna(val) else val)
+        matrix_rows.append(row)
         industries.append(industry)
 
-corr_matrix = pd.DataFrame(matrix_rows, index=industries, columns=['점포수-남성매출금액', '점포수-여성매출금액']).fillna(0)
+col_names = ['남성유동수-남성매출금액', '남성유동수-여성매출금액', '여성유동수-남성매출금액', '여성유동수-여성매출금액']
+corr_matrix = pd.DataFrame(matrix_rows, index=industries, columns=col_names).fillna(0)
 
-plt.figure(figsize=(8, max(8, len(corr_matrix) * 0.4)))
+plt.figure(figsize=(10, max(10, len(corr_matrix) * 0.4)))
 sns.heatmap(
     corr_matrix, 
     annot=True, 
@@ -1057,16 +1175,15 @@ sns.heatmap(
     linewidths=0.2, 
     linecolor='white'
 )
-plt.title('가설1 검증: 업종별 점포 수 vs 남녀 소비 금액 (2021~2025)', fontsize=13, fontweight='bold', pad=15)
-plt.xlabel('점포 수 vs 남녀 소비 금액 조합', fontsize=11)
+plt.title('가설2 검증: 성별 유동인구 수 vs 업종별 남녀 소비 금액 (2021~2025)', fontsize=13, fontweight='bold', pad=15)
+plt.xlabel('유동인구 성별 수 vs 업종별 남녀 소비 금액 조합', fontsize=11)
 plt.ylabel('서비스 업종', fontsize=11)
 plt.xticks(rotation=45, ha='right')
 plt.yticks(rotation=0)
 
 plt.tight_layout()
-output_img = os.path.join(DATA_DIR, "가설1_점포수_소비금액_히트맵.png")
+output_img = os.path.join(DATA_DIR, "가설2_유동인구_소비금액_히트맵.png")
 plt.savefig(output_img, dpi=300)
 print(f"🖼️ 히트맵 이미지 저장 완료: {output_img}")
 plt.show()
-
 
