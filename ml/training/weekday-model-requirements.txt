@@ -1,0 +1,4 @@
+# 로컬 CPU 기준모델 학습 전용. Torch/MLflow 등 서버 전체 의존성은 설치하지 않는다.
+-r ../../data_analyze/requirements.txt
+scikit-learn>=1.6,<2.0
+joblib>=1.4,<2.0
