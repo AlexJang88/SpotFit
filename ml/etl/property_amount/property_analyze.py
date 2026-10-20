@@ -143,20 +143,69 @@ import pandas as pd
 
 
 
-# 3. 단독/다가구 전/월세 데이터 행정동 매핑
+# # 3. 단독/다가구 전/월세 데이터 행정동 매핑
 
-# 1. 경로 설정 (house_rent.csv는 '2_부동산 데이터' 폴더, KIKmix는 '상권 추천 서비스' 폴더)
+# # 1. 경로 설정 (house_rent.csv는 '2_부동산 데이터' 폴더, KIKmix는 '상권 추천 서비스' 폴더)
+# data_dir = r"C:\Users\M\Desktop\final_project\1_사전작업\3_상권 추천 서비스"
+# rent_csv_path = os.path.join(data_dir, r"2_부동산 데이터\house_rent.csv")
+# kik_path = os.path.join(data_dir, "KIKmix.20260916(말소코드포함).xlsx")
+
+# print("데이터 로딩 중...")
+
+# # 2. 파일 존재 여부 확인 및 로드
+# if os.path.exists(rent_csv_path):
+#     rent_df = pd.read_csv(rent_csv_path, low_memory=False)
+# else:
+#     raise FileNotFoundError(f"'{rent_csv_path}' 경로에 house_rent.csv 파일이 존재하지 않습니다.")
+
+# if os.path.exists(kik_path):
+#     kik_df = pd.read_excel(kik_path, sheet_name=0)
+# else:
+#     raise FileNotFoundError(f"'{kik_path}' 경로에 KIKmix 마스터 파일이 존재하지 않습니다.")
+
+# # 3. KIKmix 데이터 정제 (말소일자가 없는 현존하는 동만 필터링)
+# active_kik = kik_df[kik_df['말소일자'].isna()].copy()
+
+# # 4. 매핑용 키 생성 (법정동코드 앞 5자리 = 시군구코드 sggCd, 동리명 = 법정동명 umdNm)
+# active_kik['sggCd'] = active_kik['법정동코드'].astype(str).str[:5].astype(int)
+# active_kik['umdNm'] = active_kik['동리명']
+
+# # 5. 1:N 매핑 시 데이터 폭증 방지를 위한 중복 제거 (첫 번째 행정동 대표값 선택)
+# mapping = active_kik[['sggCd', 'umdNm', '행정동코드', '읍면동명']].dropna(subset=['읍면동명']).drop_duplicates()
+# mapping_unique = mapping.drop_duplicates(subset=['sggCd', 'umdNm'], keep='first')
+
+# # 6. house_rent 데이터와 병합 (Left Join)
+# print("행정동 데이터 매핑 중...")
+# merged_rent = pd.merge(rent_df, mapping_unique, on=['sggCd', 'umdNm'], how='left')
+
+# # 7. 결과 확인
+# total_rows = len(merged_rent)
+# missing_hjd = merged_rent['행정동코드'].isna().sum()
+# print(f"전체 데이터 행 수: {total_rows}")
+# print(f"행정동 매핑 실패(결측) 행 수: {missing_hjd}")
+
+# # 8. 결과 파일 저장 (house_rent.csv가 있던 '2_부동산 데이터' 폴더에 저장)
+# output_dir = os.path.join(data_dir, "2_부동산 데이터")
+# output_filename = os.path.join(output_dir, 'house_rent_with_hdong.csv')
+# merged_rent.to_csv(output_filename, index=False, encoding='utf-8-sig')
+# print(f"매핑된 파일 저장 완료: {output_filename}")
+
+
+
+# 4. 오피스텔 전/월세 데이터 행정동 매핑
+
+# 1. 파일 경로 설정
 data_dir = r"C:\Users\M\Desktop\final_project\1_사전작업\3_상권 추천 서비스"
-rent_csv_path = os.path.join(data_dir, r"2_부동산 데이터\house_rent.csv")
+officetel_csv_path = os.path.join(data_dir, r"2_부동산 데이터\officetel_rent.csv")
 kik_path = os.path.join(data_dir, "KIKmix.20260916(말소코드포함).xlsx")
 
 print("데이터 로딩 중...")
 
-# 2. 파일 존재 여부 확인 및 로드
-if os.path.exists(rent_csv_path):
-    rent_df = pd.read_csv(rent_csv_path, low_memory=False)
+# 2. officetel_rent.csv 및 KIKmix 마스터 파일 로드
+if os.path.exists(officetel_csv_path):
+    officetel_df = pd.read_csv(officetel_csv_path, low_memory=False)
 else:
-    raise FileNotFoundError(f"'{rent_csv_path}' 경로에 house_rent.csv 파일이 존재하지 않습니다.")
+    raise FileNotFoundError(f"'{officetel_csv_path}' 경로에 officetel_rent.csv 파일이 존재하지 않습니다.")
 
 if os.path.exists(kik_path):
     kik_df = pd.read_excel(kik_path, sheet_name=0)
@@ -174,18 +223,19 @@ active_kik['umdNm'] = active_kik['동리명']
 mapping = active_kik[['sggCd', 'umdNm', '행정동코드', '읍면동명']].dropna(subset=['읍면동명']).drop_duplicates()
 mapping_unique = mapping.drop_duplicates(subset=['sggCd', 'umdNm'], keep='first')
 
-# 6. house_rent 데이터와 병합 (Left Join)
+# 6. officetel_rent 데이터와 병합 (Left Join)
 print("행정동 데이터 매핑 중...")
-merged_rent = pd.merge(rent_df, mapping_unique, on=['sggCd', 'umdNm'], how='left')
+merged_officetel = pd.merge(officetel_df, mapping_unique, on=['sggCd', 'umdNm'], how='left')
 
 # 7. 결과 확인
-total_rows = len(merged_rent)
-missing_hjd = merged_rent['행정동코드'].isna().sum()
+total_rows = len(merged_officetel)
+missing_hjd = merged_officetel['행정동코드'].isna().sum()
 print(f"전체 데이터 행 수: {total_rows}")
 print(f"행정동 매핑 실패(결측) 행 수: {missing_hjd}")
 
-# 8. 결과 파일 저장 (house_rent.csv가 있던 '2_부동산 데이터' 폴더에 저장)
+# 8. 결과 파일 저장 ('2_부동산 데이터' 폴더에 저장)
 output_dir = os.path.join(data_dir, "2_부동산 데이터")
-output_filename = os.path.join(output_dir, 'house_rent_with_hdong.csv')
-merged_rent.to_csv(output_filename, index=False, encoding='utf-8-sig')
+output_filename = os.path.join(output_dir, 'officetel_rent_with_hdong.csv')
+merged_officetel.to_csv(output_filename, index=False, encoding='utf-8-sig')
 print(f"매핑된 파일 저장 완료: {output_filename}")
+
