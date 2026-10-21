@@ -192,50 +192,163 @@ import pandas as pd
 
 
 
-# 4. 오피스텔 전/월세 데이터 행정동 매핑
+# # 4. 오피스텔 전/월세 데이터 행정동 매핑
+
+# # 1. 파일 경로 설정
+# data_dir = r"C:\Users\M\Desktop\final_project\1_사전작업\3_상권 추천 서비스"
+# officetel_csv_path = os.path.join(data_dir, r"2_부동산 데이터\officetel_rent.csv")
+# kik_path = os.path.join(data_dir, "KIKmix.20260916(말소코드포함).xlsx")
+
+# print("데이터 로딩 중...")
+
+# # 2. officetel_rent.csv 및 KIKmix 마스터 파일 로드
+# if os.path.exists(officetel_csv_path):
+#     officetel_df = pd.read_csv(officetel_csv_path, low_memory=False)
+# else:
+#     raise FileNotFoundError(f"'{officetel_csv_path}' 경로에 officetel_rent.csv 파일이 존재하지 않습니다.")
+
+# if os.path.exists(kik_path):
+#     kik_df = pd.read_excel(kik_path, sheet_name=0)
+# else:
+#     raise FileNotFoundError(f"'{kik_path}' 경로에 KIKmix 마스터 파일이 존재하지 않습니다.")
+
+# # 3. KIKmix 데이터 정제 (말소일자가 없는 현존하는 동만 필터링)
+# active_kik = kik_df[kik_df['말소일자'].isna()].copy()
+
+# # 4. 매핑용 키 생성 (법정동코드 앞 5자리 = 시군구코드 sggCd, 동리명 = 법정동명 umdNm)
+# active_kik['sggCd'] = active_kik['법정동코드'].astype(str).str[:5].astype(int)
+# active_kik['umdNm'] = active_kik['동리명']
+
+# # 5. 1:N 매핑 시 데이터 폭증 방지를 위한 중복 제거 (첫 번째 행정동 대표값 선택)
+# mapping = active_kik[['sggCd', 'umdNm', '행정동코드', '읍면동명']].dropna(subset=['읍면동명']).drop_duplicates()
+# mapping_unique = mapping.drop_duplicates(subset=['sggCd', 'umdNm'], keep='first')
+
+# # 6. officetel_rent 데이터와 병합 (Left Join)
+# print("행정동 데이터 매핑 중...")
+# merged_officetel = pd.merge(officetel_df, mapping_unique, on=['sggCd', 'umdNm'], how='left')
+
+# # 7. 결과 확인
+# total_rows = len(merged_officetel)
+# missing_hjd = merged_officetel['행정동코드'].isna().sum()
+# print(f"전체 데이터 행 수: {total_rows}")
+# print(f"행정동 매핑 실패(결측) 행 수: {missing_hjd}")
+
+# # 8. 결과 파일 저장 ('2_부동산 데이터' 폴더에 저장)
+# output_dir = os.path.join(data_dir, "2_부동산 데이터")
+# output_filename = os.path.join(output_dir, 'officetel_rent_with_hdong.csv')
+# merged_officetel.to_csv(output_filename, index=False, encoding='utf-8-sig')
+# print(f"매핑된 파일 저장 완료: {output_filename}")
+
+
+
+
+# 3-1. 단독/다가구 전/월세 데이터 지번 매핑 (원본파일에 지번 정보 없음) #############
+
+import pandas as pd
+import os
+import io
 
 # 1. 파일 경로 설정
-data_dir = r"C:\Users\M\Desktop\final_project\1_사전작업\3_상권 추천 서비스"
-officetel_csv_path = os.path.join(data_dir, r"2_부동산 데이터\officetel_rent.csv")
-kik_path = os.path.join(data_dir, "KIKmix.20260916(말소코드포함).xlsx")
+data_dir = r"C:\Users\M\Desktop\final_project\1_사전작업\3_상권 추천 서비스\2_부동산 데이터"
+rent_file_path = os.path.join(data_dir, "house_rent_with_hdong.csv") 
+
+building_file_path = os.path.join(data_dir, "서울시_건축물대장_표제부")
+if not os.path.exists(building_file_path):
+    if os.path.exists(building_file_path + ".csv"):
+        building_file_path = building_file_path + ".csv"
 
 print("데이터 로딩 중...")
+rent_df = pd.read_csv(rent_file_path, low_memory=False)
 
-# 2. officetel_rent.csv 및 KIKmix 마스터 파일 로드
-if os.path.exists(officetel_csv_path):
-    officetel_df = pd.read_csv(officetel_csv_path, low_memory=False)
-else:
-    raise FileNotFoundError(f"'{officetel_csv_path}' 경로에 officetel_rent.csv 파일이 존재하지 않습니다.")
+print("건축물대장 파일 안전 로딩 중...")
+with open(building_file_path, 'rb') as f:
+    raw_data = f.read()
 
-if os.path.exists(kik_path):
-    kik_df = pd.read_excel(kik_path, sheet_name=0)
-else:
-    raise FileNotFoundError(f"'{kik_path}' 경로에 KIKmix 마스터 파일이 존재하지 않습니다.")
+decoded_data = raw_data.decode('cp949', errors='replace')
+building_df = pd.read_csv(
+    io.StringIO(decoded_data), 
+    low_memory=False, 
+    sep=',', 
+    on_bad_lines='skip'
+)
 
-# 3. KIKmix 데이터 정제 (말소일자가 없는 현존하는 동만 필터링)
-active_kik = kik_df[kik_df['말소일자'].isna()].copy()
+# 2. 키 컬럼 완화 및 전처리 (매칭률 높이기 핵심)
+print("키 컬럼 완화 전처리 중...")
 
-# 4. 매핑용 키 생성 (법정동코드 앞 5자리 = 시군구코드 sggCd, 동리명 = 법정동명 umdNm)
-active_kik['sggCd'] = active_kik['법정동코드'].astype(str).str[:5].astype(int)
-active_kik['umdNm'] = active_kik['동리명']
+# 건축년도 정수형 변환
+building_df['buildYear'] = building_df['사용승인일자'].astype(str).str[:4]
+building_df['buildYear'] = pd.to_numeric(building_df['buildYear'], errors='coerce')
+rent_df['buildYear'] = pd.to_numeric(rent_df['buildYear'], errors='coerce')
 
-# 5. 1:N 매핑 시 데이터 폭증 방지를 위한 중복 제거 (첫 번째 행정동 대표값 선택)
-mapping = active_kik[['sggCd', 'umdNm', '행정동코드', '읍면동명']].dropna(subset=['읍면동명']).drop_duplicates()
-mapping_unique = mapping.drop_duplicates(subset=['sggCd', 'umdNm'], keep='first')
+# 연면적 오차를 줄이기 위해 소수점 반올림 (정수 단위로 비교하거나 소수 첫째 자리로 통일)
+building_df['totalFloorAr_round'] = pd.to_numeric(building_df['연면적'], errors='coerce').round(0)
+rent_df['totalFloorAr_round'] = pd.to_numeric(rent_df['totalFloorAr'], errors='coerce').round(0)
 
-# 6. officetel_rent 데이터와 병합 (Left Join)
-print("행정동 데이터 매핑 중...")
-merged_officetel = pd.merge(officetel_df, mapping_unique, on=['sggCd', 'umdNm'], how='left')
+building_df['umdNm'] = building_df['법정동코드명'].str.strip()
+rent_df['umdNm'] = rent_df['umdNm'].astype(str).str.strip()
 
-# 7. 결과 확인
-total_rows = len(merged_officetel)
-missing_hjd = merged_officetel['행정동코드'].isna().sum()
-print(f"전체 데이터 행 수: {total_rows}")
-print(f"행정동 매핑 실패(결측) 행 수: {missing_hjd}")
+# 지번 조합 함수
+def make_jibun(row):
+    try:
+        main_str = str(int(row['주지번'])) if pd.notna(row['주지번']) and str(row['주지번']).strip() != '' else ''
+        sub_str = str(int(row['부지번'])) if pd.notna(row['부지번']) and str(row['부지번']).strip() != '' and int(row['부지번']) > 0 else ''
+        if sub_str:
+            return f"{main_str}-{sub_str}"
+        return main_str
+    except:
+        return ''
 
-# 8. 결과 파일 저장 ('2_부동산 데이터' 폴더에 저장)
-output_dir = os.path.join(data_dir, "2_부동산 데이터")
-output_filename = os.path.join(output_dir, 'officetel_rent_with_hdong.csv')
-merged_officetel.to_csv(output_filename, index=False, encoding='utf-8-sig')
-print(f"매핑된 파일 저장 완료: {output_filename}")
+building_df['parsed_jibun'] = building_df.apply(make_jibun, axis=1)
+
+# 3. 단계별 다중 병합 (Merge) 수행
+# 1단계: 법정동명 + 건축년도 + 반올림된 연면적 기준 병합
+print("1단계 정밀 병합 수행 중...")
+bldg_subset = building_df[['umdNm', 'buildYear', 'totalFloorAr_round', 'parsed_jibun']].drop_duplicates(subset=['umdNm', 'buildYear', 'totalFloorAr_round'])
+
+merged_df = pd.merge(
+    rent_df,
+    bldg_subset,
+    left_on=['umdNm', 'buildYear', 'totalFloorAr_round'],
+    right_on=['umdNm', 'buildYear', 'totalFloorAr_round'],
+    how='left',
+    suffixes=('', '_bldg')
+)
+
+matched_count_1 = merged_df['parsed_jibun'].notna().sum()
+print(f"1단계 매칭 완료 건수: {matched_count_1}건")
+
+# 만약 아직 비어있는(NaN인) 데이터가 많다면, 
+# 2단계: 면적 조건을 풀고 '법정동명 + 건축년도'만으로 같은 동 내 동일 연도 건물의 대표 지번을 매칭하여 빈 곳을 보완
+print("2단계 보완 병합 수행 중 (면적 조건 완화)...")
+unmatched_mask = merged_df['parsed_jibun'].isna()
+
+if unmatched_mask.sum() > 0:
+    # 건축년도와 법정동이 같은 건물들의 대표 지번 추출 (중복 제거)
+    bldg_subset_relaxed = building_df[['umdNm', 'buildYear', 'parsed_jibun']].dropna(subset=['parsed_jibun']).drop_duplicates(subset=['umdNm', 'buildYear'])
+    
+    # 남은 데이터에 대해 법정동+건축년도로만 2차 조인
+    rent_unmatched = merged_df[unmatched_mask].drop(columns=['parsed_jibun'], errors='ignore')
+    
+    merged_relaxed = pd.merge(
+        rent_unmatched,
+        bldg_subset_relaxed,
+        on=['umdNm', 'buildYear'],
+        how='left',
+        suffixes=('', '_bldg_relaxed')
+    )
+    
+    # 기존에 매칭되지 않았던 부분 채우기
+    merged_df.loc[unmatched_mask, 'parsed_jibun'] = merged_relaxed['parsed_jibun'].values
+
+# 4. 최종 결과 확인 및 저장
+total_rows = len(merged_df)
+final_matched_count = merged_df['parsed_jibun'].notna().sum()
+
+print(f"\n[최종 병합 결과]")
+print(f"- 전체 전월세 데이터 행 수: {total_rows}")
+print(f"- 최종 매칭되어 지번이 보완된 총 건수: {final_matched_count}건 (매칭률: {(final_matched_count/total_rows)*100:.2f}%)")
+
+output_filename = os.path.join(data_dir, 'house_rent_with_building_matched.csv')
+merged_df.to_csv(output_filename, index=False, encoding='utf-8-sig')
+print(f"최종 정밀 병합 파일 저장 완료: {output_filename}")
 
