@@ -247,11 +247,11 @@ import pandas as pd
 import pandas as pd
 import os
 import io
+import re
 
 # 1. 파일 경로 설정
 data_dir = r"C:\Users\M\Desktop\final_project\1_사전작업\3_상권 추천 서비스\2_부동산 데이터"
 rent_file_path = os.path.join(data_dir, "house_rent_with_hdong.csv") 
-
 building_file_path = os.path.join(data_dir, "서울시_건축물대장_표제부")
 if not os.path.exists(building_file_path):
     if os.path.exists(building_file_path + ".csv"):
@@ -260,7 +260,7 @@ if not os.path.exists(building_file_path):
 print("데이터 로딩 중...")
 rent_df = pd.read_csv(rent_file_path, low_memory=False)
 
-print("건축물대장 파일 안전 로딩 중...")
+# 건축물대장 안전 로드
 with open(building_file_path, 'rb') as f:
     raw_data = f.read()
 
@@ -272,83 +272,77 @@ building_df = pd.read_csv(
     on_bad_lines='skip'
 )
 
-# 2. 키 컬럼 완화 및 전처리 (매칭률 높이기 핵심)
-print("키 컬럼 완화 전처리 중...")
+print("건축물대장 키 가공 및 엄격한 지번 정제 중...")
 
-# 건축년도 정수형 변환
+# 2. 키 및 지번 정제 (오염 방지)
 building_df['buildYear'] = building_df['사용승인일자'].astype(str).str[:4]
 building_df['buildYear'] = pd.to_numeric(building_df['buildYear'], errors='coerce')
 rent_df['buildYear'] = pd.to_numeric(rent_df['buildYear'], errors='coerce')
 
-# 연면적 오차를 줄이기 위해 소수점 반올림 (정수 단위로 비교하거나 소수 첫째 자리로 통일)
 building_df['totalFloorAr_round'] = pd.to_numeric(building_df['연면적'], errors='coerce').round(0)
 rent_df['totalFloorAr_round'] = pd.to_numeric(rent_df['totalFloorAr'], errors='coerce').round(0)
 
 building_df['umdNm'] = building_df['법정동코드명'].str.strip()
 rent_df['umdNm'] = rent_df['umdNm'].astype(str).str.strip()
 
-# 지번 조합 함수
-def make_jibun(row):
+# 엄격한 지번 생성 및 유효성 검증 함수
+def make_clean_jibun(row):
     try:
-        main_str = str(int(row['주지번'])) if pd.notna(row['주지번']) and str(row['주지번']).strip() != '' else ''
-        sub_str = str(int(row['부지번'])) if pd.notna(row['부지번']) and str(row['부지번']).strip() != '' and int(row['부지번']) > 0 else ''
-        if sub_str:
-            return f"{main_str}-{sub_str}"
+        main_val = row['주지번']
+        sub_val = row['부지번']
+        
+        # 주지번이 없거나 NaN이면 빈 값
+        if pd.isna(main_val) or str(main_val).strip() == '' or str(main_val) == '0':
+            return None
+            
+        main_int = int(float(main_val))
+        
+        # 🚨 핵심 방어선: 주지번이 1900~2030 사이의 연도 형태라면 지번이 아님! (잘못 매칭된 데이터 차단)
+        if 1900 <= main_int <= 2030:
+            return None
+            
+        main_str = str(main_int)
+        
+        # 부지번 처리
+        if pd.notna(sub_val) and str(sub_val).strip() != '' and str(sub_val) != '0' and str(sub_val) != '0000':
+            sub_int = int(float(sub_val))
+            if sub_int > 0:
+                return f"{main_str}-{sub_int}"
+                
         return main_str
     except:
-        return ''
+        return None
 
-building_df['parsed_jibun'] = building_df.apply(make_jibun, axis=1)
+building_df['parsed_jibun'] = building_df.apply(make_clean_jibun, axis=1)
 
-# 3. 단계별 다중 병합 (Merge) 수행
-# 1단계: 법정동명 + 건축년도 + 반올림된 연면적 기준 병합
-print("1단계 정밀 병합 수행 중...")
-bldg_subset = building_df[['umdNm', 'buildYear', 'totalFloorAr_round', 'parsed_jibun']].drop_duplicates(subset=['umdNm', 'buildYear', 'totalFloorAr_round'])
+# 유효한 지번이 확실히 존재하는 데이터만 필터링
+building_clean = building_df.dropna(subset=['parsed_jibun']).copy()
+
+# 3. 오직 '1단계 정밀 매칭'만 수행 (확실한 데이터만 허용)
+print("정밀 매칭(법정동 + 건축년도 + 반올림 연면적) 수행 중...")
+
+# 동일 조건 내 중복이 발생할 경우 정확성을 위해 고유한 매칭만 추출하거나 첫 번째 유효값 사용
+bldg_subset = building_clean[
+    ['umdNm', 'buildYear', 'totalFloorAr_round', 'parsed_jibun']
+].drop_duplicates(subset=['umdNm', 'buildYear', 'totalFloorAr_round'])
 
 merged_df = pd.merge(
     rent_df,
     bldg_subset,
-    left_on=['umdNm', 'buildYear', 'totalFloorAr_round'],
-    right_on=['umdNm', 'buildYear', 'totalFloorAr_round'],
+    on=['umdNm', 'buildYear', 'totalFloorAr_round'],
     how='left',
     suffixes=('', '_bldg')
 )
 
-matched_count_1 = merged_df['parsed_jibun'].notna().sum()
-print(f"1단계 매칭 완료 건수: {matched_count_1}건")
-
-# 만약 아직 비어있는(NaN인) 데이터가 많다면, 
-# 2단계: 면적 조건을 풀고 '법정동명 + 건축년도'만으로 같은 동 내 동일 연도 건물의 대표 지번을 매칭하여 빈 곳을 보완
-print("2단계 보완 병합 수행 중 (면적 조건 완화)...")
-unmatched_mask = merged_df['parsed_jibun'].isna()
-
-if unmatched_mask.sum() > 0:
-    # 건축년도와 법정동이 같은 건물들의 대표 지번 추출 (중복 제거)
-    bldg_subset_relaxed = building_df[['umdNm', 'buildYear', 'parsed_jibun']].dropna(subset=['parsed_jibun']).drop_duplicates(subset=['umdNm', 'buildYear'])
-    
-    # 남은 데이터에 대해 법정동+건축년도로만 2차 조인
-    rent_unmatched = merged_df[unmatched_mask].drop(columns=['parsed_jibun'], errors='ignore')
-    
-    merged_relaxed = pd.merge(
-        rent_unmatched,
-        bldg_subset_relaxed,
-        on=['umdNm', 'buildYear'],
-        how='left',
-        suffixes=('', '_bldg_relaxed')
-    )
-    
-    # 기존에 매칭되지 않았던 부분 채우기
-    merged_df.loc[unmatched_mask, 'parsed_jibun'] = merged_relaxed['parsed_jibun'].values
-
-# 4. 최종 결과 확인 및 저장
+# 4. 최종 결과 검증 및 저장
 total_rows = len(merged_df)
-final_matched_count = merged_df['parsed_jibun'].notna().sum()
+valid_matched_count = merged_df['parsed_jibun'].notna().sum()
 
-print(f"\n[최종 병합 결과]")
-print(f"- 전체 전월세 데이터 행 수: {total_rows}")
-print(f"- 최종 매칭되어 지번이 보완된 총 건수: {final_matched_count}건 (매칭률: {(final_matched_count/total_rows)*100:.2f}%)")
+print(f"\n[최종 정제 및 병합 결과]")
+print(f"- 전체 전월세 데이터 행 수: {total_rows:,}건")
+print(f"- 엄격하게 검증되어 올바른 지번이 매칭된 건수: {valid_matched_count:,}건 (매칭률: {(valid_matched_count/total_rows)*100:.2f}%)")
 
-output_filename = os.path.join(data_dir, 'house_rent_with_building_matched.csv')
+# 결과 파일 저장
+output_filename = os.path.join(data_dir, 'house_rent_with_building_matched_clean.csv')
 merged_df.to_csv(output_filename, index=False, encoding='utf-8-sig')
-print(f"최종 정밀 병합 파일 저장 완료: {output_filename}")
-
+print(f"클렌징 완료된 정밀 파일 저장: {output_filename}")
