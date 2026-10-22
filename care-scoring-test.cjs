@@ -1,0 +1,31 @@
+// TS 계산 모듈을 메모리에서 컴파일해 테스트한다. 테스트 프레임워크 추가 설치는 불필요하다.
+const fs = require("node:fs");
+const ts = require("./frontend/node_modules/typescript");
+const assert = require("node:assert/strict");
+const source = fs.readFileSync("frontend/src/views/pages/careScoring.ts", "utf8");
+const output = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
+const mod = { exports: {} };
+new Function("exports", "module", output)(mod.exports, mod);
+const { calculate, grade, metrics, fixture, prepare } = mod.exports;
+assert.deepEqual([-1,0,1].map(x => grade(x,0,1)), [50,75,100]);
+assert.equal(metrics.reduce((s,m) => s+m.weight,0).toFixed(2), "1.00");
+const keys = ["daycare","park_area","clinic"];
+// 명세의 예시: 항목 점수 100/75/50을 만드는 X를 주입한다.
+const rows = [{ name:"예시",code:"1", values:[2,0,0,.5,0,0,0,0,-.5+1] }];
+rows[0].values[0]=3; rows[0].values[3]=1.5; rows[0].values[8]=.5;
+const stats = metrics.map(() => ({ mean:1, std:1, n:25, reason:null }));
+assert.equal(calculate(keys,"weighted",rows,stats).results[0].total,81.25);
+assert.equal(calculate(keys,"equal",rows,stats).results[0].total,75);
+assert.deepEqual(calculate(keys,"weighted"),calculate([...keys].reverse(),"weighted"));
+assert.throws(() => calculate([],"weighted"));
+assert.throws(() => calculate(["daycare","daycare"],"weighted"));
+assert.throws(() => calculate(["unknown"],"weighted"));
+const single = calculate(["daycare"],"weighted");
+single.results.forEach(r => assert.equal(r.total,r.details[0].score));
+const missing = [{name:"누락", code:"1", values:metrics.map(() => null)}];
+assert.equal(calculate(keys,"weighted",missing,stats).results[0].total,null);
+const constant = fixture.map(r => ({...r,values:metrics.map(() => 0)}));
+assert.throws(() => calculate(keys,"weighted",constant,prepare(constant)));
+const ties = [rows[0], {...rows[0],code:"2"}, {...rows[0],code:"3",values:metrics.map(() => 0)}];
+assert.deepEqual(calculate(keys,"weighted",ties,stats).results.map(r => r.rank),[1,1,3]);
+console.log("PASS: 경계값, 81.25/75, 선택순서, 예외, 단일항목, 결측, inactive, 공동순위");

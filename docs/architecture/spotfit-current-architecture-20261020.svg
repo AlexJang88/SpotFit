@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1120" viewBox="0 0 1600 1120">
+<defs>
+  <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0L10 5L0 10" fill="none" stroke="#55716a" stroke-width="1.5"/></marker>
+  <style>
+    text{font-family:'Malgun Gothic','Noto Sans KR',sans-serif;fill:#203e36}
+    .title{font-size:32px;font-weight:700}.heading{font-size:22px;font-weight:700}.body{font-size:17px}.small{font-size:14px;fill:#60766d}.tag{font-size:13px;font-weight:700}
+    .panel{fill:#fff;stroke:#d2dfd7;stroke-width:2}.box{fill:#f0f8f3;stroke:#51977b;stroke-width:2}
+    .infra{fill:#eef4fd;stroke:#7999bc;stroke-width:2}.pending{fill:#fff8e9;stroke:#c29c53;stroke-width:2;stroke-dasharray:7 5}
+    .line{fill:none;stroke:#55716a;stroke-width:2;marker-end:url(#arrow)}.dash{stroke-dasharray:7 6}
+  </style>
+</defs>
+<rect width="1600" height="1120" fill="#f5f7f3"/>
+<text x="55" y="62" class="title">SpotFit · 현재 프로젝트 아키텍처</text>
+<text x="55" y="96" class="body">아이와 살기 좋은 지역 탐색 / 부동산 가격 예측 서비스 — 소스·Compose 설정 기준, 2026.10.20</text>
+<rect x="55" y="120" width="16" height="16" class="box"/><text x="81" y="134" class="small">구현 코드 있음</text>
+<rect x="250" y="120" width="16" height="16" class="infra"/><text x="277" y="134" class="small">인프라 구성 있음</text>
+<rect x="450" y="120" width="16" height="16" class="pending"/><text x="477" y="134" class="small">연결·개발 예정</text>
+<text x="780" y="134" class="small">실행 중인 서버·외부 연결 상태를 확인한 그림은 아닙니다.</text>
+
+<rect x="55" y="160" width="930" height="410" rx="20" class="panel"/>
+<text x="80" y="198" class="heading">01 / 개발 PC · Docker Compose</text>
+<text x="80" y="224" class="small">compose.dev.yaml · Windows / macOS / Linux</text>
+<rect x="80" y="255" width="210" height="120" rx="12" class="box"/>
+<text x="100" y="291" class="heading">사용자 브라우저</text>
+<text x="100" y="323" class="body">React 지도 UI 실행</text>
+<text x="100" y="349" class="small">localhost:8080</text>
+<rect x="350" y="255" width="210" height="120" rx="12" class="infra"/>
+<text x="370" y="291" class="heading">Nginx</text>
+<text x="370" y="323" class="body">개발 리버스 프록시</text>
+<text x="370" y="349" class="small">/ → UI · /api → API</text>
+<path d="M290 315H345" class="line"/>
+<rect x="630" y="245" width="325" height="140" rx="12" class="box"/>
+<text x="650" y="280" class="heading">React + TypeScript</text>
+<text x="650" y="311" class="body">Vite :5173 · Leaflet</text>
+<text x="650" y="338" class="small">구·행정동 선택 / 가격 카드 / 시설 표시</text>
+<text x="650" y="364" class="small">현재 가격·1년/3년 예측 = 더미 계산</text>
+<path d="M560 290H625" class="line"/>
+<rect x="630" y="415" width="325" height="125" rx="12" class="box"/>
+<text x="650" y="451" class="heading">FastAPI + Uvicorn :8000</text>
+<text x="650" y="482" class="body">/api/spot_fit · 생존 확인</text>
+<text x="650" y="510" class="small">모델 저장·다운로드 서비스/CLI 코드</text>
+<path d="M560 345H595V475H625" class="line"/>
+<rect x="80" y="415" width="475" height="125" rx="12" class="pending"/>
+<text x="100" y="449" class="heading">주거 서비스 API · 아직 미연결</text>
+<text x="100" y="481" class="body">DB 조회 / 가격 추론 / 양육환경 점수 / 인증</text>
+<text x="100" y="509" class="small">지도에서 보이는 가격은 백엔드 모델 응답이 아님</text>
+
+<rect x="1020" y="160" width="525" height="410" rx="20" class="panel"/>
+<text x="1045" y="198" class="heading">02 / 지도 외부·정적 데이터</text>
+<rect x="1045" y="245" width="475" height="115" rx="12" class="box"/>
+<text x="1065" y="280" class="heading">VWorld WMTS</text>
+<text x="1065" y="312" class="body">브라우저에서 배경지도 타일 직접 요청</text>
+<text x="1065" y="339" class="small">VITE_VWORLD_API_KEY · 키/도메인 설정 필요</text>
+<path d="M955 300H1040" class="line"/>
+<rect x="1045" y="385" width="475" height="155" rx="12" class="box"/>
+<text x="1065" y="420" class="heading">frontend/public · GeoJSON</text>
+<text x="1065" y="452" class="body">서울 외곽 음영 / 선택 지역 녹색 강조</text>
+<text x="1065" y="480" class="small">서울 외곽: KOSTAT 2018 공개 경계</text>
+<text x="1065" y="508" class="small">구·행정동: SGIS / vuski, 2026.10.01 경계</text>
+<path d="M955 350H1000V460H1040" class="line"/>
+
+<rect x="55" y="605" width="695" height="335" rx="20" class="panel"/>
+<text x="80" y="644" class="heading">03 / 로컬 데이터 분석·모델 파일 관리</text>
+<text x="80" y="675" class="small">data/raw → data_analyze · ml/training → artifacts</text>
+<rect x="80" y="700" width="305" height="110" rx="12" class="box"/>
+<text x="100" y="733" class="heading">분석·학습 스크립트</text>
+<text x="100" y="764" class="body">CSV → 분석 보고서·학습 산출물</text>
+<text x="100" y="791" class="small">기존 상권 모델 ≠ 주거 가격 모델</text>
+<rect x="420" y="700" width="305" height="110" rx="12" class="box"/>
+<text x="440" y="733" class="heading">모델/데이터 업로드 CLI</text>
+<text x="440" y="764" class="body">upload_minio.py · model-tools</text>
+<text x="440" y="791" class="small">model_registry: 버전·해시 JSON</text>
+<path d="M385 755H415" class="line"/>
+<rect x="80" y="835" width="645" height="75" rx="12" class="pending"/>
+<text x="100" y="865" class="body">주거 가격 학습·평가 → 모델 등록 → API 추론 → 지도 연결</text>
+<text x="100" y="890" class="small">향후 구현 흐름 · 현재 자동화 파이프라인으로 연결되어 있지 않음</text>
+
+<rect x="790" y="605" width="755" height="335" rx="20" class="panel"/>
+<text x="815" y="644" class="heading">04 / 공유 Ubuntu 인프라 · 내부망</text>
+<text x="815" y="675" class="small">VirtualBox 테스트 서버 · compose.yaml + compose.server.yaml</text>
+<rect x="815" y="700" width="335" height="100" rx="12" class="infra"/>
+<text x="835" y="731" class="heading">MinIO · S3 :9000 / :9001</text>
+<text x="835" y="760" class="body">데이터·모델 파일 / 객체 버전 관리</text>
+<text x="835" y="785" class="small">다운로드 시 SHA-256·크기 검증</text>
+<path d="M725 755H810" class="line"/>
+<path d="M955 515H980V595H982V695" class="line"/>
+<rect x="1175" y="700" width="345" height="100" rx="12" class="infra"/>
+<text x="1195" y="731" class="heading">PostgreSQL + PostGIS</text>
+<text x="1195" y="760" class="body">:5432 · 공간 데이터 저장 기반</text>
+<text x="1195" y="785" class="small">서비스 DB 조회·도메인 모델 미구현</text>
+<rect x="815" y="825" width="335" height="85" rx="12" class="infra"/>
+<text x="835" y="857" class="heading">Airflow :8081</text>
+<text x="835" y="888" class="small">LocalExecutor · 업무 DAG 아직 없음</text>
+<rect x="1175" y="825" width="345" height="85" rx="12" class="infra"/>
+<text x="1195" y="857" class="heading">MLflow :5000</text>
+<text x="1195" y="888" class="small">추적 서버 구성 · 학습 연결 별도 필요</text>
+
+<rect x="55" y="965" width="1490" height="110" rx="16" class="pending"/>
+<text x="80" y="1000" class="heading">배포·자동화 현황</text>
+<text x="80" y="1032" class="body">Git / 모델 메타데이터 관리 → 수동 Docker Compose 실행 · GitHub Actions CI/CD는 아직 미구현</text>
+<text x="80" y="1058" class="small">Airflow·MLflow의 메타데이터는 PostgreSQL, MLflow 아티팩트는 MinIO 사용 설정. 현재는 개발/내부망 테스트 구성입니다.</text>
+</svg>
