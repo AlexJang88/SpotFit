@@ -244,10 +244,10 @@ import pandas as pd
 
 # 3-1. 단독/다가구 전/월세 데이터 지번 매핑 (원본파일에 지번 정보 없음) #############
 
-import pandas as pd
-import os
-import io
-import re
+# import pandas as pd
+# import os
+# import io
+# import re
 
 # # 1. 파일 경로 설정
 # data_dir = r"C:\Users\M\Desktop\final_project\1_사전작업\3_상권 추천 서비스\2_부동산 데이터"
@@ -349,59 +349,173 @@ import re
 
 
 
-# 6. 연도별 전/월세 데이터 통합 (아파트, 연립/다세대, 단독/다가구, 오피스텔)
+# # 6. 연도별 전/월세 데이터 통합 (아파트, 연립/다세대, 단독/다가구, 오피스텔)
+
+# import os
+# import pandas as pd
+
+# # 1. 전/월세 데이터 파일 경로 설정
+# rent_path = r"C:\Users\M\Desktop\final_project\2_데이터분석\1_부동산 데이터\2_부동산 전월세 데이터"
+
+# # 2. 통합할 전/월세 연도별 파일 목록 리스트
+# rent_files = [
+#     "서울특별시_전월세가_2021.csv",
+#     "서울특별시_전월세가_2022.csv",
+#     "서울특별시_전월세가_2023.csv",
+#     "서울특별시_전월세가_2024.csv",
+#     "서울특별시_전월세가_2025.csv",
+#     "서울특별시_전월세가_2026.csv"
+# ]
+
+# rent_dfs = []
+
+# # 3. 각 파일을 순회하며 로드 (인코딩 자동 예외 처리 적용)
+# for rent_file in rent_files:
+#     file_path = os.path.join(rent_path, rent_file)
+#     if os.path.exists(file_path):
+#         df = None
+#         # utf-8을 먼저 시도하고, 실패하면 cp949/euc-kr 시도
+#         for enc in ["utf-8", "utf-8-sig", "cp949", "euc-kr"]:
+#             try:
+#                 df = pd.read_csv(file_path, encoding=enc)
+#                 print(f"전/월세 데이터 로드 성공 ({enc}): {rent_file}")
+#                 break
+#             except UnicodeDecodeError:
+#                 continue
+        
+#         if df is not None:
+#             rent_dfs.append(df)
+#         else:
+#             print(f"파일 인코딩을 읽지 못했습니다: {rent_file}")
+#     else:
+#         print(f"파일을 찾을 수 없습니다: {file_path}")
+
+# # 4. 데이터프레임 병합 및 저장
+# if rent_dfs:
+#     total_rent_df = pd.concat(rent_dfs, ignore_index=True)
+    
+#     # 통합된 데이터를 새로운 CSV 파일로 저장
+#     output_filename = "total_rent_data.csv"
+#     total_rent_output = os.path.join(rent_path, output_filename)
+    
+#     total_rent_df.to_csv(total_rent_output, index=False, encoding="utf-8-sig")
+#     print(f"\n[통합 완료] '{output_filename}' 파일로 저장되었습니다.")
+#     print(f"저장 경로: {total_rent_output}")
+#     print(f"총 통합 데이터 행 수: {len(total_rent_df):,}")
+# else:
+#     print("\n통합할 전/월세 데이터가 없습니다. 파일 경로와 파일명을 다시 확인해주세요.")
+
+
+
+# 7. 각 연도별 전/월세 데이터  행정동 매핑(아파트, 연립/다세대, 단독/다가구, 오피스텔)
 
 import os
+import glob
 import pandas as pd
 
-# 1. 전/월세 데이터 파일 경로 설정
+# 1. 파일 경로 설정
 rent_path = r"C:\Users\M\Desktop\final_project\2_데이터분석\1_부동산 데이터\2_부동산 전월세 데이터"
+mapping_path = r"C:\Users\M\Desktop\final_project\2_데이터분석\1_부동산 데이터"
 
-# 2. 통합할 전/월세 연도별 파일 목록 리스트
-rent_files = [
-    "서울특별시_전월세가_2021.csv",
-    "서울특별시_전월세가_2022.csv",
-    "서울특별시_전월세가_2023.csv",
-    "서울특별시_전월세가_2024.csv",
-    "서울특별시_전월세가_2025.csv",
-    "서울특별시_전월세가_2026.csv"
-]
+print("법정동 매핑 파일 탐색 중...")
 
-rent_dfs = []
+# 2. KIKmix가 포함된 파일을 확장자에 상관없이 자동으로 검색
+search_pattern = os.path.join(mapping_path, "*KIKmix*")
+matched_files = glob.glob(search_pattern)
 
-# 3. 각 파일을 순회하며 로드 (인코딩 자동 예외 처리 적용)
-for rent_file in rent_files:
-    file_path = os.path.join(rent_path, rent_file)
-    if os.path.exists(file_path):
-        df = None
-        # utf-8을 먼저 시도하고, 실패하면 cp949/euc-kr 시도
-        for enc in ["utf-8", "utf-8-sig", "cp949", "euc-kr"]:
-            try:
-                df = pd.read_csv(file_path, encoding=enc)
-                print(f"전/월세 데이터 로드 성공 ({enc}): {rent_file}")
-                break
-            except UnicodeDecodeError:
-                continue
-        
-        if df is not None:
-            rent_dfs.append(df)
+mapping_df = None
+if matched_files:
+    mapping_file_path = matched_files[0]
+    print(f"발견된 매핑 파일: {os.path.basename(mapping_file_path)}")
+    
+    ext = os.path.splitext(mapping_file_path)[1].lower()
+    try:
+        if ext in ['.xlsx', '.xls']:
+            mapping_df = pd.read_excel(mapping_file_path, dtype=str)
         else:
-            print(f"파일 인코딩을 읽지 못했습니다: {rent_file}")
-    else:
-        print(f"파일을 찾을 수 없습니다: {file_path}")
-
-# 4. 데이터프레임 병합 및 저장
-if rent_dfs:
-    total_rent_df = pd.concat(rent_dfs, ignore_index=True)
-    
-    # 통합된 데이터를 새로운 CSV 파일로 저장
-    output_filename = "total_rent_data.csv"
-    total_rent_output = os.path.join(rent_path, output_filename)
-    
-    total_rent_df.to_csv(total_rent_output, index=False, encoding="utf-8-sig")
-    print(f"\n[통합 완료] '{output_filename}' 파일로 저장되었습니다.")
-    print(f"저장 경로: {total_rent_output}")
-    print(f"총 통합 데이터 행 수: {len(total_rent_df):,}")
+            for enc in ["cp949", "euc-kr", "utf-8"]:
+                try:
+                    mapping_df = pd.read_csv(mapping_file_path, encoding=enc, sep=None, engine='python', dtype=str)
+                    break
+                except Exception:
+                    try:
+                        mapping_df = pd.read_csv(mapping_file_path, encoding=enc, sep='\t', dtype=str)
+                        break
+                    except Exception:
+                        continue
+    except Exception as e:
+        print(f"매핑 파일 읽기 중 오류 발생: {e}")
 else:
-    print("\n통합할 전/월세 데이터가 없습니다. 파일 경로와 파일명을 다시 확인해주세요.")
+    print(f"경로 내에 'KIKmix'가 포함된 파일을 찾을 수 없습니다: {mapping_path}")
 
+if mapping_df is not None:
+    print(f"매핑 파일 로드 성공 (총 행 수: {len(mapping_df):,})")
+    
+    # 3. 말소된 행정동/법정동 제외 (말소일자/폐지일자 컬럼이 비어있는 현존 데이터만 추출)
+    malso_cols = [col for col in mapping_df.columns if '말소' in col or '폐지' in col]
+    if malso_cols:
+        m_col = malso_cols[0]
+        mapping_df = mapping_df[mapping_df[m_col].isna() | (mapping_df[m_col].str.strip() == "")]
+        print(f"말소된 항목 제외 후 현존 데이터 행 수: {len(mapping_df):,}")
+    
+    # 4. 처리할 연도별 전/월세 파일 목록
+    rent_files = [
+        "서울특별시_전월세가_2021.csv",
+        "서울특별시_전월세가_2022.csv",
+        "서울특별시_전월세가_2023.csv",
+        "서울특별시_전월세가_2024.csv",
+        "서울특별시_전월세가_2025.csv",
+        "서울특별시_전월세가_2026.csv"
+    ]
+    
+    # KIKmix 파일에서 법정동코드에 해당하는 컬럼 찾기 (보통 '법정동코드' 또는 첫 번째 컬럼)
+    mapping_code_col = '법정동코드' if '법정동코드' in mapping_df.columns else mapping_df.columns[0]
+    
+    for filename in rent_files:
+        file_path = os.path.join(rent_path, filename)
+        
+        if os.path.exists(file_path):
+            df = None
+            for enc in ["utf-8", "utf-8-sig", "cp949", "euc-kr"]:
+                try:
+                    df = pd.read_csv(file_path, encoding=enc, dtype=str)
+                    break
+                except UnicodeDecodeError:
+                    continue
+                    
+            if df is not None:
+                print(f"\n[진행 중] 파일 로드 성공: {filename} (행 수: {len(df):,})")
+                
+                if '법정동코드' in df.columns:
+                    # 5. 법정동코드 기준으로 병합
+                    merged_df = pd.merge(
+                        df, 
+                        mapping_df, 
+                        left_on='법정동코드', 
+                        right_on=mapping_code_col, 
+                        how='left',
+                        suffixes=('', '_mapping')
+                    )
+                    
+                    # 6. 행정동 관련 컬럼 맨 뒤로 재배치 (데이터프레임 인덱싱 형식으로 수정)
+                    # KIKmix의 행정동 관련 컬럼명 패턴을 고려하여 탐색
+                    target_cols = [c for c in merged_df.columns if any(keyword in c for keyword in ['행정동', '행정기관']) and c not in ['법정동코드', '법정동명']]
+                    if target_cols:
+                        base_cols = [c for c in merged_df.columns if c not in target_cols]
+                        merged_df = merged_df[base_cols + target_cols]  # [수정됨] 데이터프레임 형태로 재정렬
+                    
+                    # 7. 새로운 이름으로 저장
+                    base_name, ext_rent = os.path.splitext(filename)
+                    output_filename = f"{base_name}_행정동포함{ext_rent}"
+                    output_path = os.path.join(rent_path, output_filename)
+                    
+                    merged_df.to_csv(output_path, index=False, encoding="utf-8-sig")
+                    print(f"-> 저장 완료: {output_filename}")
+                else:
+                    print(f"경고: {filename}에 '법정동코드' 컬럼이 존재하지 않습니다.")
+            else:
+                print(f"파일을 읽지 못했습니다: {filename}")
+        else:
+            print(f"파일을 찾을 수 없습니다: {file_path}")
+else:
+    print("\n[오류] 법정동 매핑 파일을 로드하지 못했습니다. 경로를 다시 확인해주세요.")
