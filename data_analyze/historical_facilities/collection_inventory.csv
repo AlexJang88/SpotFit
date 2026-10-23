@@ -1,0 +1,10 @@
+category,preferred_dataset,coverage,method,analysis_unit,primary_metric,quality
+cctv,data/processed/historical_facilities/reconstructed_2021_2025/cctv,2021-2025,current snapshot reconstruction,시설 위치,카메라대수합,철거 이력 누락 가능
+tourist_attractions,data/processed/historical_facilities/official_2021_2025/tourism_visitors/seoul_2021_2025_long.csv,2021-2025,official alternative series,주요관광지점,입장객수,명소 목록 수가 아니며 보고 지점 범위가 연도별로 다름
+model_restaurants,data/processed/historical_facilities/reconstructed_2021_2025/model_restaurants,2021-2025,event-date reconstruction,업소,연말 지정 업소수,재지정 기간 근사 및 비정상 날짜 제외
+hospitals,data/processed/historical_facilities/reconstructed_2021_2025/hospitals,2021-2025,event-date reconstruction,병원,연말 운영 병원수,의원 전체가 아닌 병원 인허가 자료
+passage_inconvenience,data/processed/historical_facilities/reconstructed_2021_2025/passage_inconvenience_surveys,2021-2025,survey-year split,조사 기록,연도별 조사기록수,연말 현재 재고가 아니며 미조사 연도 0은 부재를 뜻하지 않음
+parks,data/processed/historical_facilities/reconstructed_2021_2025/parks,2021-2025,current snapshot reconstruction,공원,현재 생존 공원의 지정 누적수,폐지 및 과거 면적 변경 누락
+child_centers,data/processed/historical_facilities/official_2021_2025/child_centers,2021-2025,official year-end address lists,센터,연말 센터수,연도별 열 차이를 공통 열로 정규화했고 위경도 없음
+school_zones,data/processed/historical_facilities/reconstructed_2021_2025/school_zones,2021-2025,current snapshot reconstruction,통학구역,현재 생존 구역의 생성 누적수,폐지 및 경계 변경 누락; 과거 도형 없음
+schools,data/processed/historical_facilities/reconstructed_2021_2025/schools,2021-2025,current snapshot reconstruction,학교,현재 운영 학교의 설립 누적수,폐교 누락
