@@ -1,7 +1,7 @@
 # 부동산 평당 금액 분석 (전체 기간, 아파트+빌라 매매): 행정동별로 묶은 7개 항목(층수·거래일·완공일·직장인구·CCTV·1인가구·유동인구)이 평당 금액과
 # 얼마나 관련 있는지(연관도)를 여러 분석 방법으로 비교하고, 행정동 기준으로 한 표에 합친다. (평당 금액을 예측하지는 않음)
-# 먼저 ConvertSale.py 로 *_juso.csv 를 만들어야 함. 결과는 한 페이지(HTML)로 모아서 열림
-import glob, os, unicodedata, platform, io, base64, webbrowser
+# 실행 순서: MergeSingleHousehold.py(1인가구) → MergeRent.py(전월세 합치기) → ConvertSale.py(법정동+지번 → 행정동) → 이 파일. 결과는 한 페이지(HTML)로 모아서 열림
+import glob, os, unicodedata, platform, io, base64, warnings, webbrowser
 import numpy as np, pandas as pd, seaborn as sns, matplotlib.pyplot as plt, matplotlib as mpl
 from pyproj import Transformer
 from scipy.spatial import cKDTree
@@ -12,6 +12,9 @@ from sklearn.linear_model import LassoCV, LinearRegression
 from sklearn.model_selection import KFold
 mpl.rc('font', family={'Windows': 'Malgun Gothic', 'Darwin': 'AppleGothic'}.get(platform.system(), 'NanumGothic'), size=11)
 mpl.rcParams['axes.unicode_minus'] = False
+warnings.filterwarnings('ignore', message='.*sklearn.utils.parallel.delayed.*')       # 라이브러리 내부 경고 (결과에 영향 없음)
+warnings.filterwarnings('ignore', category=PendingDeprecationWarning)
+step = lambda msg: print(msg, flush=True)                    # 오래 걸리는 단계라서 진행 상황을 표시
 
 RAW = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data', 'raw') + os.sep
 OUT = os.path.join(RAW, '..', 'processed', 'output') + os.sep
@@ -79,6 +82,7 @@ def deals():
         '완공연도': d['buildYear'], '거래일': date, '거래일(년)': year, '층수': d['floor']}), link      # 완공일 = 건축년도
 
 # ---------- 3) 행정동 기준으로 하나의 표 + 연관도 + 여러 분석 방법 ----------
+step('1/5 매매 거래와 동네 특징 불러오는 중 (약 1분)...')
 all_deals, link = deals()
 XD = dong_features()
 df = all_deals.join(XD, on=K, how='inner').dropna(subset=[Y]).reset_index(drop=True)
@@ -100,6 +104,7 @@ corr_tab = pd.DataFrame({'항목': USE, '연관도(스피어만)': corr.values})
 corr_tab['연관도(스피어만)'] = corr_tab['연관도(스피어만)'].map('{:+.2f}'.format)
 
 # 같은 질문("평당 금액과 어떤 항목이 관련 있나")을 8가지 방법으로 비교. 방법마다 보는 관점이 달라서 여러 개를 같이 봄 (행정동 단위 표 기준)
+step('2/5 8가지 분석 방법 계산 중...')
 dd = dg.dropna()                                                # 직장인구·1인가구가 비어 있는 동네를 뺀 표 (회귀·정보량·중요도는 빈 값을 못 다룸)
 def scores(t, fast=False):                                      # t: 행정동 표(평당 금액 + 7개 항목) → 항목 × 분석 방법 점수표. fast=True는 반복 평가용(가볍게)
     z = (t[USE] - t[USE].mean()) / t[USE].std()                  # 표준화: 단위가 다른 항목을 같은 눈금(표준편차 1)으로
@@ -126,6 +131,7 @@ M['VIF(겹침)'] = [1 / (1 - LinearRegression().fit(z.drop(columns=c), z[c]).sco
 M['평균 순위'] = M[METH].abs().rank(ascending=False).mean(axis=1)    # 방법마다 "관련 큰 순서"를 매겨 평균 (1등이 가장 관련 큼)
 M = M.sort_values('평균 순위')
 
+step('3/5 어떤 방법이 가장 좋은지 평가 중 (약 2분)...')
 # 어떤 방법이 가장 좋은가: 두 가지 기준으로 평가
 # ① 안정성: 동네를 무작위로 반으로 나눠 각각 분석했을 때 두 결과의 항목 순서가 얼마나 같나 (1에 가까울수록 어느 동네로 해도 같은 답, 30번 반복)
 # ② 항목 고르는 능력: 학습용 동네에서 이 방법이 뽑은 상위 3개 항목만으로 평당 금액을 설명하는 직선 모델을 만들고, 모델에 쓰지 않은 동네에서 설명력(R²)을 잼 (5분할 × 2번)
@@ -190,6 +196,7 @@ ax.set_title('집객시설 종류별 평당 금액 연관도\n(빨강: 시설이
 img_fac = img(fig)
 fac_html = fac_corr.assign(**{c: fac_corr[c].map('{:+.2f}'.format) for c in fac_corr.columns[:4]}, **{'시설이 있는 동네(%)': fac_corr['시설이 있는 동네(%)'].map('{:.0f}'.format)}).rename_axis('집객시설').reset_index()
 
+step('4/5 전월세 불러와서 종류별로 분석 중 (약 1분)...')
 # 전월세(아파트·연립다세대(빌라)·단독다가구·오피스텔): 서울시 전월세가 6개 파일을 합친 자료. 종류마다 건물 성격과 금액 수준이 달라서 종류별로 따로 분석
 # 행정동이 정확한 거래만: 오피스텔·빌라는 지번이 주소 DB와 일치한 거래, 단독다가구는 지번이 없어서 법정동이 행정동 하나뿐인 거래
 RENT = pd.read_csv(RAW + '../processed/부동산(도로명주소)/서울시_전월세가_juso.csv', low_memory=False)
@@ -199,7 +206,7 @@ RENT = RENT[ok & (RENT['임대면적'] >= 20) & (RENT['계약일'] >= 20210101)]
 ymd = pd.to_datetime(RENT['계약일'].astype(str), format='%Y%m%d', errors='coerce')
 RENT = pd.DataFrame({K: RENT[K].astype(int).replace(OLD), '종류': RENT['건물용도'].replace({'연립다세대': '빌라(연립다세대)'}), '월세 거래': num(RENT['임대료(만원)']) > 0,
                      '평당 보증금': num(RENT['보증금(만원)']) / (RENT['임대면적'] / 3.3058), '평당 월세': num(RENT['임대료(만원)']) / (RENT['임대면적'] / 3.3058),      # 보증금·월세(만원) / 면적(평)
-                     '완공연도': num(RENT['건축년도']), '거래일(년)': ymd.dt.year + (ymd.dt.dayofyear - 1) / 365, '층수': num(RENT['층']), '면적(㎡)': RENT['임대면적']})
+                     '완공연도': num(RENT['건축년도']).where(lambda v: v.between(1900, 2026)), '거래일(년)': ymd.dt.year + (ymd.dt.dayofyear - 1) / 365, '층수': num(RENT['층']).where(lambda v: v.between(-5, 100)), '면적(㎡)': RENT['임대면적']})
 def rent_corr(yn, rent, kd):    # kd 종류의 전월세 거래 → 평당 보증금(또는 월세)과의 연관도 표. rent=True: 월세 거래만, False: 전세(월세 0)만
     t = RENT[(RENT['월세 거래'] == rent) & (RENT['종류'] == kd)].join(XD, on=K, how='inner')
     t = t.rename(columns={yn: 'y'}).drop(columns=[c for c in ['평당 보증금', '평당 월세'] if c != yn]).dropna(subset=['y'])
@@ -211,6 +218,16 @@ def rent_corr(yn, rent, kd):    # kd 종류의 전월세 거래 → 평당 보�
 RENT_Y = [('① 전세(월세 0)의 평당 보증금', '평당 보증금', False), ('② 월세 거래의 평당 보증금', '평당 보증금', True), ('③ 월세 거래의 평당 월세', '평당 월세', True)]
 RENT_K = ['아파트', '빌라(연립다세대)', '오피스텔', '단독다가구']
 rent_res = {(kd, lb): rent_corr(yn, rw, kd) for kd in RENT_K for lb, yn, rw in RENT_Y}      # 종류 4 × y 3 = 12개 표
+def rent_dong(t, min_n=30):     # 전월세 거래를 행정동별로 묶어 동네 단위 연관도: y는 동네 중앙값, 7개 항목은 동네 평균 (거래 30건 이상인 동네만)
+    g = t.groupby(K).agg(n=('y', 'size'), y=('y', 'median'), **{c: (c, 'mean') for c in USE})
+    g = g[g['n'] >= min_n]
+    return g[USE].corrwith(g['y'], method='spearman').rename(len(g))
+rent_dong_tab = pd.DataFrame({f'{kd} {lb[0]}': rent_dong(rent_res[kd, lb][0]) for kd in RENT_K for lb, _, _ in RENT_Y})        # 항목 7 × (종류 4 × y 3)
+rent_dong_n = pd.Series({f'{kd} {lb[0]}': rent_dong(rent_res[kd, lb][0]).name for kd in RENT_K for lb, _, _ in RENT_Y}, name='동네 수').to_frame().T
+fig, ax = plt.subplots(figsize=(11, 4.8))
+sns.heatmap(rent_dong_tab, cmap='RdBu_r', center=0, vmin=-.8, vmax=.8, annot=True, fmt='.2f', ax=ax)
+ax.set_title('전월세 행정동 단위 연관도 (스피어만, 열 = 종류 + ①전세 평당 보증금 ②월세 거래 평당 보증금 ③월세 거래 평당 월세)'); plt.xticks(rotation=40, ha='right')
+img_rent_dong = img(fig)
 fig, ax = plt.subplots(figsize=(7, 4.5))
 corr.sort_values().plot.barh(ax=ax, color=['tomato' if v > 0 else 'steelblue' for v in corr.sort_values()])
 ax.set(xlabel='연관도 (스피어만 상관계수)', title='평당 금액과의 연관도 (행정동 단위)  빨강: 클수록 비쌈, 파랑: 클수록 저렴')
@@ -253,6 +270,7 @@ desc = pd.DataFrame([
     ['유동인구 수', '길을 지나다니는 사람 수 (전체 기간 평균)', '길단위인구']], columns=['항목', '뜻', '출처'])
 n_apt, n_villa = (df['종류'] == '아파트').sum(), (df['종류'] == '빌라').sum()
 
+step('5/5 리포트(HTML) 만드는 중...')
 html = f"""<meta charset="utf-8"><title>평당 금액 분석</title>
 <style>body{{font-family:"Malgun Gothic",sans-serif;margin:24px auto;max-width:1150px;line-height:1.6}} h2{{margin-top:36px;border-bottom:2px solid #ddd}}
 .t{{border-collapse:collapse}} .t td,.t th{{border:1px solid #ddd;padding:4px 10px;text-align:right}} .t td:first-child,.t th{{text-align:left}} .l td{{text-align:left!important}} .box{{background:#f6f8fa;padding:12px 18px;border-radius:8px}}
@@ -271,7 +289,7 @@ html = f"""<meta charset="utf-8"><title>평당 금액 분석</title>
 {table(desc, 't l')}
 
 <h2>2. 연관도: 무엇이 평당 금액과 관련 있나</h2>
-<p>이 분석은 <b>행정동 단위</b>예요(동네 1곳 = 1행). 평당 금액은 그 동네 거래의 중앙값이고, 항목은 위 표의 7개예요. <b>읽는 법:</b> 연관도는 -1~+1이에요. <b>+</b>는 그 항목이 클수록 평당 금액이 비싸고, <b>-</b>는 클수록 저렴해요. 절댓값 0.5 이상 강함, 0.3 이상 중간, 0.1 이상 약함, 0.1 미만 없음으로 봤어요. (원인이 아니라 같이 움직이는 정도예요)</p>
+<p>이 분석은 <b>행정동 단위</b>예요(동네 1곳 = 1행). 평당 금액은 그 동네 거래의 중앙값이고, 항목은 위 표의 7개예요(요청에 따라 층수·거래일·완공연도·직장인구·CCTV·1인가구·유동인구만 썼어요. 거주인구·집객시설·점포 수·창업률·폐업률·업종 수는 2-3, 2-4와 맨 아래 합친 표에 있어요). <b>읽는 법:</b> 연관도는 -1~+1이에요. <b>+</b>는 그 항목이 클수록 평당 금액이 비싸고, <b>-</b>는 클수록 저렴해요. 절댓값 0.5 이상 강함, 0.3 이상 중간, 0.1 이상 약함, 0.1 미만 없음으로 봤어요. (원인이 아니라 같이 움직이는 정도예요)</p>
 <h4>2-1. 항목별 연관도 (행정동 단위, 스피어만)</h4>{table(corr_tab, 't l')}
 <h4>2-2. 한눈에 보기 (항목끼리의 연관도 포함)</h4>
 <div class="row">{img_bar}{img_heat}</div>
@@ -284,6 +302,11 @@ html = f"""<meta charset="utf-8"><title>평당 금액 분석</title>
 <p>서울시 전월세가(2021~2026년 6개 파일을 합친 자료, 전체 {n_rent:,}건)를 법정동+지번 → 도로명주소 DB로 행정동에 연결했어요. 아파트·오피스텔·빌라(연립다세대)는 <b>지번이 일치한 거래</b>(97~99%)를, 단독다가구는 지번이 없어서 <b>법정동이 행정동 하나뿐인 거래</b>(약 15%)만 썼어요(행정동이 여러 개에 걸친 큰 법정동은 빠짐). 2021년 이후 계약, 임대면적 20㎡ 이상만 썼고 면적은 임대면적이에요(단독다가구는 전용면적이 아닐 수 있어요).
 종류마다 건물 성격과 금액 수준이 달라서 <b>종류별로 나눠서 각각</b> 분석했어요. 보증금과 월세는 서로 바꿔 낼 수 있어서 한 값으로 합치지 않고 ① 전세의 평당 보증금, ② 월세 거래의 평당 보증금, ③ 월세 거래의 평당 월세로 나눴어요. 행정동은 이름이라 상관비 η로 봤고, 값이 아예 없는 항목(예: 단독다가구의 층수)은 표에서 뺐어요. 매매 평당 금액과 뜻이 달라서 따로 봤어요.</p>
 {rent_html}
+<h4>2-5. 전월세 행정동 단위 연관도</h4>
+<p>위 2-4는 거래 1건씩 비교한 값이에요. 매매 분석(3번 이전)처럼 <b>행정동 1곳을 1행으로 묶어서</b> 다시 구했어요: y(① 전세 평당 보증금, ② 월세 거래 평당 보증금, ③ 월세 거래 평당 월세)는 동네 중앙값, 층수·거래일·완공연도는 동네 평균이고 직장인구·CCTV·1인가구·유동인구를 붙였어요. 거래가 30건 이상인 동네만 썼고, 종류마다 y마다 따로 구했어요. 단독다가구는 층수 값이 없어 빈칸이에요.</p>
+<div class="row">{img_rent_dong}</div>
+{table(rent_dong_n.rename_axis('').reset_index(), 't')}
+
 
 <h2>3. 여러 분석 방법으로 비교</h2>
 <p>"어떤 항목이 평당 금액과 관련 있나"를 <b>8가지 방법</b>으로 따로 구해서 비교했어요(행정동 단위, 동네 {len(dd)}곳 — 직장인구·1인가구가 비어 있는 동네는 회귀·정보량·중요도에서 제외). 방법마다 보는 관점(직선, 순서, 이상치, 항목끼리 겹침 등)이 달라서, 여러 방법에서 일관되게 위에 오르는 항목이 믿을 만해요. 평당 금액을 예측하는 결과는 만들지 않았어요.</p>
@@ -322,8 +345,8 @@ html = f"""<meta charset="utf-8"><title>평당 금액 분석</title>
 <ul><li>행정동 연결 방식(전체 거래 기준, <b>지번 일치만 분석에 사용</b>): {', '.join(f'{k} {v}%' for k, v in link.items())}. 상권분석에 행정동이 없어 제외한 거래: <b>{n_drop:,}건</b> (취소·20㎡ 미만·행정동 미연결 제외 후 {len(all_deals):,}건 중 {n_drop / len(all_deals) * 100:.1f}%)이에요.</li>
 <li>행정동 단위로 묶으면 동네 수(약 420곳)만큼의 점으로 계산해서, 거래가 적은 동네의 값은 덜 믿을 만하고 아파트·빌라가 섞인 중앙값이에요(종류는 이번 분석 항목에서 뺐어요). 그래서 층수·거래일처럼 동네 평균을 낸 항목은 "아파트가 많은 동네"(층이 높고 평당 금액도 높음)나 "거래 시점이 늦은 동네"의 영향을 같이 받을 수 있어요.</li>
 <li>동네 특징은 전체 기간의 평균이에요. 점포 관련 항목(점포 수·창업률·폐업률·업종 수)은 2025년 이후 데이터만 있어요.</li>
-<li>아파트와 빌라는 평당 금액 수준이 달라요(종류 항목으로 구분). 전월세(아파트·빌라·단독다가구·오피스텔)는 매매와 금액의 뜻이 달라서, 매매 평당 금액 분석에 섞지 않고 평당 보증금·평당 월세로 2-4에서 따로 봤어요.</li></ul>"""
+<li>아파트와 빌라는 평당 금액 수준이 달라서 매매 분석의 동네 값(중앙값)에 두 종류가 섞여 있어요. 전월세(아파트·빌라·단독다가구·오피스텔)는 매매와 금액의 뜻이 달라서, 매매 평당 금액 분석에 섞지 않고 평당 보증금·평당 월세로 2-4에서 따로 봤어요.</li></ul>"""
 path = os.path.abspath(OUT + 'AptHypothesis.html')
-open(path, 'w', encoding='utf-8').write(html)
+with open(path, 'w', encoding='utf-8') as f: f.write(html)
 webbrowser.open('file:///' + path.replace(os.sep, '/'))
 print('결과 모음 저장:', path, '\n행정동 합친 표:', os.path.abspath(OUT + '평당금액_행정동표.csv'))
