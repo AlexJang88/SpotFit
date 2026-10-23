@@ -1,0 +1,8 @@
+/* 긴 추천 목록은 패널 안에서 스크롤한다. 좁은 모바일에서도 표 대신 세로 상세를 사용한다. */
+.care-panel{margin-top:24px;border-top:1px solid #dbe8df;padding-top:16px}
+.care-panel h2{font-size:19px}.care-warning{background:#fff3d7;padding:10px;border-radius:8px;font-size:12px;color:#805f2c}
+.care-panel fieldset{border:1px solid #dbe8df;border-radius:9px;padding:10px}
+.care-panel fieldset label{display:flex;align-items:center;gap:8px;padding:7px 0}
+.care-panel fieldset small{margin-left:auto;color:#728478}.care-panel select{max-width:100%;padding:7px;border:1px solid #c6d6cc;border-radius:6px;background:white}
+.care-ranking{max-height:440px;overflow:auto}.care-row{display:flex;justify-content:space-between;width:100%;background:#edf5ef;margin-top:6px;padding:12px 8px;border-radius:8px;color:#235c47;font-size:12px}
+.care-breakdown{padding:10px;font-size:12px}.care-breakdown>div{border-bottom:1px solid #e4ece6;padding:10px 0}.care-breakdown p{margin:6px 0}.care-breakdown small{color:#6c8174}

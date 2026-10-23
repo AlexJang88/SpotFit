@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1160" viewBox="0 0 1600 1160">
+<defs><style>
+text{font-family:'Malgun Gothic',sans-serif;fill:#233e37;font-size:17px}
+.title{font-size:32px;font-weight:700}.head{font-size:21px;font-weight:700}.small{font-size:14px;fill:#60766c}
+.table{fill:white;stroke:#619d86;stroke-width:2}.band{fill:#e5f1e9}.rel{fill:none;stroke:#4d7b68;stroke-width:2}
+.label{font-size:16px;font-weight:700;fill:#276249}
+</style></defs>
+<rect width="1600" height="1160" fill="#f5f7f3"/>
+<text x="50" y="60" class="title">SpotFit · 주거 서비스 ERD 초안</text>
+<text x="50" y="94">제안 설계 — 현재 서비스 테이블 없음 / PostGIS 확장만 설정 / DB 변경 없음</text>
+<text x="50" y="124" class="small">PK 기본키 · FK 외래키 · UK 유일키 · 1 : N 관계 (자식은 0개 이상 가능) · 분석 피처는 추후 확정</text>
+
+<rect x="50" y="175" width="420" height="265" rx="12" class="table"/>
+<text x="70" y="210" class="head">REGION · 행정구역 이력</text>
+<text x="70" y="248">PK region_id</text>
+<text x="70" y="277">FK parent_region_id → REGION (NULL 허용)</text>
+<text x="70" y="306">region_code / name / level (시·구·동)</text>
+<text x="70" y="335">valid_from / valid_to</text>
+<text x="70" y="364">boundary · MultiPolygon, SRID 4326</text>
+<text x="70" y="393">UK (region_code, valid_from)</text>
+<text x="70" y="422" class="small">상위 구역 0..1 : 하위 구역 N / 경계 개편 이력 보존</text>
+
+<rect x="590" y="175" width="420" height="265" rx="12" class="table"/>
+<text x="610" y="210" class="head">PRICE_OBSERVATION · 현재 대표가격</text>
+<text x="610" y="248">PK observation_id</text>
+<text x="610" y="277">FK region_id / FK source_id</text>
+<text x="610" y="306">period_start / period_end / property_type</text>
+<text x="610" y="335">transaction_type / price_per_m2</text>
+<text x="610" y="364">sample_count / aggregation_method</text>
+<text x="610" y="393">data_as_of (데이터 기준일)</text>
+<text x="610" y="422" class="small">단위: 만원/㎡ / 집계 기준과 표본 수 함께 제공</text>
+
+<rect x="1130" y="175" width="420" height="265" rx="12" class="table"/>
+<text x="1150" y="210" class="head">PRICE_FORECAST · 가격 예측</text>
+<text x="1150" y="248">PK forecast_id</text>
+<text x="1150" y="277">FK observation_id / FK model_version_id</text>
+<text x="1150" y="306">forecast_origin / target_date</text>
+<text x="1150" y="335">horizon_months (12 또는 36)</text>
+<text x="1150" y="364">predicted_price_per_m2</text>
+<text x="1150" y="393">lower_bound / upper_bound (선택)</text>
+<text x="1150" y="422" class="small">지역·주택 유형·현재 기준가격은 observation 참조</text>
+
+<path d="M470 275H590" class="rel"/><text x="480" y="265" class="label">1</text><text x="565" y="265" class="label">N</text>
+<path d="M1010 275H1130" class="rel"/><text x="1020" y="265" class="label">1</text><text x="1105" y="265" class="label">N</text>
+
+<rect x="50" y="530" width="420" height="230" rx="12" class="table"/>
+<text x="70" y="565" class="head">FACILITY · 생활시설 스냅샷</text>
+<text x="70" y="603">PK facility_snapshot_id</text>
+<text x="70" y="632">FK region_id / FK source_id</text>
+<text x="70" y="661">source_record_id / name / category</text>
+<text x="70" y="690">address / location (Point, SRID 4326)</text>
+<text x="70" y="719">observed_at / status</text>
+<text x="70" y="746" class="small">학교·어린이집·공원·의료 / 과거 자료 존재 여부 구분</text>
+
+<rect x="590" y="530" width="420" height="230" rx="12" class="table"/>
+<text x="610" y="565" class="head">CARE_SCORE · 양육환경 평가</text>
+<text x="610" y="603">PK score_id</text>
+<text x="610" y="632">FK region_id / FK source_id</text>
+<text x="610" y="661">reference_date / score_version</text>
+<text x="610" y="690">total_score / component_scores (JSONB)</text>
+<text x="610" y="719">methodology / calculated_at</text>
+<text x="610" y="746" class="small">점수 산식·구성 항목 미확정 / 가격과 별도 평가</text>
+
+<rect x="1130" y="530" width="420" height="230" rx="12" class="table"/>
+<text x="1150" y="565" class="head">MODEL_VERSION · 모델 메타데이터</text>
+<text x="1150" y="603">PK model_version_id</text>
+<text x="1150" y="632">UK (name, version) / manifest_path</text>
+<text x="1150" y="661">trained_until / feature_schema_version</text>
+<text x="1150" y="690">metrics (JSONB) / created_at</text>
+<text x="1150" y="719">task / horizon_months</text>
+<text x="1150" y="746" class="small">실제 파일: MinIO / 기존 Git manifest와 연계 예정</text>
+
+<path d="M260 440V530" class="rel"/><text x="272" y="465" class="label">1</text><text x="272" y="516" class="label">N</text>
+<path d="M450 440V480H800V530" class="rel"/><text x="463" y="470" class="label">1</text><text x="810" y="516" class="label">N</text>
+<path d="M1340 440V530" class="rel"/><text x="1352" y="465" class="label">N</text><text x="1352" y="516" class="label">1</text>
+
+<rect x="50" y="845" width="420" height="235" rx="12" class="table"/>
+<text x="70" y="880" class="head">DATA_SOURCE · 출처·데이터 버전</text>
+<text x="70" y="918">PK source_id / dataset_name / provider</text>
+<text x="70" y="947">source_url / license / dataset_version</text>
+<text x="70" y="976">retrieved_at / data_as_of</text>
+<text x="70" y="1005">object_key (원자료 MinIO 위치)</text>
+<text x="70" y="1034" class="small">1 : N → 가격 관측 · 시설 · 양육환경 평가</text>
+<text x="70" y="1063" class="small">복수 원자료 파생 시 별도 lineage 테이블 확장</text>
+
+<rect x="590" y="845" width="420" height="235" rx="12" class="table"/>
+<text x="610" y="880" class="head">FORECAST_EXPLANATION · 예측 근거</text>
+<text x="610" y="918">PK explanation_id / FK forecast_id</text>
+<text x="610" y="947">feature_name / feature_value</text>
+<text x="610" y="976">contribution / method / rank</text>
+<text x="610" y="1005">UK (forecast_id, method, feature_name)</text>
+<text x="610" y="1034" class="small">실제 모델에서 산출한 설명만 저장</text>
+<text x="610" y="1063" class="small">인과적 근거가 아닌 모델 예측 기여도</text>
+<path d="M1550 305H1570V805H800V845" class="rel"/><text x="1554" y="332" class="label">1</text><text x="811" y="836" class="label">N</text>
+
+<rect x="1130" y="845" width="420" height="235" rx="12" fill="#fff5de" stroke="#cfb073"/>
+<text x="1150" y="880" class="head">설계 확정 전 확인할 사항</text>
+<text x="1150" y="921">• 1년·3년 예측을 각각 저장</text>
+<text x="1150" y="954">• 거래 유형/집계 방식별 가격 분리</text>
+<text x="1150" y="987">• 지역 경계 버전과 자료 시점 일치</text>
+<text x="1150" y="1020">• 원천 거래·피처 저장 구조는 추후</text>
+<text x="1150" y="1053">• 인증·즐겨찾기는 현재 범위 제외</text>
+<text x="50" y="1125" class="small">출처 관계는 가독성을 위해 FK 및 DATA_SOURCE 설명으로 표시했습니다. 물리 DB·마이그레이션은 생성하지 않았습니다.</text>
+</svg>

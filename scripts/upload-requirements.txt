@@ -1,3 +1,0 @@
-minio==7.2.20
-python-dotenv>=1.0,<2.0
-pydantic>=2.0,<3.0

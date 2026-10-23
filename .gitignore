@@ -1,3 +1,5 @@
+# Local EDA virtual environment (dependencies are declared in data_analyze/).
+.venv-analysis/
 # macOS
 .DS_Store
 ._*
