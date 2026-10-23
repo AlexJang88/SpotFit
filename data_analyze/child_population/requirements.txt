@@ -1,0 +1,2 @@
+# 공간 매핑 전용. 분석 공통 의존성은 ../requirements.txt에 있습니다.
+shapely>=2.0,<3
