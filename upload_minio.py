@@ -1,4 +1,8 @@
-"""Upload data folders and optional versioned models; skip existing object keys."""
+"""데이터와 ``models/recommender`` 모델만 MinIO에 업로드한다.
+
+다른 팀원이 ``models`` 아래에서 실험 중인 모델을 실수로 공유 저장소에
+올리지 않도록 모델 탐색 범위를 recommender 하위로 강제한다.
+"""
 
 import argparse
 import mimetypes
@@ -45,22 +49,30 @@ def upload_tree(client, bucket, source, prefix, missing_error):
     return uploaded, skipped
 
 
-def model_sources(root):
-    """One artifact per model/version, matching the existing manifest schema."""
-    if not root.is_dir():
-        raise ValueError(f'Models directory does not exist: {root}')
+def recommender_sources(models_root):
+    """``models/recommender/<version>/<file>``만 업로드 계획으로 만든다.
+
+    모델 버전 하나에는 파일 하나 또는 하나로 묶은 아카이브만 허용한다.
+    recommender 폴더가 없거나 숨김 파일만 있으면 모델 업로드를 건너뛴다.
+    ``models``의 다른 하위 폴더는 탐색조차 하지 않는 것이 충돌 방지 의도다.
+    """
+    root = models_root / 'recommender'
+    if not root.exists():
+        return []
+    if not root.is_dir() or root.is_symlink():
+        raise ValueError(f'Recommender path must be a real directory: {root}')
     groups = {}
     for source in files_under(root):
         parts = source.relative_to(root).parts
-        if len(parts) != 3:
-            raise ValueError(f'Expected models/<name>/<version>/<file>: {source}')
-        name, version, _ = parts
-        groups.setdefault((name, version), []).append(source)
+        if len(parts) != 2:
+            raise ValueError(f'Expected models/recommender/<version>/<file>: {source}')
+        version, _ = parts
+        groups.setdefault(version, []).append(source)
     plans = []
-    for (name, version), sources in sorted(groups.items()):
+    for version, sources in sorted(groups.items()):
         if len(sources) != 1:
-            raise ValueError(f'{name}/{version}: use one model file or one archive per version')
-        plans.append((sources[0], name, version))
+            raise ValueError(f'recommender/{version}: use one model file or one archive per version')
+        plans.append((sources[0], 'recommender', version))
     return plans
 
 
@@ -69,7 +81,10 @@ def main():
     parser.add_argument('--env-file', type=Path, default=ROOT / '.env.dev')
     parser.add_argument('--data-dir', type=Path, default=ROOT / 'data')
     parser.add_argument('--bucket', help='Default: S3_DATA_BUCKET or S3_MODEL_BUCKET')
-    parser.add_argument('--models-dir', type=Path, default=ROOT / 'models')
+    # 이 인수는 models 루트만 바꾼다. 어떤 경로를 주더라도 그 아래의
+    # recommender 폴더만 탐색하므로 다른 모델이 함께 업로드되지 않는다.
+    parser.add_argument('--models-dir', type=Path, default=ROOT / 'models',
+                        help='Models root; only its recommender child is uploaded')
     parser.add_argument('--registry-dir', type=Path, default=ROOT / 'model_registry')
     args = parser.parse_args()
     if not args.data_dir.is_dir():
@@ -86,7 +101,7 @@ def main():
         from urllib3 import PoolManager, Timeout
         from urllib3.exceptions import HTTPError
     except ImportError:
-        print('Install dependencies: python3 -m pip install -r scripts/upload-requirements.txt', file=sys.stderr)
+        print('Install dependencies: python -m pip install -r requirements-dev.txt', file=sys.stderr)
         return 1
     # Read only this file, so unrelated shell AWS credentials cannot override it.
     env = dotenv_values(args.env_file)
@@ -112,7 +127,7 @@ def main():
         uploaded, skipped = upload_tree(client, bucket, args.data_dir, '', S3Error)
         model_bucket = env.get('S3_MODEL_BUCKET') or bucket
         store = ModelStore(client, model_bucket)
-        plans = model_sources(args.models_dir)
+        plans = recommender_sources(args.models_dir)
         if plans:
             store.require_versioning()
         for source, name, version in plans:
