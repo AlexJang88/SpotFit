@@ -143,4 +143,11 @@ def main():
         export_models(root,out,a.export_version)
 
 
-if __name__=='__main__': main()
+if __name__=='__main__':
+    # 새 평가가 기본이다. 과거 RF-only 재현은 명시적인 legacy 옵션으로만 실행한다.
+    if '--legacy-rf-only' in sys.argv:
+        sys.argv.remove('--legacy-rf-only')
+        main()
+    else:
+        from compare_child_algorithms import main as compare_main
+        compare_main()

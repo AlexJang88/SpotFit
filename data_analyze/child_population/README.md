@@ -5,12 +5,11 @@
 프로젝트 루트에서:
 
 ```powershell
-python -m pip install -r data_analyze/requirements.txt
-python -m pip install -r data_analyze/child_population/requirements.txt
+python -m pip install -r requirements-dev.txt
 python data_analyze/child_population/analyze_child_population.py
 ```
 
-추가 패키지는 공간 매핑용 Shapely입니다. 기존 서버 requirements는 변경하지 않습니다.
+Shapely를 포함한 분석 의존성은 루트의 `requirements-dev.txt`에서 관리합니다.
 원본은 수정하지 않고 실행별 결과를 data/processed/child_population/YYYYMMDD_HHMMSS 에 저장합니다.
 
 ## 결과 파일

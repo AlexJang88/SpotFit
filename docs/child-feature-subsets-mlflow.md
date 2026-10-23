@@ -1,5 +1,12 @@
 # 아동 인구수 시설 조합 실험과 MLflow
 
+> 2026-10-23 개정: 기본 진입점은 다중 알고리즘 교차검증으로 변경했습니다.
+> 아래 RF-only 명령은 과거 재현용이며 `--legacy-rf-only`를 추가해야 합니다.
+> 새 실행은 `python ml/training/train_child_feature_subsets.py --data <analysis_panel.csv> --ages elementary --folds 5`입니다.
+> `--register-best`, `--export-version`은 새 비교 모드에서 지원하지 않습니다.
+> 새 결과를 기존 exporter에 전달하지 마세요. 선정/보류 근거와 변경 규칙은
+> [팀 규칙 12절](model-team-workflow.md#12-알고리즘-비교선정-근거-필수-규칙-개정)을 참고하세요.
+
 ## README의 공유 저장 규칙 (중요)
 
 로컬 MLflow는 실험용 기록입니다. 프로젝트 공식 공유 모델은 README대로
@@ -38,8 +45,7 @@ docker compose --env-file .env.dev -f compose.dev.yaml run --rm model-tools uplo
 
 ## 실행
 
-프로젝트 루트에서 실행합니다. 기존 ml/requirements.txt의 pandas, numpy,
-scikit-learn, mlflow와 분석 환경의 scipy, joblib가 필요합니다.
+프로젝트 루트에서 실행합니다. 개발 PC에는 `requirements-dev.txt`를 설치합니다.
 
 ```powershell
 python ml/training/train_child_feature_subsets.py --register-best

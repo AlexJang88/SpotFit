@@ -1,0 +1,10 @@
+# SpotFit 개발 환경
+# 서버 런타임 전체와 EDA·시각화·Excel·공간 분석 도구를 함께 설치합니다.
+# 팀원은 별도 requirements를 조합하지 않고 이 파일 하나만 설치합니다.
+-r requirements-server.txt
+
+# 데이터 분석·시각화
+matplotlib>=3.9,<4.0
+seaborn>=0.13.2,<0.14
+openpyxl>=3.1.5,<4.0
+shapely>=2.0,<3.0

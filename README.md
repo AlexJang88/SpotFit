@@ -56,6 +56,8 @@ spot_fit/
 ├── artifacts/{models,reports}/  # 학습 모델·평가 결과 (Git 제외)
 ├── model_registry/             # 모델 버전·저장 위치·해시 JSON (Git 포함)
 ├── scripts/                   # 공통 작업 스크립트
+├── requirements-dev.txt       # 개발 PC: 서버 패키지 + 분석·시각화·공간 도구
+├── requirements-server.txt    # 백엔드·Airflow·MLflow 서버 런타임
 ├── docs/architecture/         # 아키텍처 문서
 ├── .github/workflows/         # 추후 GitHub Actions 추가
 ├── compose.yaml               # 개발 환경
@@ -127,7 +129,7 @@ Python 의존성을 최초 한 번 설치한 뒤 프로젝트 루트에서 실�
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-python3 -m pip install -r scripts/upload-requirements.txt
+python3 -m pip install -r requirements-server.txt
 python3 upload_minio.py
 ```
 
@@ -166,7 +168,9 @@ MinIO 객체만 있고 로컬 JSON이 없으면 원격 파일의 SHA-256을 검�
 Airflow와 MLflow는 PostgreSQL의 별도 `airflow`, `mlflow` 데이터베이스를 사용합니다.
 Airflow 계정은 `.env`의 `AIRFLOW_ADMIN_USER`이며, 첫 실행 시 생성되는 비밀번호를 확인하려면
 `docker compose exec airflow cat /opt/airflow/simple_auth_manager_passwords.json.generated`를 실행합니다.
-학습 의존성은 [ml/requirements.txt](ml/requirements.txt)에서 관리하고 백엔드와 Airflow 이미지 양쪽에 설치합니다.
+파이썬 의존성은 루트의 [requirements-server.txt](requirements-server.txt)와
+[requirements-dev.txt](requirements-dev.txt) 두 파일로만 관리합니다. 백엔드와 Airflow 이미지는
+서버용 파일을 설치하고, 개발 PC는 서버 의존성을 포함하는 개발용 파일을 설치합니다.
 Airflow·MLflow 웹 포트는 호스트의 `127.0.0.1`에만 열립니다.
 
 PostgreSQL 컨테이너는 PostgreSQL 17과 PostGIS 3.5가 포함된 이미지를 사용합니다. 새 DB 볼륨을
