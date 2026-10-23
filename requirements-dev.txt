@@ -1,0 +1,16 @@
+# SpotFit 개발 환경
+# 서버 런타임 전체와 EDA·시각화·Excel·공간 분석 도구를 함께 설치합니다.
+# 팀원은 별도 requirements를 조합하지 않고 이 파일 하나만 설치합니다.
+-r requirements-server.txt
+
+# 데이터 분석·시각화
+matplotlib>=3.9,<4.0
+seaborn>=0.13.2,<0.14
+openpyxl>=3.1.5,<4.0
+shapely>=2.0,<3.0
+
+# 공간 데이터 분석
+# geopandas: 행정동 경계 등 공간 파일 로딩, 좌표계 변환, 공간 조인에 사용합니다.
+# libpysal: 인접 행정동 공간가중치 생성과 공간 자기상관 분석에 사용합니다.
+geopandas>=1.0,<2.0
+libpysal>=4.12,<5.0

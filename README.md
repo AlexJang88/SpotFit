@@ -56,6 +56,8 @@ spot_fit/
 ├── artifacts/{models,reports}/  # 학습 모델·평가 결과 (Git 제외)
 ├── model_registry/             # 모델 버전·저장 위치·해시 JSON (Git 포함)
 ├── scripts/                   # 공통 작업 스크립트
+├── requirements-dev.txt       # 개발 PC: 서버 패키지 + 분석·시각화·공간 도구
+├── requirements-server.txt    # 백엔드·Airflow·MLflow 서버 런타임
 ├── docs/architecture/         # 아키텍처 문서
 ├── .github/workflows/         # 추후 GitHub Actions 추가
 ├── compose.yaml               # 개발 환경
@@ -127,7 +129,7 @@ Python 의존성을 최초 한 번 설치한 뒤 프로젝트 루트에서 실�
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-python3 -m pip install -r scripts/upload-requirements.txt
+python3 -m pip install -r requirements-server.txt
 python3 upload_minio.py
 ```
 
@@ -137,7 +139,8 @@ python3 upload_minio.py
 동일한 객체 경로가 이미 존재하면 내용이 달라도 업로드하지 않습니다. 파일 삭제는 원격에 반영하지 않습니다.
 기본 버킷은 `S3_DATA_BUCKET`, 미설정 시 `S3_MODEL_BUCKET`입니다. 버킷은 미리 생성되어 있어야 하며 읽기·쓰기 권한이 필요합니다.
 
-모델은 아래 구조로 넣으면 같은 명령으로 자동 등록합니다. 각 버전 폴더에는 모델 파일 하나를 넣습니다.
+모델은 `models/recommender` 하위만 업로드합니다. `models`의 다른 하위 모델은 탐색하지 않으므로
+팀원의 실험 모델이 실수로 공유 MinIO에 올라가지 않습니다. 각 버전 폴더에는 모델 파일 하나를 넣습니다.
 여러 파일이 필요한 모델은 ZIP 등 하나의 아카이브로 묶으세요.
 
 ```text
@@ -166,7 +169,9 @@ MinIO 객체만 있고 로컬 JSON이 없으면 원격 파일의 SHA-256을 검�
 Airflow와 MLflow는 PostgreSQL의 별도 `airflow`, `mlflow` 데이터베이스를 사용합니다.
 Airflow 계정은 `.env`의 `AIRFLOW_ADMIN_USER`이며, 첫 실행 시 생성되는 비밀번호를 확인하려면
 `docker compose exec airflow cat /opt/airflow/simple_auth_manager_passwords.json.generated`를 실행합니다.
-학습 의존성은 [ml/requirements.txt](ml/requirements.txt)에서 관리하고 백엔드와 Airflow 이미지 양쪽에 설치합니다.
+파이썬 의존성은 루트의 [requirements-server.txt](requirements-server.txt)와
+[requirements-dev.txt](requirements-dev.txt) 두 파일로만 관리합니다. 백엔드와 Airflow 이미지는
+서버용 파일을 설치하고, 개발 PC는 서버 의존성을 포함하는 개발용 파일을 설치합니다.
 Airflow·MLflow 웹 포트는 호스트의 `127.0.0.1`에만 열립니다.
 
 PostgreSQL 컨테이너는 PostgreSQL 17과 PostGIS 3.5가 포함된 이미지를 사용합니다. 새 DB 볼륨을

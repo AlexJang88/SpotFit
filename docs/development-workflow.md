@@ -87,19 +87,21 @@ docker compose --env-file .env.dev -f compose.dev.yaml exec frontend npm run bui
 
 갱신된 `frontend/package.json`과 `frontend/package-lock.json`을 함께 커밋합니다. 새 브랜치나 다른 PC에서는 컨테이너 시작 시 `npm ci`가 lock 파일에 맞춰 설치합니다.
 
-### FastAPI 전용 Python 패키지
+### Python 패키지
 
-`backend/requirements.txt`에 패키지와 버전 범위를 추가합니다. 예를 들어 `httpx>=0.27,<1.0`을 선언했다면 백엔드 이미지를 다시 빌드합니다.
+Python 의존성은 루트의 두 파일로만 관리합니다.
+
+- `requirements-server.txt`: FastAPI, 학습·추론, MLflow, MinIO 등 서버 런타임
+- `requirements-dev.txt`: 서버 전체 + EDA·시각화·Excel·공간 분석
+
+개발 PC는 `python -m pip install -r requirements-dev.txt`를 사용합니다.
+서버에 필요한 패키지는 `requirements-server.txt`에 추가하고 이미지를 다시 빌드합니다.
 
 ```sh
 docker compose --env-file .env.dev -f compose.dev.yaml up --build -d backend
 ```
 
-### 학습·데이터 처리 패키지
-
-백엔드와 Airflow가 공유하는 NumPy, Pandas, scikit-learn 등의 패키지는 `ml/requirements.txt`에 선언합니다. 개발 PC의 백엔드 이미지를 빌드하고, Airflow에서 사용하는 패키지는 Ubuntu 서버에서 Airflow 이미지를 다시 빌드해야 적용됩니다.
-
-개발 PC:
+백엔드 이미지 재빌드:
 
 ```sh
 docker compose --env-file .env.dev -f compose.dev.yaml up --build -d backend
