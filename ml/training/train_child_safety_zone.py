@@ -10,16 +10,23 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
+import sys
 from datetime import datetime
 from pathlib import Path
 
 import joblib
+import matplotlib
+
+# 학습 스크립트는 GUI가 없는 서버/컨테이너에서도 그래프를 파일로 저장해야 한다.
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import mlflow
 import mlflow.sklearn
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from dotenv import load_dotenv
 from sklearn.compose import TransformedTargetRegressor
 from sklearn.dummy import DummyRegressor
 from sklearn.ensemble import ExtraTreesRegressor, RandomForestRegressor
@@ -82,12 +89,25 @@ def configure_plot() -> None:
 
 
 def main() -> None:
+    # MLflow 3.x가 출력하는 이모지가 Windows 기본 CP949 콘솔에서 실행을 중단시키지 않게 한다.
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
+
+    # 개발 PC의 공유 MLflow 주소는 .env.dev의 MLFLOW_TRACKING_URI로 관리한다.
+    # 이미 셸/CI에 설정된 값은 덮어쓰지 않으며 CLI 인자가 항상 최우선이다.
+    load_dotenv(ROOT / ".env.dev", override=False)
+
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data", type=Path, default=DEFAULT_DATA)
     parser.add_argument("--output", type=Path, default=ROOT / "artifacts/child_safety_zone")
     parser.add_argument(
         "--tracking-uri",
-        help="MLflow 서버 URI. 생략하면 프로젝트 artifacts 아래의 로컬 SQLite를 사용합니다.",
+        default=os.getenv("MLFLOW_TRACKING_URI"),
+        help=(
+            "MLflow 서버 URI. 우선순위는 CLI > MLFLOW_TRACKING_URI(.env.dev 포함)이며, "
+            "둘 다 없을 때만 프로젝트 artifacts 아래의 로컬 SQLite를 사용합니다."
+        ),
     )
     parser.add_argument(
         "--experiment-name",
@@ -109,6 +129,8 @@ def main() -> None:
     local_tracking = ROOT / "artifacts/mlflow_child_safety_zone"
     local_tracking.mkdir(parents=True, exist_ok=True)
     tracking_uri = args.tracking_uri or f"sqlite:///{(local_tracking / 'tracking.db').as_posix()}"
+    tracking_mode = "remote" if args.tracking_uri else "local"
+    print(f"MLflow tracking ({tracking_mode}): {tracking_uri}", flush=True)
     mlflow.set_tracking_uri(tracking_uri)
     if mlflow.get_experiment_by_name(args.experiment_name) is None:
         mlflow.create_experiment(
@@ -141,6 +163,7 @@ def main() -> None:
         "dataset_unit": "administrative_dong_year",
         "selection_rule": "lowest_2023_5fold_cv_rmse",
         "deployment_status": "exploratory_not_production",
+        "tracking_mode": tracking_mode,
         "mlflow.note.content": "실제 어린이보호구역 연도별 자료 기반 탐색 실험. 시간 전환이 두 개뿐이므로 자동 배포 금지.",
     })
     mlflow.log_artifact(str(Path(__file__)), artifact_path="source")
