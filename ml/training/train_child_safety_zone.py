@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import sys
 from datetime import datetime
 from pathlib import Path
 
@@ -99,7 +100,40 @@ def main() -> None:
         action="store_true",
         help="연령군별 CV 우승 모델만 MLflow Model Registry에 등록합니다.",
     )
+    parser.add_argument(
+        "--minio-env-file",
+        type=Path,
+        help="MinIO 설정 파일. 생략하면 프로젝트의 .env.dev, .env 순서로 찾습니다.",
+    )
+    parser.add_argument(
+        "--data-prefix",
+        default="",
+        help="MinIO 데이터 버킷의 객체 접두사. 기존 upload_minio.py 구조는 빈 값입니다.",
+    )
+    parser.add_argument(
+        "--skip-data-sync",
+        action="store_true",
+        help="오프라인 재현 등 명시적인 경우에만 시작 전 MinIO 데이터 동기화를 건너뜁니다.",
+    )
     args = parser.parse_args()
+
+    # 어느 PC에서 실행해도 동일한 공유 입력을 먼저 확보한다. 동기화 실패 시 기존 로컬 자료로
+    # 계속하지 않고 예외를 발생시켜 데이터 버전이 다른 상태에서 모델이 등록되는 것을 막는다.
+    sync_result: dict[str, object] = {"status": "skipped_by_user"}
+    if not args.skip_data_sync:
+        sys.path.insert(0, str(ROOT))
+        from scripts.minio_data_sync import sync_minio_data
+
+        sync_result = sync_minio_data(
+            root=ROOT,
+            data_dir=ROOT / "data",
+            env_file=args.minio_env_file,
+            prefix=args.data_prefix,
+        )
+        print(
+            "MinIO data sync completed: "
+            f"downloaded={sync_result['downloaded']}, skipped={sync_result['skipped']}"
+        )
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     out = args.output / stamp; out.mkdir(parents=True, exist_ok=False)
     model_dir = out / "models"; model_dir.mkdir()
@@ -135,6 +169,10 @@ def main() -> None:
         "cv_folds": 5,
         "minimum_base_children": 30,
         "candidate_count_per_age": len(candidates()),
+        "minio_data_bucket": sync_result.get("bucket", "sync_skipped"),
+        "minio_data_prefix": sync_result.get("prefix", ""),
+        "minio_downloaded_files": sync_result.get("downloaded", 0),
+        "minio_skipped_files": sync_result.get("skipped", 0),
     })
     mlflow.set_tags({
         "task": "next_year_child_population_log_growth",

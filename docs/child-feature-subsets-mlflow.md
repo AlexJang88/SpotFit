@@ -159,6 +159,42 @@ python ml/training/train_child_feature_subsets.py --tracking-uri http://127.0.0.
 - `spotfit-child-safety-zone-middle`
 - `spotfit-child-safety-zone-high`
 
+### 학습 시작 전 MinIO 데이터 동기화
+
+이 스크립트는 기본적으로 모델 학습보다 먼저 MinIO 데이터 버킷의 모든 데이터 객체를 로컬
+`data/` 아래에 내려받습니다. `.env.dev`가 있으면 우선 사용하고, 없으면 `.env`를 사용합니다.
+`S3_DATA_BUCKET`이 있으면 해당 버킷을 사용하며, 없으면 기존 구성과 같이
+`S3_MODEL_BUCKET`을 사용합니다. 같은 버킷의 `recommender/` 객체는 서비스 모델이므로 데이터
+동기화에서 제외합니다.
+
+다운로드는 임시파일이 완성된 후 원본 경로를 교체합니다. 네트워크·권한·인증 오류가 발생하면
+기존 로컬 데이터로 학습을 계속하지 않고 중단하므로, PC마다 다른 자료가 MLflow에 등록되는
+문제를 막습니다. 원격에 없는 로컬 파일을 자동 삭제하지는 않습니다.
+
+기본 실행:
+
+```powershell
+python ml/training/train_child_safety_zone.py
+```
+
+설정 파일을 직접 지정하려면:
+
+```powershell
+python ml/training/train_child_safety_zone.py --minio-env-file .env.dev
+```
+
+MinIO 객체가 실제로 `data/...` 접두사 아래 저장된 별도 구성이라면:
+
+```powershell
+python ml/training/train_child_safety_zone.py --data-prefix data/
+```
+
+이미 고정한 로컬 스냅샷을 오프라인 재현할 때만 다음 옵션을 명시합니다.
+
+```powershell
+python ml/training/train_child_safety_zone.py --skip-data-sync
+```
+
 로컬 검증만 수행하면 다음 명령을 사용합니다. Registry에는 등록하지 않습니다.
 
 ```powershell
