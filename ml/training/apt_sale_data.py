@@ -11,7 +11,7 @@ MIN_N = 10          # 동네당 거래가 이만큼은 있어야 그 동네의 �
 X_COLS = ['층수', '거래일(년)', '완공연도', '직장인구 수', 'CCTV 수', '1인가구 비율(%)', '유동인구 수']
 Y = '평당 금액(만원)'
 
-def load():
+def load(drop_missing=True):     # drop_missing=False 이면 직장인구·1인가구가 빈 동네도 남김 (빈 값을 처리하는 모델용)
     # 아파트 매매 거래 → 행정동별 한 표 (AptHypothesis.py 의 deals() 와 같은 기준: 취소 거래·20㎡ 미만·지번 불일치 제외)
     cols = ['행정동_코드', '연결방식', 'cdealType', 'excluUseAr', 'dealAmount', 'dealYear', 'dealMonth', 'dealDay', 'buildYear', 'floor']
     a = pd.read_csv(DATA + '부동산(도로명주소)/apt_sale_juso.csv', low_memory=False, usecols=cols)
@@ -22,6 +22,6 @@ def load():
     g = a.groupby('행정동_코드').agg(**{'거래 수': (Y, 'size'), Y: (Y, 'median'), '층수': ('층수', 'mean'), '거래일(년)': ('거래일(년)', 'mean'), '완공연도': ('완공연도', 'mean')})    # y는 동네 중앙값, 항목은 동네 평균
     info = pd.read_csv(OUT + '평당금액_행정동표.csv').set_index('행정동_코드')                                          # 동네 특징(직장인구·CCTV·1인가구·유동인구)과 동네 이름
     d = g[g['거래 수'] >= MIN_N].join(info[['자치구', '행정동', '직장인구 수', 'CCTV 수', '1인가구 비율(%)', '유동인구 수']])
-    n0 = len(d); d = d.dropna(subset=X_COLS)                                                                            # 직장인구·1인가구가 비어 있는 동네는 제외 (릿지·랜덤포레스트가 빈 값을 못 다룸)
+    n0 = len(d); d = d.dropna(subset=X_COLS) if drop_missing else d                                                                            # 직장인구·1인가구가 비어 있는 동네(11곳)는 제외: 릿지가 빈 값을 못 다루고, 모든 모델을 같은 동네로 비교하기 위해서 (랜덤포레스트·XGBoost는 빈 값을 처리할 수 있음). 빈 값은 채우지 않음
     print(f'아파트 매매 {len(a):,}건 → 행정동 {len(g)}곳 → 거래 {MIN_N}건 이상 {n0}곳 → 빈 값 제외 {len(d)}곳 | 평당 금액 중앙값의 중앙값 {d[Y].median():,.0f}만원')
     return d
