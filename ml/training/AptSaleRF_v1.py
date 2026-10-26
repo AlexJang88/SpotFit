@@ -28,7 +28,7 @@ a = pd.DataFrame({'행정동_코드': a['행정동_코드'].astype(int).replace(
 g = a.groupby('행정동_코드').agg(**{'거래 수': (Y, 'size'), Y: (Y, 'median'), '층수': ('층수', 'mean'), '거래일(년)': ('거래일(년)', 'mean'), '완공연도': ('완공연도', 'mean')})    # y는 동네 중앙값, 항목은 동네 평균
 info = pd.read_csv(OUT + '평당금액_행정동표.csv').set_index('행정동_코드')                                              # 동네 특징(직장인구·CCTV·1인가구·유동인구)과 동네 이름
 d = g[g['거래 수'] >= MIN_N].join(info[['자치구', '행정동', '직장인구 수', 'CCTV 수', '1인가구 비율(%)', '유동인구 수']])
-n0 = len(d); d = d.dropna(subset=X_COLS)                                                                                # 직장인구·1인가구가 비어 있는 동네는 제외 (랜덤포레스트가 빈 값을 못 다룸)
+n0 = len(d); d = d.dropna(subset=X_COLS)                                                            
 X, y = d[X_COLS], d[Y]
 print(f'아파트 매매 {len(a):,}건 → 행정동 {len(g)}곳 → 거래 {MIN_N}건 이상 {n0}곳 → 빈 값 제외 {len(d)}곳 | 평당 금액 중앙값의 중앙값 {y.median():,.0f}만원')
 
