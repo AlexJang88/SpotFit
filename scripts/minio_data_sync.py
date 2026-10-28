@@ -7,9 +7,14 @@
 
 from __future__ import annotations
 
+import argparse
 import os
 from pathlib import Path, PurePosixPath
+import sys
 from urllib.parse import urlsplit
+
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def _safe_destination(data_dir: Path, object_name: str, prefix: str) -> Path:
@@ -45,6 +50,7 @@ def sync_minio_data(
     env_file: Path | None = None,
     prefix: str = "",
     bucket_override: str | None = None,
+    overwrite: bool = False,
 ) -> dict[str, int | str]:
     """MinIO 데이터 객체 전체를 내려받고 다운로드·건너뜀 개수를 반환한다."""
     try:
@@ -102,10 +108,14 @@ def sync_minio_data(
             continue
         destination = _safe_destination(data_dir, item.object_name, prefix)
         destination.parent.mkdir(parents=True, exist_ok=True)
-        # 사용자가 요구한 실행 시점 스냅샷을 확실히 확보하기 위해 크기가 같더라도 매번 받는다.
-        # 같은 크기로 내용만 변경된 객체를 놓치는 문제를 방지한다.
+        if destination.is_file() and not overwrite:
+            print(f"SKIP existing: {destination}")
+            skipped += 1
+            continue
+        # 덮어쓰기는 임시 파일 다운로드가 완료된 뒤 원자적으로 수행한다.
         temporary = destination.with_name(destination.name + ".minio-download.tmp")
         try:
+            print(f"DOWNLOAD s3://{bucket}/{item.object_name} -> {destination}")
             client.fget_object(bucket, item.object_name, str(temporary))
             os.replace(temporary, destination)
         finally:
@@ -121,4 +131,61 @@ def sync_minio_data(
         "skipped": skipped,
         "env_file": str(selected_env),
     }
+
+
+def main() -> int:
+    """Download MinIO data objects into the project's data directory."""
+    parser = argparse.ArgumentParser(
+        description="MinIO 버킷의 파일을 프로젝트 data 디렉터리로 다운로드합니다."
+    )
+    parser.add_argument(
+        "--env-file",
+        type=Path,
+        help="MinIO 설정 파일. 기본값: 프로젝트의 .env.dev, 없으면 .env",
+    )
+    parser.add_argument(
+        "--data-dir",
+        type=Path,
+        default=ROOT / "data",
+        help="다운로드 대상 디렉터리. 기본값: 프로젝트/data",
+    )
+    parser.add_argument(
+        "--bucket",
+        help="버킷 이름. 기본값: S3_DATA_BUCKET, 없으면 S3_MODEL_BUCKET",
+    )
+    parser.add_argument(
+        "--prefix",
+        default="",
+        help="다운로드할 MinIO 객체 경로 접두사",
+    )
+    parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="로컬에 같은 경로의 파일이 있어도 다시 다운로드하여 덮어씁니다.",
+    )
+    args = parser.parse_args()
+
+    try:
+        result = sync_minio_data(
+            root=ROOT,
+            data_dir=args.data_dir,
+            env_file=args.env_file,
+            prefix=args.prefix,
+            bucket_override=args.bucket,
+            overwrite=args.overwrite,
+        )
+    except (FileNotFoundError, OSError, RuntimeError, ValueError) as error:
+        print(f"MinIO download failed: {error}", file=sys.stderr)
+        return 1
+
+    print(
+        "MinIO download completed: "
+        f"bucket={result['bucket']}, prefix={result['prefix']!r}, "
+        f"downloaded={result['downloaded']}, skipped={result['skipped']}"
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
 
