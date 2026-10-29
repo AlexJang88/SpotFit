@@ -1,6 +1,7 @@
-# 아파트 매매 모델 버전 비교에 공통으로 쓰는 코드 (v8부터 사용)
+# 매매 모델(아파트 v8부터, 빌라 v1부터) 버전 비교에 공통으로 쓰는 코드
 #   add_area, add_age : 동네 항목 추가 (AptSaleRF_v6.py, AptSaleRF_v7.py 와 같은 방법)
-#   compare           : 같은 분할(5분할 × 20번 반복)에서 이전 버전과 새 버전 모델(기본 랜덤포레스트, XGBoost 선택 가능)을 나란히 학습·비교하고, 결과 저장 + MLflow 기록
+#   compare           : 같은 분할(5분할 × 20번 반복)에서 이전 버전과 새 버전 모델(랜덤포레스트·XGBoost·릿지, 이전 버전 자리에 기준 모델 가능)을
+#                       나란히 학습·비교하고, 결과 저장 + MLflow 기록. kind='villa' 이면 빌라 매매
 import argparse, hashlib, json, os, subprocess, warnings
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -8,7 +9,7 @@ import joblib, mlflow, mlflow.sklearn, numpy as np, pandas as pd
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.inspection import permutation_importance
 from sklearn.model_selection import RepeatedKFold
-from apt_sale_data import DATA, OLD, OUT, Y
+from apt_sale_data import DATA, JUSO, KINDS, OLD, OUT, Y
 warnings.simplefilter('ignore')
 
 REPEAT = 20
@@ -24,11 +25,14 @@ def ridge():                                                                    
     from sklearn.pipeline import make_pipeline
     from sklearn.preprocessing import StandardScaler
     return make_pipeline(StandardScaler(), RidgeCV(alphas=np.logspace(-2, 3, 30)))
-MODELS = {'random_forest': ('랜덤포레스트', 'RF', rf), 'xgboost': ('XGBoost', 'XGB', xgb), 'ridge': ('릿지', 'Ridge', ridge)}     # 이름: (한글 이름, 파일 이름용 약자, 모델 만드는 함수)
+def mean():                                                                                         # 기준 모델: 학습 동네의 평균으로 찍기 (아파트 v1~v3의 기준과 같음)
+    from sklearn.dummy import DummyRegressor
+    return DummyRegressor(strategy='mean')
+MODELS = {'random_forest': ('랜덤포레스트', 'RF', rf), 'xgboost': ('XGBoost', 'XGB', xgb), 'ridge': ('릿지', 'Ridge', ridge), 'mean': ('기준(평균으로 찍기)', 'Mean', mean)}   # 이름: (한글 이름, 파일 이름용 약자, 모델 만드는 함수)
 
-def add_area(d):        # 동네 아파트 매매 거래의 평균 전용면적 (apt_sale_data.py 와 같은 거래 기준)
-    t = pd.read_csv(DATA + '부동산(도로명주소)/apt_sale_juso.csv', low_memory=False, usecols=['행정동_코드', '연결방식', 'cdealType', 'excluUseAr'])
-    t = t[t['cdealType'].isna() & (t['excluUseAr'] >= 20) & (t['연결방식'] == '지번 일치')]
+def add_area(d, kind='apt'):        # 동네 매매 거래의 평균 전용면적 (apt_sale_data.py 와 같은 거래 기준, kind='villa' 이면 빌라 거래)
+    t = pd.read_csv(JUSO + KINDS[kind][1], low_memory=False, usecols=['행정동_코드', '연결방식', 'cdealType', 'excluUseAr'])
+    t = t[t['cdealType'].isna() & (t['연결방식'] == '지번 일치')]
     return d.join(t.groupby(t['행정동_코드'].astype(int).replace(OLD))['excluUseAr'].mean().rename(AREA))
 
 def add_age(d):         # 상주인구 연령대 비율 6개 (값이 이상한 2022년 4분기~2023년 3분기는 빼고 분기 평균)
@@ -42,9 +46,10 @@ def add_age(d):         # 상주인구 연령대 비율 6개 (값이 이상한 2
     share = p[raw].div(p[raw].sum(axis=1), axis=0).mul(100).set_axis(AGE_COLS, axis=1)
     return d.join(share.groupby(p['행정동_코드']).mean())
 
-def compare(d, old, new, name, run, why, old_alg='random_forest', new_alg='random_forest'):
+def compare(d, old, new, name, run, why, old_alg='random_forest', new_alg='random_forest', kind='apt'):
     """old, new = ('버전', [X 목록]). 같은 분할에서 두 버전을 나란히 학습해 비교하고 new 결과를 저장·기록. old_alg, new_alg = MODELS의 이름"""
     (ko_o, _, mk_o), (ko_n, ab_n, mk_n) = MODELS[old_alg], MODELS[new_alg]
+    pre = KINDS[kind][0] + '매매'                                                                     # 저장 파일 이름 앞부분: 아파트매매 / 빌라매매
     ap = argparse.ArgumentParser()
     ap.add_argument('--tracking-uri'); ap.add_argument('--experiment', default='house-price-forecast-comparison'); ap.add_argument('--task-id', default='unassigned')
     a = ap.parse_args()
@@ -65,7 +70,7 @@ def compare(d, old, new, name, run, why, old_alg='random_forest', new_alg='rando
     r2 = lambda p: 1 - ((y.values - p) ** 2).sum(axis=1) / ((y.values - y.mean()) ** 2).sum()            # 반복마다 R² (v1~v7과 같은 정의)
     mae = lambda p: np.abs(y.values - p).mean(axis=1)
     po, pn = P[vo], P[vn]
-    res = pd.DataFrame({'모델': [f'{ko_o} {vo} ({len(Xo)}개)', name], 'R² 평균': [r2(po).mean(), r2(pn).mean()], 'R² 표준편차': [r2(po).std(), r2(pn).std()],
+    res = pd.DataFrame({'모델': [ko_o if old_alg == 'mean' else f'{ko_o} {vo} ({len(Xo)}개)', name], 'R² 평균': [r2(po).mean(), r2(pn).mean()], 'R² 표준편차': [r2(po).std(), r2(pn).std()],
                         '평균 오차(만원/평)': [mae(po).mean(), mae(pn).mean()]})
     diff = r2(pn) - r2(po)
     wins = int((np.array(fold_mae[vn]) < np.array(fold_mae[vo])).sum())
@@ -92,15 +97,16 @@ def compare(d, old, new, name, run, why, old_alg='random_forest', new_alg='rando
     print(f'\n[{vn} 항목 중요도: 섞으면 R²가 떨어지는 정도]'); print(imp.round(3).to_string())
 
     # 저장
-    f = OUT + f'아파트매매_{ab_n}_{vn}_'
+    f = OUT + f'{pre}_{ab_n}_{vn}_'
     res.round(3).to_csv(f + '성능.csv', index=False, encoding='utf-8-sig')
     pd.DataFrame({'반복': range(1, REPEAT + 1), f'R² {vo}': r2(po), f'R² {vn}': r2(pn), '차이': diff}).round(4).to_csv(f + '반복별차이.csv', index=False, encoding='utf-8-sig')
     weak.round(1).to_csv(f + '약점확인.csv', encoding='utf-8-sig')
     imp.round(4).rename('중요도(R² 감소량)').to_csv(f + '중요도.csv', encoding='utf-8-sig')
     d.assign(예측=pn.mean(axis=0), 오차=lambda t: t['예측'] - t[Y]).reset_index().round(2).to_csv(f + '동네별예측.csv', index=False, encoding='utf-8-sig')
-    cp = OUT + '아파트매매_모델비교.csv'
-    c = pd.read_csv(cp)
-    cmp = pd.concat([c[~c['모델'].isin([name, '기준(평균으로 찍기)'])], res.iloc[[1]], c[c['모델'] == '기준(평균으로 찍기)']]).round(3)
+    cp = OUT + f'{pre}_모델비교.csv'                                                                   # 버전들을 한 표에 모음 (기준 모델 행은 맨 아래)
+    c = pd.read_csv(cp) if os.path.exists(cp) else pd.DataFrame(columns=res.columns)
+    base = res.iloc[[0]] if old_alg == 'mean' else c[c['모델'] == '기준(평균으로 찍기)']
+    cmp = pd.concat([c[~c['모델'].isin([name, '기준(평균으로 찍기)'])], res.iloc[[1]], base]).infer_objects().round(3)     # 새 표일 때 숫자 열이 글자형이 되는 것 방지
     cmp.to_csv(cp, index=False, encoding='utf-8-sig')
     print('\n[모델 비교]'); print(cmp.to_string(index=False))
     model = mk_n().fit(d[Xn], y)
@@ -108,7 +114,7 @@ def compare(d, old, new, name, run, why, old_alg='random_forest', new_alg='rando
 
     # MLflow 기록 (docs/model-team-workflow.md): Run 1개, 필수 태그, Registry 등록·champion·MinIO 업로드는 하지 않음
     root = Path(__file__).resolve().parents[2]
-    ev = root / 'artifacts/apt_sale_model_comparison' / (vn + '_' + datetime.now(timezone(timedelta(hours=9))).strftime('%Y%m%d_%H%M%S')); ev.mkdir(parents=True)
+    ev = root / f'artifacts/{kind}_sale_model_comparison' / (vn + '_' + datetime.now(timezone(timedelta(hours=9))).strftime('%Y%m%d_%H%M%S')); ev.mkdir(parents=True)
     d.reset_index().to_csv(ev / 'analysis_panel.csv', index=False, encoding='utf-8-sig')
     split = pd.concat([d.reset_index()[['행정동_코드', '자치구', '행정동']].assign(repeat=r, validation_fold=-1) for r in range(REPEAT)], ignore_index=True)
     for i, (_, te) in enumerate(cv): split.loc[te + (i // 5) * len(d), 'validation_fold'] = i % 5
@@ -121,13 +127,13 @@ def compare(d, old, new, name, run, why, old_alg='random_forest', new_alg='rando
     note = (f'{why} 결과: R² {r2(po).mean():.3f} → {r2(pn).mean():.3f} (차이 {diff.mean():+.4f}, 기준 폭 {band:.4f}), MAE {mae(po).mean():.1f} → {mae(pn).mean():.1f}, '
             f'오차가 더 작은 분할 {wins}/100. 판정: {verdict}. 동네 단위 정적 집계이며 미래 예측·인과 모델이 아님.')
     with mlflow.start_run(run_name=run):
-        mlflow.log_params({'algorithm': new_alg, 'version': vn, 'features': json.dumps(Xn, ensure_ascii=False), 'compared_with': f'{vo} {old_alg} {len(Xo)} features',
+        mlflow.log_params({'target': f'{KINDS[kind][0]} 매매 동네 평당 금액(만원, 중앙값)', 'algorithm': new_alg, 'version': vn, 'features': json.dumps(Xn, ensure_ascii=False), 'compared_with': f'{vo} {old_alg} {len(Xo)} features',
                            'removed_features': json.dumps([c for c in Xo if c not in Xn], ensure_ascii=False), 'added_features': json.dumps([c for c in Xn if c not in Xo], ensure_ascii=False),
                            'n_dongs': len(d), 'cv': f'RepeatedKFold(n_splits=5, n_repeats={REPEAT}, random_state=0)', 'estimator_params': json.dumps(mk_n().get_params(), default=str)})
         mlflow.log_metrics({'cv_r2_pooled': float(r2(pn).mean()), 'cv_r2_pooled_std': float(r2(pn).std()), 'cv_mae': float(mae(pn).mean()), f'{vo}_cv_r2_pooled': float(r2(po).mean()),
                             f'{vo}_cv_mae': float(mae(po).mean()), f'r2_diff_vs_{vo}': float(diff.mean()), f'fold_wins_vs_{vo}': wins})
         mlflow.set_tags({'owner': owner, 'task_id': a.task_id, 'dataset_sha256': sha(ev / 'analysis_panel.csv'), 'split_sha256': sha(ev / 'cv_split.csv'), 'review_status': 'not_reviewed',
-                         'selection_status': 'feature_ablation', 'caution': 'static_dong_aggregate_not_future_forecast_not_causal', 'mlflow.note.content': note})
+                         'selection_status': 'baseline_comparison' if old_alg == 'mean' else 'feature_ablation', 'caution': 'static_dong_aggregate_not_future_forecast_not_causal', 'mlflow.note.content': note})
         for s in ['성능', '반복별차이', '약점확인', '중요도', '동네별예측']: mlflow.log_artifact(f + s + '.csv', artifact_path='evidence')
         for p in ev.iterdir(): mlflow.log_artifact(str(p), artifact_path='evidence')
         mlflow.log_artifact(__file__, artifact_path='source')
