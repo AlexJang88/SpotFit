@@ -1,6 +1,6 @@
 # 모델 버전 6: 랜덤포레스트에 평균 전용면적을 더하면 좋아지는지 확인 (v1 = 7개 항목 vs v6 = 7개 + 평균 전용면적)
 #   같은 동네 408곳, 같은 분할(5분할 × 20번 반복), 같은 랜덤포레스트 설정으로 두 모델을 나란히 학습해서 비교함
-#   평균 전용면적 = 동네 아파트 매매 거래의 전용면적(excluUseAr, ㎡) 평균. 거래 기준은 apt_sale_data.py 와 같음 (취소 거래·20㎡ 미만·지번 불일치 제외)
+#   평균 전용면적 = 동네 아파트 매매 거래의 전용면적(excluUseAr, ㎡) 평균. 거래 기준은 apt_sale_data.py 와 같음 (취소 거래·지번 불일치 제외, 작은 집도 모두 포함)
 #   더하는 이유: 지금 X에 집 크기 정보가 없고, 기존 7개를 고려한 뒤에도 평당 금액과의 연관이 남음(순위 편상관 +0.30)
 #   판단: 좋아짐 = R² 차이가 반복마다 흔들리는 폭(v1 R² 표준편차)보다 크고, 100개 분할 중 80개 이상에서 오차가 작음
 # 실행: python AptSaleRF_v6.py                                          (내 PC의 로컬 MLflow에만 기록, 시험용)
@@ -12,7 +12,7 @@ import joblib, mlflow, mlflow.sklearn, numpy as np, pandas as pd
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.inspection import permutation_importance
 from sklearn.model_selection import RepeatedKFold
-from apt_sale_data import DATA, OLD, OUT, X_COLS, Y, load
+from apt_sale_data import JUSO, OLD, OUT, X_COLS, Y, load
 warnings.simplefilter('ignore')
 
 REPEAT = 20                                                 # v1~v5와 같아야 같은 분할로 비교됨
@@ -27,8 +27,8 @@ a = ap.parse_args()
 
 # 데이터: v1과 같은 408곳 + 동네 평균 전용면적
 d = load()
-t = pd.read_csv(DATA + '부동산(도로명주소)/apt_sale_juso.csv', low_memory=False, usecols=['행정동_코드', '연결방식', 'cdealType', 'excluUseAr'])
-t = t[t['cdealType'].isna() & (t['excluUseAr'] >= 20) & (t['연결방식'] == '지번 일치')]          # apt_sale_data.py 와 같은 거래 기준
+t = pd.read_csv(JUSO + 'apt_sale_juso.csv', low_memory=False, usecols=['행정동_코드', '연결방식', 'cdealType', 'excluUseAr'])
+t = t[t['cdealType'].isna() & (t['연결방식'] == '지번 일치')]          # apt_sale_data.py 와 같은 거래 기준
 area = t.groupby(t['행정동_코드'].astype(int).replace(OLD))['excluUseAr'].mean().rename(ADD)
 n0 = len(d); d = d.join(area)
 assert len(d) == n0 and d[ADD].notna().all(), '전용면적이 없는 동네가 있음'
@@ -110,7 +110,7 @@ why = (f'v1 랜덤포레스트에 동네 평균 전용면적 추가 실험. 이�
        f'결과: R² {r2(a1).mean():.3f} → {r2(a6).mean():.3f} (차이 {diff.mean():+.4f}, 기준 폭 {band:.4f}), MAE {mae(a1).mean():.1f} → {mae(a6).mean():.1f}, 오차가 더 작은 분할 {wins}/100. 판정: {verdict}. 동네 단위 정적 집계이며 미래 예측·인과 모델이 아님.')
 with mlflow.start_run(run_name='apt_sale_random_forest_v6_area'):
     mlflow.log_params({'algorithm': 'random_forest', 'version': 'v6', 'features': json.dumps(X8, ensure_ascii=False), 'added_features': json.dumps([ADD], ensure_ascii=False),
-                       'added_feature_source': 'apt_sale_juso.csv excluUseAr 동네 평균 (취소·20㎡ 미만·지번 불일치 제외)', 'compared_with': 'v1 random_forest 7 features',
+                       'added_feature_source': 'apt_sale_juso.csv excluUseAr 동네 평균 (취소·지번 불일치 제외, 작은 집도 포함)', 'compared_with': 'v1 random_forest 7 features',
                        'n_dongs': len(d), 'cv': 'RepeatedKFold(n_splits=5, n_repeats=20, random_state=0)', 'estimator_params': json.dumps(rf().get_params(), default=str)})
     mlflow.log_metrics({'cv_r2_pooled': float(r2(a6).mean()), 'cv_r2_pooled_std': float(r2(a6).std()), 'cv_mae': float(mae(a6).mean()), 'v1_cv_r2_pooled': float(r2(a1).mean()),
                         'v1_cv_mae': float(mae(a1).mean()), 'r2_diff_vs_v1': float(diff.mean()), 'fold_wins_vs_v1': wins})

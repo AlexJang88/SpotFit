@@ -13,7 +13,7 @@ import joblib, mlflow, mlflow.sklearn, numpy as np, pandas as pd
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.inspection import permutation_importance
 from sklearn.model_selection import RepeatedKFold
-from apt_sale_data import DATA, OLD, OUT, X_COLS, Y, load
+from apt_sale_data import DATA, JUSO, OLD, OUT, X_COLS, Y, load
 warnings.simplefilter('ignore')
 
 REPEAT = 20                                                 # v1~v6와 같아야 같은 분할로 비교됨
@@ -31,8 +31,8 @@ a = ap.parse_args()
 
 # ---------- 데이터: v1과 같은 408곳 + 평균 전용면적(v6과 같은 방법) + 연령대 비율 ----------
 d = load()
-t = pd.read_csv(DATA + '부동산(도로명주소)/apt_sale_juso.csv', low_memory=False, usecols=['행정동_코드', '연결방식', 'cdealType', 'excluUseAr'])
-t = t[t['cdealType'].isna() & (t['excluUseAr'] >= 20) & (t['연결방식'] == '지번 일치')]          # apt_sale_data.py 와 같은 거래 기준
+t = pd.read_csv(JUSO + 'apt_sale_juso.csv', low_memory=False, usecols=['행정동_코드', '연결방식', 'cdealType', 'excluUseAr'])
+t = t[t['cdealType'].isna() & (t['연결방식'] == '지번 일치')]          # apt_sale_data.py 와 같은 거래 기준
 d = d.join(t.groupby(t['행정동_코드'].astype(int).replace(OLD))['excluUseAr'].mean().rename(AREA))
 
 p = pd.read_csv(DATA + '../raw/서울시 상권분석서비스(상주인구-행정동).csv', encoding='cp949')
