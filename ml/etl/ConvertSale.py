@@ -6,8 +6,8 @@ import os
 import numpy as np, pandas as pd
 
 RAW = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data', 'raw') + os.sep
-PROC = os.path.join(RAW, '..', 'processed', '부동산') + os.sep                  # 고친 지번 파일(*_with_hdong.csv), 합친 전월세 파일이 있는 곳
-JUSO = os.path.join(RAW, '..', 'processed', '부동산(도로명주소)') + os.sep    # 결과(*_juso.csv)를 저장하는 곳
+PROC = os.path.join(RAW, '..', 'interim', '부동산') + os.sep                    # 고친 지번 파일(*_with_hdong.csv), 합친 전월세 파일이 있는 곳 (중간 결과라 data/interim)
+JUSO = os.path.join(RAW, '..', 'interim', '부동산(도로명주소)') + os.sep      # 결과(*_juso.csv)를 저장하는 곳
 os.makedirs(JUSO, exist_ok=True)
 
 # 1) 주소 DB → 지번별 행정동 (건물마다 한 줄이라 지번 기준으로 하나만 남김)
