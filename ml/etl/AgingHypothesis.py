@@ -24,7 +24,7 @@ def load(kw):           # 상권분석 csv를 이름으로 찾아 불러옴 (모
     return pd.concat([pd.read_csv(f, encoding='cp949') for f in glob.glob(RAW + '*.csv') if kw in unicodedata.normalize('NFC', os.path.basename(f))])
 
 # ---------- 1) 건물 목록: (지번, 종류) 1개 = 건물(단지) 1개, 종류와 건축년도는 거래 데이터에서 가져옴 ----------
-J, c = DATA + '부동산(도로명주소)/', ['sggCd', 'umdNm', 'jibun', '행정동_코드', '연결방식']
+J, c = RAW + '../interim/부동산(도로명주소)/', ['sggCd', 'umdNm', 'jibun', '행정동_코드', '연결방식']
 read = lambda n, kind: pd.read_csv(J + f'{n}_juso.csv', low_memory=False, usecols=c + ['buildYear']).rename(columns={'buildYear': '건축년도'}).assign(종류=kind)
 sale = pd.concat([read('apt_sale', '아파트'), read('villa_sale', '빌라')])                               # 매매: 파일로 종류 구분
 rent = pd.read_csv(J + '서울시_전월세가_juso.csv', low_memory=False, usecols=c + ['건축년도', '건물용도'])
