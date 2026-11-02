@@ -18,13 +18,11 @@ REPEAT = 20         # 5분할 교차검증을 반복하는 횟수 (클수록 결
 X_COLS = ['층수', '거래일(년)', '완공연도', '직장인구 수', 'CCTV 수', '1인가구 비율(%)', '유동인구 수']
 Y = '평당 금액(만원)'
 
-# 1) 아파트 매매 거래 → 행정동별 한 표 (AptHypothesis.py 의 deals() 와 같은 기준: 취소 거래·지번 불일치 제외, 작은 집도 모두 포함)
-cols = ['행정동_코드', '연결방식', 'cdealType', 'excluUseAr', 'dealAmount', 'dealYear', 'dealMonth', 'dealDay', 'buildYear', 'floor']
-a = pd.read_csv(DATA + '../interim/부동산(도로명주소)/apt_sale_juso.csv', low_memory=False, usecols=cols)
-a = a[a['cdealType'].isna() & (a['연결방식'] == '지번 일치')]
-day = pd.to_datetime(a[['dealYear', 'dealMonth', 'dealDay']].set_axis(['year', 'month', 'day'], axis=1), errors='coerce')
-a = pd.DataFrame({'행정동_코드': a['행정동_코드'].astype(int).replace(OLD), Y: pd.to_numeric(a['dealAmount'].str.replace(',', ''), errors='coerce') / (a['excluUseAr'] / 3.3058),   # 거래금액(만원) / 전용면적(평)
-                  '층수': a['floor'], '거래일(년)': day.dt.year + (day.dt.dayofyear - 1) / 365, '완공연도': a['buildYear']})
+# 1) 아파트 매매 거래 → 행정동별 한 표 (전처리된 아파트_매매.csv 사용: 취소 거래·지번 불일치는 이미 제외됨, 작은 집도 모두 포함)
+a = pd.read_csv(DATA + '부동산(전처리)/아파트_매매.csv', low_memory=False, usecols=['행정동_코드(상권분석)', '계약일', Y, '층', '건축년도'])
+day = pd.to_datetime(a['계약일'], errors='coerce')
+a = pd.DataFrame({'행정동_코드': a['행정동_코드(상권분석)'].astype(int), Y: a[Y],                                                                    # 평당 금액 = 거래금액(만원) / 전용면적(평)
+                  '층수': a['층'], '거래일(년)': day.dt.year + (day.dt.dayofyear - 1) / 365, '완공연도': a['건축년도']})
 g = a.groupby('행정동_코드').agg(**{'거래 수': (Y, 'size'), Y: (Y, 'median'), '층수': ('층수', 'mean'), '거래일(년)': ('거래일(년)', 'mean'), '완공연도': ('완공연도', 'mean')})    # y는 동네 중앙값, 항목은 동네 평균
 info = pd.read_csv(OUT + '평당금액_행정동표.csv').set_index('행정동_코드')                                              # 동네 특징(직장인구·CCTV·1인가구·유동인구)과 동네 이름
 d = g[g['거래 수'] >= MIN_N].join(info[['자치구', '행정동', '직장인구 수', 'CCTV 수', '1인가구 비율(%)', '유동인구 수']])
