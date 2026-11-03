@@ -38,7 +38,7 @@ def load(kw):           # 상권분석 csv를 이름으로 찾아 불러옴 (모
 
 # ---------- 1) 동네 특징 X 10개: 전체 기간 평균 ----------
 def one_person():       # 1인가구 비율(2022~2025 월별 전체). 코드 체계가 달라 이름으로 연결 (신사동은 강남·관악 2곳이라 따로 처리)
-    one = pd.read_csv(RAW + '../processed/1인가구/1인가구_전체.csv', encoding='cp949').groupby(['행정동코드', '행정동명'])[['1인가구수', '총인구']].sum().reset_index()
+    one = pd.read_csv(RAW + '../interim/1인가구/1인가구_전체.csv', encoding='cp949').groupby(['행정동코드', '행정동명'])[['1인가구수', '총인구']].sum().reset_index()
     one['비율'] = one['1인가구수'] / one['총인구'] * 100
     one['이름'] = one['행정동명'].str.replace('·', '').mask(one['행정동코드'] == 1121068, '관악신사동')
     nm = load('상주인구-행정동').drop_duplicates(K)[[K, '행정동_코드_명']]
@@ -72,9 +72,9 @@ def dong_features():
 # ---------- 2) 부동산 거래 항목 + 평당 금액 y: 거래 1건이 1행 ----------
 def deals():
     cols = ['_source_service', K, '연결방식', 'dealAmount', 'excluUseAr', 'dealYear', 'dealMonth', 'dealDay', 'buildYear', 'floor', 'cdealType']
-    d = pd.concat([pd.read_csv(RAW + f'../processed/부동산(도로명주소)/{n}_juso.csv', low_memory=False, usecols=cols) for n in ['apt_sale', 'villa_sale']], ignore_index=True)
+    d = pd.concat([pd.read_csv(RAW + f'../interim/부동산(도로명주소)/{n}_juso.csv', low_memory=False, usecols=cols) for n in ['apt_sale', 'villa_sale']], ignore_index=True)
     link = (d['연결방식'].fillna('연결안됨').value_counts(normalize=True) * 100).round(1)       # 전체 거래의 행정동 연결 방식 비율 (리포트에 표시)
-    d = d[d['cdealType'].isna() & (d['excluUseAr'] >= 20) & (d['연결방식'] == '지번 일치')]       # 해제(취소) 거래·초소형·지번이 주소 DB와 안 맞는 거래 제외
+    d = d[d['cdealType'].isna() & (d['연결방식'] == '지번 일치')]       # 해제(취소) 거래·지번이 주소 DB와 안 맞는 거래 제외 (작은 집도 모두 포함)
     date, year = when(d)
     return pd.DataFrame({K: d[K].astype(int).replace(OLD), '종류': d['_source_service'].map({'apt_sale': '아파트', 'villa_sale': '빌라'}),
         Y: num(d['dealAmount']) / (d['excluUseAr'] / 3.3058),                              # 거래금액(만원) / 전용면적(평)
@@ -199,10 +199,10 @@ fac_html = fac_corr.assign(**{c: fac_corr[c].map('{:+.2f}'.format) for c in fac_
 step('4/5 전월세 불러와서 종류별로 분석 중 (약 1분)...')
 # 전월세(아파트·연립다세대(빌라)·단독다가구·오피스텔): 서울시 전월세가 6개 파일을 합친 자료. 종류마다 건물 성격과 금액 수준이 달라서 종류별로 따로 분석
 # 행정동이 정확한 거래만: 오피스텔·빌라는 지번이 주소 DB와 일치한 거래, 단독다가구는 지번이 없어서 법정동이 행정동 하나뿐인 거래
-RENT = pd.read_csv(RAW + '../processed/부동산(도로명주소)/서울시_전월세가_juso.csv', low_memory=False)
+RENT = pd.read_csv(RAW + '../interim/부동산(도로명주소)/서울시_전월세가_juso.csv', low_memory=False)
 n_rent = len(RENT)
 ok = ((RENT['건물용도'] == '단독다가구') & (RENT['연결방식'] == '법정동 하나뿐')) | ((RENT['건물용도'] != '단독다가구') & (RENT['연결방식'] == '지번 일치'))
-RENT = RENT[ok & (RENT['임대면적'] >= 20) & (RENT['계약일'] >= 20210101)].reset_index(drop=True)         # 20㎡ 이상, 매매 분석과 같은 기간(2021년 이후 계약)
+RENT = RENT[ok & (RENT['계약일'] >= 20210101)].reset_index(drop=True)         # 매매 분석과 같은 기간(2021년 이후 계약), 작은 집도 모두 포함
 ymd = pd.to_datetime(RENT['계약일'].astype(str), format='%Y%m%d', errors='coerce')
 RENT = pd.DataFrame({K: RENT[K].astype(int).replace(OLD), '종류': RENT['건물용도'].replace({'연립다세대': '빌라(연립다세대)'}), '월세 거래': num(RENT['임대료(만원)']) > 0,
                      '평당 보증금': num(RENT['보증금(만원)']) / (RENT['임대면적'] / 3.3058), '평당 월세': num(RENT['임대료(만원)']) / (RENT['임대면적'] / 3.3058),      # 보증금·월세(만원) / 면적(평)
@@ -283,7 +283,7 @@ html = f"""<meta charset="utf-8"><title>평당 금액 분석</title>
 
 <h2>1. 어떻게 분석했나</h2>
 <ol><li><b>지번 → 행정동 변환</b>: 실거래 데이터의 법정동(umdNm)+지번(jibun)을 도로명주소 DB(juso.go.kr)의 지번별 행정동과 연결했어요 (<code>apt_sale_juso.csv</code>, <code>villa_sale_juso.csv</code>). 법정동 하나가 행정동 여러 개에 걸쳐도 지번마다 정확한 행정동을 알 수 있어요. 주소 DB에서 지번이 정확히 일치한 거래만 썼어요(주소 DB에 없는 지번은 분석에서 뺐어요). 지번이 깨진 건(엑셀 날짜 변환)은 고친 지번(<code>*_with_hdong.csv</code>)을 썼어요.</li>
-<li><b>평당 금액(y)</b>: <code>거래금액(만원) ÷ (전용면적 ÷ 3.3058)</code>. 해제(취소) 거래와 20㎡ 미만은 뺐어요. (㎡당 금액은 이 값 ÷ 3.3058이에요)</li>
+<li><b>평당 금액(y)</b>: <code>거래금액(만원) ÷ (전용면적 ÷ 3.3058)</code>. 해제(취소) 거래는 뺐어요. 작은 집도 모두 포함했어요. (㎡당 금액은 이 값 ÷ 3.3058이에요)</li>
 <li><b>거래일</b>: 계약 연·월·일을 하나의 날짜로 합치고, 연도에 연중 경과 비율을 더한 숫자(예: 2024.5)로 바꿨어요. 전체 기간을 쓰기 때문에 시간에 따라 오른 가격이 이 항목에 반영돼요.</li>
 <li><b>행정동 단위로 묶기</b>: 거래를 <b>행정동 코드(8자리)</b>별로 묶어 동네 1곳을 1행으로 만들었어요. 평당 금액은 동네 중앙값, 층수·거래일·완공연도는 동네 평균이에요. 여기에 동네 특징(직장인구·CCTV·1인가구·유동인구)을 붙였어요. 상권분석 자료(유동·직장·거주인구, 집객시설, 점포)는 코드가 같고, CCTV는 좌표로 가까운 행정동에, 1인가구는 코드 체계가 달라 행정동 이름으로 연결했어요. 최근 새로 나뉘거나 이름이 바뀐 동(신설동·용두동→용신동, 상일제1·2동→상일동, 개포3동→일원2동)은 KIKmix 변경 이력대로 상권분석의 옛 행정동에 합쳤어요.</li></ol>
 {table(desc, 't l')}
@@ -299,7 +299,7 @@ html = f"""<meta charset="utf-8"><title>평당 금액 분석</title>
 <div class="row"><div>{table(fac_html, 't')}</div>{img_fac}</div>
 
 <h4>2-4. 전월세 거래: 종류별 (거래 1건 단위)</h4>
-<p>서울시 전월세가(2021~2026년 6개 파일을 합친 자료, 전체 {n_rent:,}건)를 법정동+지번 → 도로명주소 DB로 행정동에 연결했어요. 아파트·오피스텔·빌라(연립다세대)는 <b>지번이 일치한 거래</b>(97~99%)를, 단독다가구는 지번이 없어서 <b>법정동이 행정동 하나뿐인 거래</b>(약 15%)만 썼어요(행정동이 여러 개에 걸친 큰 법정동은 빠짐). 2021년 이후 계약, 임대면적 20㎡ 이상만 썼고 면적은 임대면적이에요(단독다가구는 전용면적이 아닐 수 있어요).
+<p>서울시 전월세가(2021~2026년 6개 파일을 합친 자료, 전체 {n_rent:,}건)를 법정동+지번 → 도로명주소 DB로 행정동에 연결했어요. 아파트·오피스텔·빌라(연립다세대)는 <b>지번이 일치한 거래</b>(97~99%)를, 단독다가구는 지번이 없어서 <b>법정동이 행정동 하나뿐인 거래</b>(약 15%)만 썼어요(행정동이 여러 개에 걸친 큰 법정동은 빠짐). 2021년 이후 계약만 썼고(작은 집도 포함) 면적은 임대면적이에요(단독다가구는 전용면적이 아닐 수 있어요).
 종류마다 건물 성격과 금액 수준이 달라서 <b>종류별로 나눠서 각각</b> 분석했어요. 보증금과 월세는 서로 바꿔 낼 수 있어서 한 값으로 합치지 않고 ① 전세의 평당 보증금, ② 월세 거래의 평당 보증금, ③ 월세 거래의 평당 월세로 나눴어요. 행정동은 이름이라 상관비 η로 봤고, 값이 아예 없는 항목(예: 단독다가구의 층수)은 표에서 뺐어요. 매매 평당 금액과 뜻이 달라서 따로 봤어요.</p>
 {rent_html}
 <h4>2-5. 전월세 행정동 단위 연관도</h4>
@@ -342,7 +342,7 @@ html = f"""<meta charset="utf-8"><title>평당 금액 분석</title>
 <div style="overflow:auto">{gu_corr.round(2).rename_axis('자치구').reset_index().to_html(index=False, border=0, classes='t', formatters={c: ff('{:+.2f}') for c in USE})}</div>
 
 <h2>6. 알아둘 점</h2>
-<ul><li>행정동 연결 방식(전체 거래 기준, <b>지번 일치만 분석에 사용</b>): {', '.join(f'{k} {v}%' for k, v in link.items())}. 상권분석에 행정동이 없어 제외한 거래: <b>{n_drop:,}건</b> (취소·20㎡ 미만·행정동 미연결 제외 후 {len(all_deals):,}건 중 {n_drop / len(all_deals) * 100:.1f}%)이에요.</li>
+<ul><li>행정동 연결 방식(전체 거래 기준, <b>지번 일치만 분석에 사용</b>): {', '.join(f'{k} {v}%' for k, v in link.items())}. 상권분석에 행정동이 없어 제외한 거래: <b>{n_drop:,}건</b> (취소·행정동 미연결 제외 후 {len(all_deals):,}건 중 {n_drop / len(all_deals) * 100:.1f}%)이에요.</li>
 <li>행정동 단위로 묶으면 동네 수(약 420곳)만큼의 점으로 계산해서, 거래가 적은 동네의 값은 덜 믿을 만하고 아파트·빌라가 섞인 중앙값이에요(종류는 이번 분석 항목에서 뺐어요). 그래서 층수·거래일처럼 동네 평균을 낸 항목은 "아파트가 많은 동네"(층이 높고 평당 금액도 높음)나 "거래 시점이 늦은 동네"의 영향을 같이 받을 수 있어요.</li>
 <li>동네 특징은 전체 기간의 평균이에요. 점포 관련 항목(점포 수·창업률·폐업률·업종 수)은 2025년 이후 데이터만 있어요.</li>
 <li>아파트와 빌라는 평당 금액 수준이 달라서 매매 분석의 동네 값(중앙값)에 두 종류가 섞여 있어요. 전월세(아파트·빌라·단독다가구·오피스텔)는 매매와 금액의 뜻이 달라서, 매매 평당 금액 분석에 섞지 않고 평당 보증금·평당 월세로 2-4에서 따로 봤어요.</li></ul>"""
