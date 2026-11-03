@@ -1,0 +1,2117 @@
+{
+    "가락1동": {
+        "current_price_per_pyeong": 2592.1,
+        "predicted_price_1y_2027": 1763.6,
+        "predicted_price_3y_2029": 1750.8
+    },
+    "가락2동": {
+        "current_price_per_pyeong": 2087.0,
+        "predicted_price_1y_2027": 2084.5,
+        "predicted_price_3y_2029": 2023.0
+    },
+    "가락본동": {
+        "current_price_per_pyeong": 1963.2,
+        "predicted_price_1y_2027": 2238.3,
+        "predicted_price_3y_2029": 2208.0
+    },
+    "가리봉동": {
+        "current_price_per_pyeong": 1308.5,
+        "predicted_price_1y_2027": 1169.5,
+        "predicted_price_3y_2029": 1178.0
+    },
+    "가산동": {
+        "current_price_per_pyeong": 1555.4,
+        "predicted_price_1y_2027": 608.5,
+        "predicted_price_3y_2029": 657.9
+    },
+    "가양제1동": {
+        "current_price_per_pyeong": 1466.7,
+        "predicted_price_1y_2027": 1915.9,
+        "predicted_price_3y_2029": 1844.5
+    },
+    "가양제2동": {
+        "current_price_per_pyeong": 1436.8,
+        "predicted_price_1y_2027": 1890.4,
+        "predicted_price_3y_2029": 1897.5
+    },
+    "가양제3동": {
+        "current_price_per_pyeong": 1495.0,
+        "predicted_price_1y_2027": 1900.3,
+        "predicted_price_3y_2029": 1919.0
+    },
+    "갈현제1동": {
+        "current_price_per_pyeong": 1781.4,
+        "predicted_price_1y_2027": 655.0,
+        "predicted_price_3y_2029": 655.0
+    },
+    "갈현제2동": {
+        "current_price_per_pyeong": 1828.8,
+        "predicted_price_1y_2027": 2138.7,
+        "predicted_price_3y_2029": 2134.3
+    },
+    "강일동": {
+        "current_price_per_pyeong": 863.2,
+        "predicted_price_1y_2027": 1298.5,
+        "predicted_price_3y_2029": 1278.0
+    },
+    "개봉제1동": {
+        "current_price_per_pyeong": 1229.4,
+        "predicted_price_1y_2027": 1393.2,
+        "predicted_price_3y_2029": 1532.0
+    },
+    "개봉제2동": {
+        "current_price_per_pyeong": 1488.0,
+        "predicted_price_1y_2027": 1887.9,
+        "predicted_price_3y_2029": 1958.0
+    },
+    "개봉제3동": {
+        "current_price_per_pyeong": 1272.5,
+        "predicted_price_1y_2027": 1731.0,
+        "predicted_price_3y_2029": 1796.0
+    },
+    "개포1동": {
+        "current_price_per_pyeong": 2571.3,
+        "predicted_price_1y_2027": 5208.9,
+        "predicted_price_3y_2029": 5129.6
+    },
+    "개포2동": {
+        "current_price_per_pyeong": 2507.6,
+        "predicted_price_1y_2027": 2806.3,
+        "predicted_price_3y_2029": 2849.9
+    },
+    "개포3동": {
+        "current_price_per_pyeong": 2493.2,
+        "predicted_price_1y_2027": 1812.2,
+        "predicted_price_3y_2029": 1925.2
+    },
+    "개포4동": {
+        "current_price_per_pyeong": 3008.7,
+        "predicted_price_1y_2027": 2972.9,
+        "predicted_price_3y_2029": 2903.9
+    },
+    "거여1동": {
+        "current_price_per_pyeong": 1322.8,
+        "predicted_price_1y_2027": 1934.0,
+        "predicted_price_3y_2029": 1951.9
+    },
+    "거여2동": {
+        "current_price_per_pyeong": 1625.0,
+        "predicted_price_1y_2027": 2079.9,
+        "predicted_price_3y_2029": 2079.9
+    },
+    "고덕제1동": {
+        "current_price_per_pyeong": 2312.3,
+        "predicted_price_1y_2027": 1597.0,
+        "predicted_price_3y_2029": 1597.1
+    },
+    "고덕제2동": {
+        "current_price_per_pyeong": 2383.3,
+        "predicted_price_1y_2027": 2132.8,
+        "predicted_price_3y_2029": 2128.2
+    },
+    "고척제1동": {
+        "current_price_per_pyeong": 1243.1,
+        "predicted_price_1y_2027": 1421.8,
+        "predicted_price_3y_2029": 1429.2
+    },
+    "고척제2동": {
+        "current_price_per_pyeong": 1436.3,
+        "predicted_price_1y_2027": 1814.4,
+        "predicted_price_3y_2029": 1962.5
+    },
+    "공덕동": {
+        "current_price_per_pyeong": 2182.8,
+        "predicted_price_1y_2027": 2524.5,
+        "predicted_price_3y_2029": 2535.1
+    },
+    "공릉1동": {
+        "current_price_per_pyeong": 1130.7,
+        "predicted_price_1y_2027": 311.9,
+        "predicted_price_3y_2029": 315.9
+    },
+    "공릉2동": {
+        "current_price_per_pyeong": 1410.1,
+        "predicted_price_1y_2027": 1832.5,
+        "predicted_price_3y_2029": 1820.6
+    },
+    "공항동": {
+        "current_price_per_pyeong": 1703.8,
+        "predicted_price_1y_2027": 2872.5,
+        "predicted_price_3y_2029": 2953.7
+    },
+    "광장동": {
+        "current_price_per_pyeong": 2304.6,
+        "predicted_price_1y_2027": 2718.2,
+        "predicted_price_3y_2029": 2653.5
+    },
+    "광희동": {
+        "current_price_per_pyeong": 1804.0,
+        "predicted_price_1y_2027": 518.5,
+        "predicted_price_3y_2029": 440.1
+    },
+    "교남동": {
+        "current_price_per_pyeong": 2641.5,
+        "predicted_price_1y_2027": 1175.8,
+        "predicted_price_3y_2029": 1242.5
+    },
+    "구로제1동": {
+        "current_price_per_pyeong": 1214.8,
+        "predicted_price_1y_2027": 1731.4,
+        "predicted_price_3y_2029": 1704.6
+    },
+    "구로제2동": {
+        "current_price_per_pyeong": 1322.7,
+        "predicted_price_1y_2027": 2290.2,
+        "predicted_price_3y_2029": 2395.5
+    },
+    "구로제3동": {
+        "current_price_per_pyeong": 1403.8,
+        "predicted_price_1y_2027": 2206.6,
+        "predicted_price_3y_2029": 2168.5
+    },
+    "구로제4동": {
+        "current_price_per_pyeong": 1148.0,
+        "predicted_price_1y_2027": 1764.2,
+        "predicted_price_3y_2029": 1734.8
+    },
+    "구로제5동": {
+        "current_price_per_pyeong": 1561.0,
+        "predicted_price_1y_2027": 1975.7,
+        "predicted_price_3y_2029": 2103.5
+    },
+    "구산동": {
+        "current_price_per_pyeong": 1201.5,
+        "predicted_price_1y_2027": 1184.8,
+        "predicted_price_3y_2029": 1371.3
+    },
+    "구의제1동": {
+        "current_price_per_pyeong": 2935.1,
+        "predicted_price_1y_2027": 2678.6,
+        "predicted_price_3y_2029": 2683.9
+    },
+    "구의제2동": {
+        "current_price_per_pyeong": 2513.8,
+        "predicted_price_1y_2027": 1922.9,
+        "predicted_price_3y_2029": 1922.9
+    },
+    "구의제3동": {
+        "current_price_per_pyeong": 2081.4,
+        "predicted_price_1y_2027": 1993.3,
+        "predicted_price_3y_2029": 1826.0
+    },
+    "군자동": {
+        "current_price_per_pyeong": 1958.3,
+        "predicted_price_1y_2027": 1782.8,
+        "predicted_price_3y_2029": 1787.6
+    },
+    "금호1가동": {
+        "current_price_per_pyeong": 1939.8,
+        "predicted_price_1y_2027": 2459.2,
+        "predicted_price_3y_2029": 2459.2
+    },
+    "금호2.3가동": {
+        "current_price_per_pyeong": 2216.4,
+        "predicted_price_1y_2027": 1421.9,
+        "predicted_price_3y_2029": 1494.9
+    },
+    "금호4가동": {
+        "current_price_per_pyeong": 2298.6,
+        "predicted_price_1y_2027": 3207.7,
+        "predicted_price_3y_2029": 3174.4
+    },
+    "길동": {
+        "current_price_per_pyeong": 1757.3,
+        "predicted_price_1y_2027": 2396.5,
+        "predicted_price_3y_2029": 2118.7
+    },
+    "길음제1동": {
+        "current_price_per_pyeong": 1797.4,
+        "predicted_price_1y_2027": 1825.9,
+        "predicted_price_3y_2029": 1872.8
+    },
+    "길음제2동": {
+        "current_price_per_pyeong": 1534.2,
+        "predicted_price_1y_2027": 1768.1,
+        "predicted_price_3y_2029": 1768.1
+    },
+    "낙성대동": {
+        "current_price_per_pyeong": 1372.8,
+        "predicted_price_1y_2027": 1246.2,
+        "predicted_price_3y_2029": 1211.0
+    },
+    "난곡동": {
+        "current_price_per_pyeong": 1082.0,
+        "predicted_price_1y_2027": 1681.1,
+        "predicted_price_3y_2029": 1651.4
+    },
+    "난향동": {
+        "current_price_per_pyeong": 1251.6,
+        "predicted_price_1y_2027": 1884.8,
+        "predicted_price_3y_2029": 1895.1
+    },
+    "남가좌제1동": {
+        "current_price_per_pyeong": 1990.5,
+        "predicted_price_1y_2027": 2011.6,
+        "predicted_price_3y_2029": 2022.9
+    },
+    "남가좌제2동": {
+        "current_price_per_pyeong": 1844.8,
+        "predicted_price_1y_2027": 1822.2,
+        "predicted_price_3y_2029": 1816.6
+    },
+    "남영동": {
+        "current_price_per_pyeong": 1512.7,
+        "predicted_price_1y_2027": 2407.0,
+        "predicted_price_3y_2029": 2410.4
+    },
+    "남현동": {
+        "current_price_per_pyeong": 2080.4,
+        "predicted_price_1y_2027": 2413.4,
+        "predicted_price_3y_2029": 2329.0
+    },
+    "내곡동": {
+        "current_price_per_pyeong": 2068.3,
+        "predicted_price_1y_2027": 2246.3,
+        "predicted_price_3y_2029": 1968.0
+    },
+    "노량진제1동": {
+        "current_price_per_pyeong": 1739.9,
+        "predicted_price_1y_2027": 1950.5,
+        "predicted_price_3y_2029": 1932.2
+    },
+    "노량진제2동": {
+        "current_price_per_pyeong": 1141.0,
+        "predicted_price_1y_2027": 397.4,
+        "predicted_price_3y_2029": 731.3
+    },
+    "녹번동": {
+        "current_price_per_pyeong": 1702.3,
+        "predicted_price_1y_2027": 1686.3,
+        "predicted_price_3y_2029": 1699.9
+    },
+    "논현1동": {
+        "current_price_per_pyeong": 1657.8,
+        "predicted_price_1y_2027": 929.3,
+        "predicted_price_3y_2029": 1021.1
+    },
+    "논현2동": {
+        "current_price_per_pyeong": 2369.0,
+        "predicted_price_1y_2027": 2920.9,
+        "predicted_price_3y_2029": 2883.0
+    },
+    "능동": {
+        "current_price_per_pyeong": 2136.2,
+        "predicted_price_1y_2027": 2776.6,
+        "predicted_price_3y_2029": 2777.2
+    },
+    "다산동": {
+        "current_price_per_pyeong": 1122.8,
+        "predicted_price_1y_2027": 1597.9,
+        "predicted_price_3y_2029": 1590.5
+    },
+    "답십리제1동": {
+        "current_price_per_pyeong": 1810.8,
+        "predicted_price_1y_2027": 2262.6,
+        "predicted_price_3y_2029": 2232.6
+    },
+    "답십리제2동": {
+        "current_price_per_pyeong": 1595.4,
+        "predicted_price_1y_2027": 1914.0,
+        "predicted_price_3y_2029": 2019.0
+    },
+    "당산제1동": {
+        "current_price_per_pyeong": 1833.7,
+        "predicted_price_1y_2027": 1982.2,
+        "predicted_price_3y_2029": 2054.6
+    },
+    "당산제2동": {
+        "current_price_per_pyeong": 2213.7,
+        "predicted_price_1y_2027": 1934.3,
+        "predicted_price_3y_2029": 1965.2
+    },
+    "대림제1동": {
+        "current_price_per_pyeong": 1872.8,
+        "predicted_price_1y_2027": 1647.0,
+        "predicted_price_3y_2029": 1648.7
+    },
+    "대림제2동": {
+        "current_price_per_pyeong": 1388.7,
+        "predicted_price_1y_2027": 530.5,
+        "predicted_price_3y_2029": 558.9
+    },
+    "대림제3동": {
+        "current_price_per_pyeong": 1410.8,
+        "predicted_price_1y_2027": 2097.8,
+        "predicted_price_3y_2029": 2063.6
+    },
+    "대방동": {
+        "current_price_per_pyeong": 1720.8,
+        "predicted_price_1y_2027": 2091.3,
+        "predicted_price_3y_2029": 2109.8
+    },
+    "대조동": {
+        "current_price_per_pyeong": 1576.2,
+        "predicted_price_1y_2027": 1290.9,
+        "predicted_price_3y_2029": 1332.2
+    },
+    "대치1동": {
+        "current_price_per_pyeong": 3980.1,
+        "predicted_price_1y_2027": 4544.0,
+        "predicted_price_3y_2029": 4616.5
+    },
+    "대치2동": {
+        "current_price_per_pyeong": 2454.6,
+        "predicted_price_1y_2027": 3300.2,
+        "predicted_price_3y_2029": 3116.5
+    },
+    "대치4동": {
+        "current_price_per_pyeong": 1939.5,
+        "predicted_price_1y_2027": 141.0,
+        "predicted_price_3y_2029": 221.9
+    },
+    "대학동": {
+        "current_price_per_pyeong": 1254.8,
+        "predicted_price_1y_2027": 1613.9,
+        "predicted_price_3y_2029": 1647.4
+    },
+    "대흥동": {
+        "current_price_per_pyeong": 1807.5,
+        "predicted_price_1y_2027": 1223.9,
+        "predicted_price_3y_2029": 1245.3
+    },
+    "도곡1동": {
+        "current_price_per_pyeong": 2324.0,
+        "predicted_price_1y_2027": 3288.2,
+        "predicted_price_3y_2029": 3297.1
+    },
+    "도곡2동": {
+        "current_price_per_pyeong": 3381.7,
+        "predicted_price_1y_2027": 4727.3,
+        "predicted_price_3y_2029": 4911.6
+    },
+    "도림동": {
+        "current_price_per_pyeong": 1584.3,
+        "predicted_price_1y_2027": 2635.7,
+        "predicted_price_3y_2029": 2596.7
+    },
+    "도봉제1동": {
+        "current_price_per_pyeong": 986.7,
+        "predicted_price_1y_2027": 1743.6,
+        "predicted_price_3y_2029": 1681.2
+    },
+    "도봉제2동": {
+        "current_price_per_pyeong": 1039.7,
+        "predicted_price_1y_2027": 1586.0,
+        "predicted_price_3y_2029": 1583.7
+    },
+    "도화동": {
+        "current_price_per_pyeong": 1724.4,
+        "predicted_price_1y_2027": 2196.7,
+        "predicted_price_3y_2029": 2229.0
+    },
+    "독산제1동": {
+        "current_price_per_pyeong": 1388.8,
+        "predicted_price_1y_2027": 982.1,
+        "predicted_price_3y_2029": 915.2
+    },
+    "독산제2동": {
+        "current_price_per_pyeong": 1854.7,
+        "predicted_price_1y_2027": 2396.0,
+        "predicted_price_3y_2029": 2396.0
+    },
+    "독산제3동": {
+        "current_price_per_pyeong": 1354.4,
+        "predicted_price_1y_2027": 1873.8,
+        "predicted_price_3y_2029": 1980.4
+    },
+    "독산제4동": {
+        "current_price_per_pyeong": 1474.2,
+        "predicted_price_1y_2027": 1725.9,
+        "predicted_price_3y_2029": 1725.0
+    },
+    "돈암제1동": {
+        "current_price_per_pyeong": 1420.8,
+        "predicted_price_1y_2027": 1682.2,
+        "predicted_price_3y_2029": 1782.2
+    },
+    "돈암제2동": {
+        "current_price_per_pyeong": 1564.0,
+        "predicted_price_1y_2027": 2192.4,
+        "predicted_price_3y_2029": 2135.7
+    },
+    "동선동": {
+        "current_price_per_pyeong": 1995.6,
+        "predicted_price_1y_2027": 1586.9,
+        "predicted_price_3y_2029": 2094.3
+    },
+    "동화동": {
+        "current_price_per_pyeong": 1866.2,
+        "predicted_price_1y_2027": 2041.1,
+        "predicted_price_3y_2029": 2026.8
+    },
+    "둔촌제2동": {
+        "current_price_per_pyeong": 1934.8,
+        "predicted_price_1y_2027": 1916.5,
+        "predicted_price_3y_2029": 1946.4
+    },
+    "등촌제1동": {
+        "current_price_per_pyeong": 1819.8,
+        "predicted_price_1y_2027": 1913.5,
+        "predicted_price_3y_2029": 1946.0
+    },
+    "등촌제2동": {
+        "current_price_per_pyeong": 1819.9,
+        "predicted_price_1y_2027": 2001.9,
+        "predicted_price_3y_2029": 1873.2
+    },
+    "등촌제3동": {
+        "current_price_per_pyeong": 1609.5,
+        "predicted_price_1y_2027": 2253.6,
+        "predicted_price_3y_2029": 2192.9
+    },
+    "마장동": {
+        "current_price_per_pyeong": 1497.9,
+        "predicted_price_1y_2027": 2342.3,
+        "predicted_price_3y_2029": 2321.4
+    },
+    "마천1동": {
+        "current_price_per_pyeong": 862.6,
+        "predicted_price_1y_2027": 1298.8,
+        "predicted_price_3y_2029": 1186.5
+    },
+    "마천2동": {
+        "current_price_per_pyeong": 1652.1,
+        "predicted_price_1y_2027": 1856.7,
+        "predicted_price_3y_2029": 1855.0
+    },
+    "망우본동": {
+        "current_price_per_pyeong": 1353.6,
+        "predicted_price_1y_2027": 2079.0,
+        "predicted_price_3y_2029": 2045.7
+    },
+    "망우제3동": {
+        "current_price_per_pyeong": 1142.3,
+        "predicted_price_1y_2027": 429.1,
+        "predicted_price_3y_2029": 456.6
+    },
+    "망원제1동": {
+        "current_price_per_pyeong": 2153.6,
+        "predicted_price_1y_2027": 1829.3,
+        "predicted_price_3y_2029": 1852.1
+    },
+    "망원제2동": {
+        "current_price_per_pyeong": 1896.4,
+        "predicted_price_1y_2027": 2096.4,
+        "predicted_price_3y_2029": 2141.6
+    },
+    "면목본동": {
+        "current_price_per_pyeong": 1697.8,
+        "predicted_price_1y_2027": 427.2,
+        "predicted_price_3y_2029": 427.2
+    },
+    "면목제2동": {
+        "current_price_per_pyeong": 1031.9,
+        "predicted_price_1y_2027": 647.4,
+        "predicted_price_3y_2029": 594.6
+    },
+    "면목제3.8동": {
+        "current_price_per_pyeong": 1366.4,
+        "predicted_price_1y_2027": 1704.6,
+        "predicted_price_3y_2029": 1758.3
+    },
+    "면목제4동": {
+        "current_price_per_pyeong": 1696.6,
+        "predicted_price_1y_2027": 2018.3,
+        "predicted_price_3y_2029": 2002.8
+    },
+    "면목제5동": {
+        "current_price_per_pyeong": 1805.5,
+        "predicted_price_1y_2027": 2533.1,
+        "predicted_price_3y_2029": 2599.1
+    },
+    "면목제7동": {
+        "current_price_per_pyeong": 1625.5,
+        "predicted_price_1y_2027": 1794.1,
+        "predicted_price_3y_2029": 1882.2
+    },
+    "명동": {
+        "current_price_per_pyeong": 1608.2,
+        "predicted_price_1y_2027": 890.4,
+        "predicted_price_3y_2029": 847.4
+    },
+    "명일제1동": {
+        "current_price_per_pyeong": 1935.9,
+        "predicted_price_1y_2027": 3267.1,
+        "predicted_price_3y_2029": 3277.4
+    },
+    "명일제2동": {
+        "current_price_per_pyeong": 1592.7,
+        "predicted_price_1y_2027": 1180.7,
+        "predicted_price_3y_2029": 1180.3
+    },
+    "목1동": {
+        "current_price_per_pyeong": 2411.9,
+        "predicted_price_1y_2027": 3234.2,
+        "predicted_price_3y_2029": 3306.6
+    },
+    "목2동": {
+        "current_price_per_pyeong": 1760.1,
+        "predicted_price_1y_2027": 1846.5,
+        "predicted_price_3y_2029": 1880.9
+    },
+    "목3동": {
+        "current_price_per_pyeong": 2080.7,
+        "predicted_price_1y_2027": 1876.4,
+        "predicted_price_3y_2029": 1931.9
+    },
+    "목4동": {
+        "current_price_per_pyeong": 1939.3,
+        "predicted_price_1y_2027": 2399.8,
+        "predicted_price_3y_2029": 2404.7
+    },
+    "목5동": {
+        "current_price_per_pyeong": 2335.7,
+        "predicted_price_1y_2027": 2775.2,
+        "predicted_price_3y_2029": 2766.3
+    },
+    "무악동": {
+        "current_price_per_pyeong": 2149.8,
+        "predicted_price_1y_2027": 2607.6,
+        "predicted_price_3y_2029": 2542.6
+    },
+    "묵제1동": {
+        "current_price_per_pyeong": 1351.1,
+        "predicted_price_1y_2027": 1756.5,
+        "predicted_price_3y_2029": 1748.9
+    },
+    "묵제2동": {
+        "current_price_per_pyeong": 1371.4,
+        "predicted_price_1y_2027": 2036.2,
+        "predicted_price_3y_2029": 1987.2
+    },
+    "문래동": {
+        "current_price_per_pyeong": 1695.6,
+        "predicted_price_1y_2027": 2235.3,
+        "predicted_price_3y_2029": 2278.1
+    },
+    "문정1동": {
+        "current_price_per_pyeong": 1801.8,
+        "predicted_price_1y_2027": 2013.7,
+        "predicted_price_3y_2029": 2081.7
+    },
+    "문정2동": {
+        "current_price_per_pyeong": 2176.0,
+        "predicted_price_1y_2027": 2487.0,
+        "predicted_price_3y_2029": 2491.6
+    },
+    "미성동": {
+        "current_price_per_pyeong": 1409.6,
+        "predicted_price_1y_2027": 1593.2,
+        "predicted_price_3y_2029": 1597.4
+    },
+    "미아동": {
+        "current_price_per_pyeong": 659.0,
+        "predicted_price_1y_2027": 495.5,
+        "predicted_price_3y_2029": 519.2
+    },
+    "반포1동": {
+        "current_price_per_pyeong": 3758.7,
+        "predicted_price_1y_2027": 5126.7,
+        "predicted_price_3y_2029": 5176.5
+    },
+    "반포2동": {
+        "current_price_per_pyeong": 4499.1,
+        "predicted_price_1y_2027": 5273.0,
+        "predicted_price_3y_2029": 5219.9
+    },
+    "반포3동": {
+        "current_price_per_pyeong": 2809.9,
+        "predicted_price_1y_2027": 3802.7,
+        "predicted_price_3y_2029": 3823.6
+    },
+    "반포4동": {
+        "current_price_per_pyeong": 2274.2,
+        "predicted_price_1y_2027": 2717.4,
+        "predicted_price_3y_2029": 2721.4
+    },
+    "반포본동": {
+        "current_price_per_pyeong": 1269.3,
+        "predicted_price_1y_2027": 1386.9,
+        "predicted_price_3y_2029": 1386.9
+    },
+    "발산제1동": {
+        "current_price_per_pyeong": 1122.9,
+        "predicted_price_1y_2027": 2204.0,
+        "predicted_price_3y_2029": 2250.8
+    },
+    "방배1동": {
+        "current_price_per_pyeong": 3201.5,
+        "predicted_price_1y_2027": 4439.1,
+        "predicted_price_3y_2029": 4427.5
+    },
+    "방배2동": {
+        "current_price_per_pyeong": 2754.4,
+        "predicted_price_1y_2027": 2872.1,
+        "predicted_price_3y_2029": 2696.0
+    },
+    "방배3동": {
+        "current_price_per_pyeong": 2476.2,
+        "predicted_price_1y_2027": 2885.5,
+        "predicted_price_3y_2029": 2994.2
+    },
+    "방배4동": {
+        "current_price_per_pyeong": 2360.9,
+        "predicted_price_1y_2027": 2706.7,
+        "predicted_price_3y_2029": 2839.3
+    },
+    "방배본동": {
+        "current_price_per_pyeong": 2087.3,
+        "predicted_price_1y_2027": 2819.5,
+        "predicted_price_3y_2029": 2827.6
+    },
+    "방이1동": {
+        "current_price_per_pyeong": 1938.0,
+        "predicted_price_1y_2027": 2320.0,
+        "predicted_price_3y_2029": 2287.8
+    },
+    "방이2동": {
+        "current_price_per_pyeong": 2191.3,
+        "predicted_price_1y_2027": 629.2,
+        "predicted_price_3y_2029": 628.3
+    },
+    "방학제1동": {
+        "current_price_per_pyeong": 1293.7,
+        "predicted_price_1y_2027": 1494.3,
+        "predicted_price_3y_2029": 1488.4
+    },
+    "방학제2동": {
+        "current_price_per_pyeong": 1130.8,
+        "predicted_price_1y_2027": 2619.5,
+        "predicted_price_3y_2029": 2591.1
+    },
+    "방학제3동": {
+        "current_price_per_pyeong": 979.4,
+        "predicted_price_1y_2027": 1973.4,
+        "predicted_price_3y_2029": 1920.4
+    },
+    "방화제1동": {
+        "current_price_per_pyeong": 1432.1,
+        "predicted_price_1y_2027": 1686.0,
+        "predicted_price_3y_2029": 1671.4
+    },
+    "방화제2동": {
+        "current_price_per_pyeong": 1321.0,
+        "predicted_price_1y_2027": 1797.7,
+        "predicted_price_3y_2029": 1852.6
+    },
+    "방화제3동": {
+        "current_price_per_pyeong": 1289.7,
+        "predicted_price_1y_2027": 1667.1,
+        "predicted_price_3y_2029": 1713.1
+    },
+    "번1동": {
+        "current_price_per_pyeong": 2173.7,
+        "predicted_price_1y_2027": 2127.5,
+        "predicted_price_3y_2029": 2081.8
+    },
+    "번2동": {
+        "current_price_per_pyeong": 1149.3,
+        "predicted_price_1y_2027": 1413.5,
+        "predicted_price_3y_2029": 1435.4
+    },
+    "번3동": {
+        "current_price_per_pyeong": 1054.5,
+        "predicted_price_1y_2027": 1496.3,
+        "predicted_price_3y_2029": 1497.7
+    },
+    "보광동": {
+        "current_price_per_pyeong": 1645.2,
+        "predicted_price_1y_2027": 1963.9,
+        "predicted_price_3y_2029": 1861.2
+    },
+    "보라매동": {
+        "current_price_per_pyeong": 1439.9,
+        "predicted_price_1y_2027": 1834.6,
+        "predicted_price_3y_2029": 1841.9
+    },
+    "보문동": {
+        "current_price_per_pyeong": 1906.9,
+        "predicted_price_1y_2027": 3521.8,
+        "predicted_price_3y_2029": 3523.6
+    },
+    "부암동": {
+        "current_price_per_pyeong": 1274.1,
+        "predicted_price_1y_2027": 1732.0,
+        "predicted_price_3y_2029": 1782.8
+    },
+    "북가좌제1동": {
+        "current_price_per_pyeong": 1756.4,
+        "predicted_price_1y_2027": 1758.6,
+        "predicted_price_3y_2029": 1772.8
+    },
+    "북가좌제2동": {
+        "current_price_per_pyeong": 1505.1,
+        "predicted_price_1y_2027": 1851.6,
+        "predicted_price_3y_2029": 1903.2
+    },
+    "북아현동": {
+        "current_price_per_pyeong": 2199.0,
+        "predicted_price_1y_2027": 1616.0,
+        "predicted_price_3y_2029": 1629.6
+    },
+    "불광제1동": {
+        "current_price_per_pyeong": 1395.9,
+        "predicted_price_1y_2027": 1369.0,
+        "predicted_price_3y_2029": 1382.3
+    },
+    "불광제2동": {
+        "current_price_per_pyeong": 1870.7,
+        "predicted_price_1y_2027": 1700.4,
+        "predicted_price_3y_2029": 1696.4
+    },
+    "사근동": {
+        "current_price_per_pyeong": 1647.8,
+        "predicted_price_1y_2027": 1760.6,
+        "predicted_price_3y_2029": 1371.8
+    },
+    "사당제1동": {
+        "current_price_per_pyeong": 1686.9,
+        "predicted_price_1y_2027": 980.8,
+        "predicted_price_3y_2029": 906.2
+    },
+    "사당제2동": {
+        "current_price_per_pyeong": 2049.1,
+        "predicted_price_1y_2027": 1777.3,
+        "predicted_price_3y_2029": 1739.5
+    },
+    "사당제3동": {
+        "current_price_per_pyeong": 2144.9,
+        "predicted_price_1y_2027": 1818.5,
+        "predicted_price_3y_2029": 2049.8
+    },
+    "사당제4동": {
+        "current_price_per_pyeong": 1845.2,
+        "predicted_price_1y_2027": 1553.4,
+        "predicted_price_3y_2029": 1650.8
+    },
+    "사당제5동": {
+        "current_price_per_pyeong": 2137.6,
+        "predicted_price_1y_2027": 2584.2,
+        "predicted_price_3y_2029": 2575.6
+    },
+    "사직동": {
+        "current_price_per_pyeong": 1681.2,
+        "predicted_price_1y_2027": 972.7,
+        "predicted_price_3y_2029": 1029.8
+    },
+    "삼각산동": {
+        "current_price_per_pyeong": 1357.8,
+        "predicted_price_1y_2027": 2012.9,
+        "predicted_price_3y_2029": 2024.3
+    },
+    "삼선동": {
+        "current_price_per_pyeong": 1710.8,
+        "predicted_price_1y_2027": 2017.1,
+        "predicted_price_3y_2029": 2031.0
+    },
+    "삼성1동": {
+        "current_price_per_pyeong": 2294.0,
+        "predicted_price_1y_2027": 2808.9,
+        "predicted_price_3y_2029": 2814.2
+    },
+    "삼성2동": {
+        "current_price_per_pyeong": 2740.3,
+        "predicted_price_1y_2027": 1550.2,
+        "predicted_price_3y_2029": 1574.8
+    },
+    "삼성동": {
+        "current_price_per_pyeong": 1131.9,
+        "predicted_price_1y_2027": 1457.6,
+        "predicted_price_3y_2029": 1457.6
+    },
+    "삼양동": {
+        "current_price_per_pyeong": 1305.1,
+        "predicted_price_1y_2027": 1623.7,
+        "predicted_price_3y_2029": 1593.3
+    },
+    "삼전동": {
+        "current_price_per_pyeong": 1681.7,
+        "predicted_price_1y_2027": 2607.5,
+        "predicted_price_3y_2029": 2654.4
+    },
+    "상계10동": {
+        "current_price_per_pyeong": 1117.9,
+        "predicted_price_1y_2027": 1513.3,
+        "predicted_price_3y_2029": 1469.4
+    },
+    "상계1동": {
+        "current_price_per_pyeong": 1038.5,
+        "predicted_price_1y_2027": 1477.3,
+        "predicted_price_3y_2029": 1474.0
+    },
+    "상계2동": {
+        "current_price_per_pyeong": 1349.8,
+        "predicted_price_1y_2027": 1891.5,
+        "predicted_price_3y_2029": 1883.2
+    },
+    "상계3.4동": {
+        "current_price_per_pyeong": 1231.7,
+        "predicted_price_1y_2027": 1934.3,
+        "predicted_price_3y_2029": 1995.9
+    },
+    "상계5동": {
+        "current_price_per_pyeong": 952.7,
+        "predicted_price_1y_2027": 1482.0,
+        "predicted_price_3y_2029": 1421.4
+    },
+    "상계6.7동": {
+        "current_price_per_pyeong": 999.7,
+        "predicted_price_1y_2027": 2264.9,
+        "predicted_price_3y_2029": 2258.1
+    },
+    "상계8동": {
+        "current_price_per_pyeong": 1000.5,
+        "predicted_price_1y_2027": 1273.3,
+        "predicted_price_3y_2029": 1396.7
+    },
+    "상계9동": {
+        "current_price_per_pyeong": 992.6,
+        "predicted_price_1y_2027": 1335.3,
+        "predicted_price_3y_2029": 1301.7
+    },
+    "상도제1동": {
+        "current_price_per_pyeong": 1832.2,
+        "predicted_price_1y_2027": 1552.3,
+        "predicted_price_3y_2029": 1601.2
+    },
+    "상도제2동": {
+        "current_price_per_pyeong": 2248.9,
+        "predicted_price_1y_2027": 1723.2,
+        "predicted_price_3y_2029": 1735.6
+    },
+    "상도제3동": {
+        "current_price_per_pyeong": 1697.0,
+        "predicted_price_1y_2027": 1914.5,
+        "predicted_price_3y_2029": 1918.9
+    },
+    "상도제4동": {
+        "current_price_per_pyeong": 1911.5,
+        "predicted_price_1y_2027": 2612.1,
+        "predicted_price_3y_2029": 2521.6
+    },
+    "상봉제1동": {
+        "current_price_per_pyeong": 1559.6,
+        "predicted_price_1y_2027": 2674.5,
+        "predicted_price_3y_2029": 2679.1
+    },
+    "상봉제2동": {
+        "current_price_per_pyeong": 1931.9,
+        "predicted_price_1y_2027": 1759.9,
+        "predicted_price_3y_2029": 1863.8
+    },
+    "상암동": {
+        "current_price_per_pyeong": 1109.5,
+        "predicted_price_1y_2027": 1016.5,
+        "predicted_price_3y_2029": 978.1
+    },
+    "상일제1동": {
+        "current_price_per_pyeong": 2187.1,
+        "predicted_price_1y_2027": 2962.8,
+        "predicted_price_3y_2029": 2962.8
+    },
+    "상일제2동": {
+        "current_price_per_pyeong": 831.7,
+        "predicted_price_1y_2027": 687.8,
+        "predicted_price_3y_2029": 701.7
+    },
+    "서강동": {
+        "current_price_per_pyeong": 1898.0,
+        "predicted_price_1y_2027": 1602.7,
+        "predicted_price_3y_2029": 1593.7
+    },
+    "서교동": {
+        "current_price_per_pyeong": 1268.9,
+        "predicted_price_1y_2027": 1001.0,
+        "predicted_price_3y_2029": 1035.1
+    },
+    "서림동": {
+        "current_price_per_pyeong": 1396.9,
+        "predicted_price_1y_2027": 1713.8,
+        "predicted_price_3y_2029": 1815.6
+    },
+    "서빙고동": {
+        "current_price_per_pyeong": 1724.2,
+        "predicted_price_1y_2027": 1579.3,
+        "predicted_price_3y_2029": 1579.3
+    },
+    "서원동": {
+        "current_price_per_pyeong": 1123.9,
+        "predicted_price_1y_2027": 900.1,
+        "predicted_price_3y_2029": 890.8
+    },
+    "서초1동": {
+        "current_price_per_pyeong": 2434.8,
+        "predicted_price_1y_2027": 2769.1,
+        "predicted_price_3y_2029": 2769.1
+    },
+    "서초2동": {
+        "current_price_per_pyeong": 2686.7,
+        "predicted_price_1y_2027": 1616.8,
+        "predicted_price_3y_2029": 1706.1
+    },
+    "서초3동": {
+        "current_price_per_pyeong": 2379.8,
+        "predicted_price_1y_2027": 3026.6,
+        "predicted_price_3y_2029": 3244.3
+    },
+    "서초4동": {
+        "current_price_per_pyeong": 2693.8,
+        "predicted_price_1y_2027": 3060.8,
+        "predicted_price_3y_2029": 3098.6
+    },
+    "석관동": {
+        "current_price_per_pyeong": 1627.1,
+        "predicted_price_1y_2027": 1934.4,
+        "predicted_price_3y_2029": 1943.4
+    },
+    "석촌동": {
+        "current_price_per_pyeong": 2282.3,
+        "predicted_price_1y_2027": 1924.5,
+        "predicted_price_3y_2029": 1922.8
+    },
+    "성내제1동": {
+        "current_price_per_pyeong": 2498.0,
+        "predicted_price_1y_2027": 2107.9,
+        "predicted_price_3y_2029": 2106.7
+    },
+    "성내제2동": {
+        "current_price_per_pyeong": 1415.2,
+        "predicted_price_1y_2027": 389.5,
+        "predicted_price_3y_2029": 385.7
+    },
+    "성내제3동": {
+        "current_price_per_pyeong": 2213.4,
+        "predicted_price_1y_2027": 2004.4,
+        "predicted_price_3y_2029": 1980.3
+    },
+    "성북동": {
+        "current_price_per_pyeong": 1475.5,
+        "predicted_price_1y_2027": 1814.6,
+        "predicted_price_3y_2029": 1869.9
+    },
+    "성산제1동": {
+        "current_price_per_pyeong": 1868.7,
+        "predicted_price_1y_2027": 514.2,
+        "predicted_price_3y_2029": 517.3
+    },
+    "성산제2동": {
+        "current_price_per_pyeong": 1504.7,
+        "predicted_price_1y_2027": 2140.8,
+        "predicted_price_3y_2029": 2140.8
+    },
+    "성수1가제1동": {
+        "current_price_per_pyeong": 2999.8,
+        "predicted_price_1y_2027": 2642.9,
+        "predicted_price_3y_2029": 2649.3
+    },
+    "성수1가제2동": {
+        "current_price_per_pyeong": 2171.9,
+        "predicted_price_1y_2027": 1752.9,
+        "predicted_price_3y_2029": 1632.6
+    },
+    "성수2가제1동": {
+        "current_price_per_pyeong": 1910.7,
+        "predicted_price_1y_2027": 2605.4,
+        "predicted_price_3y_2029": 2606.7
+    },
+    "성수2가제3동": {
+        "current_price_per_pyeong": 1980.1,
+        "predicted_price_1y_2027": 2161.7,
+        "predicted_price_3y_2029": 2063.1
+    },
+    "성현동": {
+        "current_price_per_pyeong": 1297.4,
+        "predicted_price_1y_2027": 2490.4,
+        "predicted_price_3y_2029": 2482.8
+    },
+    "세곡동": {
+        "current_price_per_pyeong": 1585.0,
+        "predicted_price_1y_2027": 2719.3,
+        "predicted_price_3y_2029": 2721.9
+    },
+    "소공동": {
+        "current_price_per_pyeong": 2375.1,
+        "predicted_price_1y_2027": 1148.8,
+        "predicted_price_3y_2029": 1135.7
+    },
+    "송정동": {
+        "current_price_per_pyeong": 1773.7,
+        "predicted_price_1y_2027": 1937.0,
+        "predicted_price_3y_2029": 1969.6
+    },
+    "송중동": {
+        "current_price_per_pyeong": 1447.5,
+        "predicted_price_1y_2027": 2609.1,
+        "predicted_price_3y_2029": 2543.4
+    },
+    "송천동": {
+        "current_price_per_pyeong": 1551.0,
+        "predicted_price_1y_2027": 1886.3,
+        "predicted_price_3y_2029": 1891.5
+    },
+    "송파1동": {
+        "current_price_per_pyeong": 1932.3,
+        "predicted_price_1y_2027": 2453.0,
+        "predicted_price_3y_2029": 2475.0
+    },
+    "송파2동": {
+        "current_price_per_pyeong": 2156.7,
+        "predicted_price_1y_2027": 2510.5,
+        "predicted_price_3y_2029": 2521.9
+    },
+    "수궁동": {
+        "current_price_per_pyeong": 1420.6,
+        "predicted_price_1y_2027": 1429.2,
+        "predicted_price_3y_2029": 1344.3
+    },
+    "수색동": {
+        "current_price_per_pyeong": 1609.5,
+        "predicted_price_1y_2027": 1796.4,
+        "predicted_price_3y_2029": 1782.3
+    },
+    "수서동": {
+        "current_price_per_pyeong": 2166.9,
+        "predicted_price_1y_2027": 2827.9,
+        "predicted_price_3y_2029": 2787.3
+    },
+    "수유1동": {
+        "current_price_per_pyeong": 1557.0,
+        "predicted_price_1y_2027": 2421.3,
+        "predicted_price_3y_2029": 2408.0
+    },
+    "수유2동": {
+        "current_price_per_pyeong": 1199.5,
+        "predicted_price_1y_2027": 1316.5,
+        "predicted_price_3y_2029": 1333.7
+    },
+    "수유3동": {
+        "current_price_per_pyeong": 1009.0,
+        "predicted_price_1y_2027": 376.4,
+        "predicted_price_3y_2029": 335.2
+    },
+    "숭인제1동": {
+        "current_price_per_pyeong": 1824.7,
+        "predicted_price_1y_2027": 1681.5,
+        "predicted_price_3y_2029": 1693.8
+    },
+    "숭인제2동": {
+        "current_price_per_pyeong": 1417.7,
+        "predicted_price_1y_2027": 480.7,
+        "predicted_price_3y_2029": 415.7
+    },
+    "시흥제1동": {
+        "current_price_per_pyeong": 1247.6,
+        "predicted_price_1y_2027": 1718.5,
+        "predicted_price_3y_2029": 1715.6
+    },
+    "시흥제2동": {
+        "current_price_per_pyeong": 1148.0,
+        "predicted_price_1y_2027": 2157.4,
+        "predicted_price_3y_2029": 2081.1
+    },
+    "시흥제3동": {
+        "current_price_per_pyeong": 1168.3,
+        "predicted_price_1y_2027": 2027.1,
+        "predicted_price_3y_2029": 2047.0
+    },
+    "시흥제4동": {
+        "current_price_per_pyeong": 1157.2,
+        "predicted_price_1y_2027": 1686.0,
+        "predicted_price_3y_2029": 1563.8
+    },
+    "시흥제5동": {
+        "current_price_per_pyeong": 1145.6,
+        "predicted_price_1y_2027": 1482.3,
+        "predicted_price_3y_2029": 1505.4
+    },
+    "신길제1동": {
+        "current_price_per_pyeong": 1760.0,
+        "predicted_price_1y_2027": 615.2,
+        "predicted_price_3y_2029": 615.5
+    },
+    "신길제3동": {
+        "current_price_per_pyeong": 1739.9,
+        "predicted_price_1y_2027": 1999.5,
+        "predicted_price_3y_2029": 2067.1
+    },
+    "신길제4동": {
+        "current_price_per_pyeong": 1799.4,
+        "predicted_price_1y_2027": 1806.0,
+        "predicted_price_3y_2029": 1827.2
+    },
+    "신길제5동": {
+        "current_price_per_pyeong": 2143.4,
+        "predicted_price_1y_2027": 2712.6,
+        "predicted_price_3y_2029": 2799.8
+    },
+    "신길제6동": {
+        "current_price_per_pyeong": 1509.1,
+        "predicted_price_1y_2027": 1828.2,
+        "predicted_price_3y_2029": 1964.5
+    },
+    "신길제7동": {
+        "current_price_per_pyeong": 2033.1,
+        "predicted_price_1y_2027": 1623.5,
+        "predicted_price_3y_2029": 1628.4
+    },
+    "신내1동": {
+        "current_price_per_pyeong": 883.5,
+        "predicted_price_1y_2027": 825.2,
+        "predicted_price_3y_2029": 1638.8
+    },
+    "신내2동": {
+        "current_price_per_pyeong": 1293.4,
+        "predicted_price_1y_2027": 1833.3,
+        "predicted_price_3y_2029": 1829.1
+    },
+    "신당동": {
+        "current_price_per_pyeong": 1556.9,
+        "predicted_price_1y_2027": 584.7,
+        "predicted_price_3y_2029": 630.6
+    },
+    "신당제5동": {
+        "current_price_per_pyeong": 1243.8,
+        "predicted_price_1y_2027": 368.9,
+        "predicted_price_3y_2029": 361.5
+    },
+    "신대방제1동": {
+        "current_price_per_pyeong": 1821.5,
+        "predicted_price_1y_2027": 2180.5,
+        "predicted_price_3y_2029": 2172.9
+    },
+    "신대방제2동": {
+        "current_price_per_pyeong": 1980.2,
+        "predicted_price_1y_2027": 2020.6,
+        "predicted_price_3y_2029": 2066.8
+    },
+    "신도림동": {
+        "current_price_per_pyeong": 1841.2,
+        "predicted_price_1y_2027": 2682.4,
+        "predicted_price_3y_2029": 2729.1
+    },
+    "신림동": {
+        "current_price_per_pyeong": 1081.6,
+        "predicted_price_1y_2027": 501.1,
+        "predicted_price_3y_2029": 537.8
+    },
+    "신사동": {
+        "current_price_per_pyeong": 2245.7,
+        "predicted_price_1y_2027": 2016.6,
+        "predicted_price_3y_2029": 2018.2
+    },
+    "신사제1동": {
+        "current_price_per_pyeong": 1457.2,
+        "predicted_price_1y_2027": 1850.2,
+        "predicted_price_3y_2029": 1846.3
+    },
+    "신사제2동": {
+        "current_price_per_pyeong": 1281.6,
+        "predicted_price_1y_2027": 1519.5,
+        "predicted_price_3y_2029": 1563.0
+    },
+    "신설동": {
+        "current_price_per_pyeong": 1861.7,
+        "predicted_price_1y_2027": 2709.3,
+        "predicted_price_3y_2029": 2715.8
+    },
+    "신수동": {
+        "current_price_per_pyeong": 2259.0,
+        "predicted_price_1y_2027": 2714.0,
+        "predicted_price_3y_2029": 2704.9
+    },
+    "신원동": {
+        "current_price_per_pyeong": 1450.6,
+        "predicted_price_1y_2027": 2284.2,
+        "predicted_price_3y_2029": 2295.9
+    },
+    "신월1동": {
+        "current_price_per_pyeong": 1084.9,
+        "predicted_price_1y_2027": 1146.6,
+        "predicted_price_3y_2029": 1154.0
+    },
+    "신월2동": {
+        "current_price_per_pyeong": 1356.4,
+        "predicted_price_1y_2027": 1559.9,
+        "predicted_price_3y_2029": 1462.5
+    },
+    "신월3동": {
+        "current_price_per_pyeong": 1044.7,
+        "predicted_price_1y_2027": 1255.3,
+        "predicted_price_3y_2029": 1303.4
+    },
+    "신월4동": {
+        "current_price_per_pyeong": 1362.1,
+        "predicted_price_1y_2027": 1488.4,
+        "predicted_price_3y_2029": 1539.6
+    },
+    "신월5동": {
+        "current_price_per_pyeong": 1374.2,
+        "predicted_price_1y_2027": 1442.2,
+        "predicted_price_3y_2029": 1434.0
+    },
+    "신월6동": {
+        "current_price_per_pyeong": 1606.0,
+        "predicted_price_1y_2027": 1496.9,
+        "predicted_price_3y_2029": 1496.8
+    },
+    "신월7동": {
+        "current_price_per_pyeong": 942.5,
+        "predicted_price_1y_2027": 1201.6,
+        "predicted_price_3y_2029": 1261.7
+    },
+    "신정1동": {
+        "current_price_per_pyeong": 2147.6,
+        "predicted_price_1y_2027": 2150.0,
+        "predicted_price_3y_2029": 2163.3
+    },
+    "신정2동": {
+        "current_price_per_pyeong": 1890.5,
+        "predicted_price_1y_2027": 2440.2,
+        "predicted_price_3y_2029": 2572.8
+    },
+    "신정3동": {
+        "current_price_per_pyeong": 1117.4,
+        "predicted_price_1y_2027": 2732.8,
+        "predicted_price_3y_2029": 2597.8
+    },
+    "신정4동": {
+        "current_price_per_pyeong": 1376.1,
+        "predicted_price_1y_2027": 1712.6,
+        "predicted_price_3y_2029": 1710.9
+    },
+    "신정6동": {
+        "current_price_per_pyeong": 2023.9,
+        "predicted_price_1y_2027": 2270.5,
+        "predicted_price_3y_2029": 2261.0
+    },
+    "신정7동": {
+        "current_price_per_pyeong": 1495.7,
+        "predicted_price_1y_2027": 1652.5,
+        "predicted_price_3y_2029": 1608.0
+    },
+    "신촌동": {
+        "current_price_per_pyeong": 1461.6,
+        "predicted_price_1y_2027": 867.7,
+        "predicted_price_3y_2029": 1055.2
+    },
+    "쌍문제1동": {
+        "current_price_per_pyeong": 1081.3,
+        "predicted_price_1y_2027": 1653.1,
+        "predicted_price_3y_2029": 1726.3
+    },
+    "쌍문제2동": {
+        "current_price_per_pyeong": 919.5,
+        "predicted_price_1y_2027": 1403.2,
+        "predicted_price_3y_2029": 1429.5
+    },
+    "쌍문제3동": {
+        "current_price_per_pyeong": 1181.0,
+        "predicted_price_1y_2027": 1786.6,
+        "predicted_price_3y_2029": 1834.9
+    },
+    "쌍문제4동": {
+        "current_price_per_pyeong": 975.8,
+        "predicted_price_1y_2027": 1878.0,
+        "predicted_price_3y_2029": 1895.9
+    },
+    "아현동": {
+        "current_price_per_pyeong": 2374.1,
+        "predicted_price_1y_2027": 3318.7,
+        "predicted_price_3y_2029": 3294.4
+    },
+    "안암동": {
+        "current_price_per_pyeong": 1188.4,
+        "predicted_price_1y_2027": 1672.8,
+        "predicted_price_3y_2029": 1672.8
+    },
+    "암사제1동": {
+        "current_price_per_pyeong": 1946.9,
+        "predicted_price_1y_2027": 1869.6,
+        "predicted_price_3y_2029": 1864.2
+    },
+    "암사제2동": {
+        "current_price_per_pyeong": 1976.0,
+        "predicted_price_1y_2027": 1984.8,
+        "predicted_price_3y_2029": 1992.3
+    },
+    "암사제3동": {
+        "current_price_per_pyeong": 2047.2,
+        "predicted_price_1y_2027": 1951.2,
+        "predicted_price_3y_2029": 1992.2
+    },
+    "압구정동": {
+        "current_price_per_pyeong": 2132.9,
+        "predicted_price_1y_2027": 2655.4,
+        "predicted_price_3y_2029": 2681.3
+    },
+    "약수동": {
+        "current_price_per_pyeong": 1593.6,
+        "predicted_price_1y_2027": 2412.0,
+        "predicted_price_3y_2029": 2443.5
+    },
+    "양재1동": {
+        "current_price_per_pyeong": 1631.9,
+        "predicted_price_1y_2027": 2173.2,
+        "predicted_price_3y_2029": 2161.9
+    },
+    "양재2동": {
+        "current_price_per_pyeong": 1677.2,
+        "predicted_price_1y_2027": 2827.8,
+        "predicted_price_3y_2029": 2811.9
+    },
+    "양평제1동": {
+        "current_price_per_pyeong": 1890.8,
+        "predicted_price_1y_2027": 2179.5,
+        "predicted_price_3y_2029": 2091.3
+    },
+    "양평제2동": {
+        "current_price_per_pyeong": 1850.9,
+        "predicted_price_1y_2027": 1579.3,
+        "predicted_price_3y_2029": 1603.0
+    },
+    "여의동": {
+        "current_price_per_pyeong": 1556.1,
+        "predicted_price_1y_2027": 2051.4,
+        "predicted_price_3y_2029": 2128.4
+    },
+    "역삼1동": {
+        "current_price_per_pyeong": 1945.0,
+        "predicted_price_1y_2027": 553.9,
+        "predicted_price_3y_2029": 621.5
+    },
+    "역삼2동": {
+        "current_price_per_pyeong": 2995.1,
+        "predicted_price_1y_2027": 1721.8,
+        "predicted_price_3y_2029": 1267.9
+    },
+    "역촌동": {
+        "current_price_per_pyeong": 1394.7,
+        "predicted_price_1y_2027": 1557.6,
+        "predicted_price_3y_2029": 1595.4
+    },
+    "연남동": {
+        "current_price_per_pyeong": 1676.8,
+        "predicted_price_1y_2027": 1849.6,
+        "predicted_price_3y_2029": 1876.0
+    },
+    "연희동": {
+        "current_price_per_pyeong": 1286.2,
+        "predicted_price_1y_2027": 623.0,
+        "predicted_price_3y_2029": 683.5
+    },
+    "염리동": {
+        "current_price_per_pyeong": 2600.4,
+        "predicted_price_1y_2027": 3512.8,
+        "predicted_price_3y_2029": 3343.4
+    },
+    "염창동": {
+        "current_price_per_pyeong": 1815.5,
+        "predicted_price_1y_2027": 2458.8,
+        "predicted_price_3y_2029": 2480.0
+    },
+    "영등포동": {
+        "current_price_per_pyeong": 2160.7,
+        "predicted_price_1y_2027": 912.7,
+        "predicted_price_3y_2029": 913.9
+    },
+    "영등포본동": {
+        "current_price_per_pyeong": 1965.3,
+        "predicted_price_1y_2027": 2401.4,
+        "predicted_price_3y_2029": 2260.7
+    },
+    "오금동": {
+        "current_price_per_pyeong": 1664.1,
+        "predicted_price_1y_2027": 1937.2,
+        "predicted_price_3y_2029": 1925.8
+    },
+    "오류제1동": {
+        "current_price_per_pyeong": 1086.8,
+        "predicted_price_1y_2027": 495.2,
+        "predicted_price_3y_2029": 480.9
+    },
+    "오류제2동": {
+        "current_price_per_pyeong": 772.8,
+        "predicted_price_1y_2027": 1413.9,
+        "predicted_price_3y_2029": 1303.3
+    },
+    "오륜동": {
+        "current_price_per_pyeong": 2324.6,
+        "predicted_price_1y_2027": 2337.0,
+        "predicted_price_3y_2029": 2161.5
+    },
+    "옥수동": {
+        "current_price_per_pyeong": 2158.6,
+        "predicted_price_1y_2027": 2716.2,
+        "predicted_price_3y_2029": 2723.9
+    },
+    "왕십리도선동": {
+        "current_price_per_pyeong": 2524.3,
+        "predicted_price_1y_2027": 3377.8,
+        "predicted_price_3y_2029": 3266.5
+    },
+    "왕십리제2동": {
+        "current_price_per_pyeong": 2122.8,
+        "predicted_price_1y_2027": 1871.4,
+        "predicted_price_3y_2029": 1879.1
+    },
+    "용강동": {
+        "current_price_per_pyeong": 2154.4,
+        "predicted_price_1y_2027": 2982.2,
+        "predicted_price_3y_2029": 2987.8
+    },
+    "용답동": {
+        "current_price_per_pyeong": 1048.5,
+        "predicted_price_1y_2027": 474.3,
+        "predicted_price_3y_2029": 522.2
+    },
+    "용두동": {
+        "current_price_per_pyeong": 1743.9,
+        "predicted_price_1y_2027": 1959.6,
+        "predicted_price_3y_2029": 1922.9
+    },
+    "용문동": {
+        "current_price_per_pyeong": 1784.5,
+        "predicted_price_1y_2027": 2577.9,
+        "predicted_price_3y_2029": 2631.7
+    },
+    "용산2가동": {
+        "current_price_per_pyeong": 1149.5,
+        "predicted_price_1y_2027": 1551.2,
+        "predicted_price_3y_2029": 1545.8
+    },
+    "우이동": {
+        "current_price_per_pyeong": 1255.3,
+        "predicted_price_1y_2027": 1216.4,
+        "predicted_price_3y_2029": 1178.9
+    },
+    "우장산동": {
+        "current_price_per_pyeong": 2061.9,
+        "predicted_price_1y_2027": 1941.7,
+        "predicted_price_3y_2029": 1580.7
+    },
+    "원효로제1동": {
+        "current_price_per_pyeong": 2015.9,
+        "predicted_price_1y_2027": 836.0,
+        "predicted_price_3y_2029": 801.2
+    },
+    "원효로제2동": {
+        "current_price_per_pyeong": 1704.3,
+        "predicted_price_1y_2027": 1804.3,
+        "predicted_price_3y_2029": 1778.3
+    },
+    "월계1동": {
+        "current_price_per_pyeong": 1264.9,
+        "predicted_price_1y_2027": 1458.6,
+        "predicted_price_3y_2029": 1483.5
+    },
+    "월계2동": {
+        "current_price_per_pyeong": 1152.0,
+        "predicted_price_1y_2027": 1697.8,
+        "predicted_price_3y_2029": 1702.7
+    },
+    "월계3동": {
+        "current_price_per_pyeong": 1111.0,
+        "predicted_price_1y_2027": 1399.1,
+        "predicted_price_3y_2029": 1416.3
+    },
+    "월곡제1동": {
+        "current_price_per_pyeong": 1607.7,
+        "predicted_price_1y_2027": 1830.4,
+        "predicted_price_3y_2029": 1893.4
+    },
+    "월곡제2동": {
+        "current_price_per_pyeong": 1555.8,
+        "predicted_price_1y_2027": 1937.6,
+        "predicted_price_3y_2029": 2121.1
+    },
+    "위례동": {
+        "current_price_per_pyeong": 1901.4,
+        "predicted_price_1y_2027": 1689.8,
+        "predicted_price_3y_2029": 1689.8
+    },
+    "은천동": {
+        "current_price_per_pyeong": 1499.4,
+        "predicted_price_1y_2027": 2032.2,
+        "predicted_price_3y_2029": 2082.0
+    },
+    "을지로동": {
+        "current_price_per_pyeong": 1979.1,
+        "predicted_price_1y_2027": 3129.1,
+        "predicted_price_3y_2029": 3198.2
+    },
+    "응봉동": {
+        "current_price_per_pyeong": 1742.8,
+        "predicted_price_1y_2027": 2010.6,
+        "predicted_price_3y_2029": 2021.9
+    },
+    "응암제1동": {
+        "current_price_per_pyeong": 1804.8,
+        "predicted_price_1y_2027": 2689.5,
+        "predicted_price_3y_2029": 2688.7
+    },
+    "응암제2동": {
+        "current_price_per_pyeong": 1633.5,
+        "predicted_price_1y_2027": 2969.0,
+        "predicted_price_3y_2029": 2989.8
+    },
+    "응암제3동": {
+        "current_price_per_pyeong": 1535.9,
+        "predicted_price_1y_2027": 2087.1,
+        "predicted_price_3y_2029": 2146.0
+    },
+    "이문제1동": {
+        "current_price_per_pyeong": 1951.2,
+        "predicted_price_1y_2027": 2895.4,
+        "predicted_price_3y_2029": 2813.8
+    },
+    "이문제2동": {
+        "current_price_per_pyeong": 1441.7,
+        "predicted_price_1y_2027": 1923.8,
+        "predicted_price_3y_2029": 1897.5
+    },
+    "이촌제1동": {
+        "current_price_per_pyeong": 2225.7,
+        "predicted_price_1y_2027": 3298.0,
+        "predicted_price_3y_2029": 3298.0
+    },
+    "이촌제2동": {
+        "current_price_per_pyeong": 1756.9,
+        "predicted_price_1y_2027": 1601.0,
+        "predicted_price_3y_2029": 1632.8
+    },
+    "이태원제1동": {
+        "current_price_per_pyeong": 1331.3,
+        "predicted_price_1y_2027": 1556.5,
+        "predicted_price_3y_2029": 1558.7
+    },
+    "이태원제2동": {
+        "current_price_per_pyeong": 1622.3,
+        "predicted_price_1y_2027": 1776.2,
+        "predicted_price_3y_2029": 1800.3
+    },
+    "이화동": {
+        "current_price_per_pyeong": 445.4,
+        "predicted_price_1y_2027": 748.8,
+        "predicted_price_3y_2029": 751.9
+    },
+    "인수동": {
+        "current_price_per_pyeong": 829.6,
+        "predicted_price_1y_2027": 738.9,
+        "predicted_price_3y_2029": 714.7
+    },
+    "인헌동": {
+        "current_price_per_pyeong": 1735.8,
+        "predicted_price_1y_2027": 1896.3,
+        "predicted_price_3y_2029": 1916.7
+    },
+    "일원1동": {
+        "current_price_per_pyeong": 2130.7,
+        "predicted_price_1y_2027": 2844.1,
+        "predicted_price_3y_2029": 2818.7
+    },
+    "일원본동": {
+        "current_price_per_pyeong": 2451.9,
+        "predicted_price_1y_2027": 3388.6,
+        "predicted_price_3y_2029": 3395.0
+    },
+    "자양제1동": {
+        "current_price_per_pyeong": 2120.7,
+        "predicted_price_1y_2027": 1901.7,
+        "predicted_price_3y_2029": 1893.6
+    },
+    "자양제2동": {
+        "current_price_per_pyeong": 1808.4,
+        "predicted_price_1y_2027": 1703.5,
+        "predicted_price_3y_2029": 1737.7
+    },
+    "자양제3동": {
+        "current_price_per_pyeong": 2122.0,
+        "predicted_price_1y_2027": 2019.3,
+        "predicted_price_3y_2029": 2038.1
+    },
+    "자양제4동": {
+        "current_price_per_pyeong": 2284.2,
+        "predicted_price_1y_2027": 1676.1,
+        "predicted_price_3y_2029": 1836.9
+    },
+    "잠실2동": {
+        "current_price_per_pyeong": 3205.2,
+        "predicted_price_1y_2027": 2288.8,
+        "predicted_price_3y_2029": 2323.6
+    },
+    "잠실3동": {
+        "current_price_per_pyeong": 2418.2,
+        "predicted_price_1y_2027": 2211.3,
+        "predicted_price_3y_2029": 2103.8
+    },
+    "잠실4동": {
+        "current_price_per_pyeong": 2969.9,
+        "predicted_price_1y_2027": 3655.7,
+        "predicted_price_3y_2029": 3775.6
+    },
+    "잠실6동": {
+        "current_price_per_pyeong": 2053.0,
+        "predicted_price_1y_2027": 2273.2,
+        "predicted_price_3y_2029": 2340.9
+    },
+    "잠실7동": {
+        "current_price_per_pyeong": 2004.0,
+        "predicted_price_1y_2027": 2253.2,
+        "predicted_price_3y_2029": 2262.5
+    },
+    "잠실본동": {
+        "current_price_per_pyeong": 1806.9,
+        "predicted_price_1y_2027": 1257.0,
+        "predicted_price_3y_2029": 1338.5
+    },
+    "잠원동": {
+        "current_price_per_pyeong": 2534.7,
+        "predicted_price_1y_2027": 3335.9,
+        "predicted_price_3y_2029": 3282.0
+    },
+    "장안제1동": {
+        "current_price_per_pyeong": 1856.1,
+        "predicted_price_1y_2027": 1927.8,
+        "predicted_price_3y_2029": 1927.8
+    },
+    "장안제2동": {
+        "current_price_per_pyeong": 1624.4,
+        "predicted_price_1y_2027": 1889.3,
+        "predicted_price_3y_2029": 1940.0
+    },
+    "장위제1동": {
+        "current_price_per_pyeong": 1690.2,
+        "predicted_price_1y_2027": 2797.5,
+        "predicted_price_3y_2029": 2798.6
+    },
+    "장위제2동": {
+        "current_price_per_pyeong": 1063.4,
+        "predicted_price_1y_2027": 970.8,
+        "predicted_price_3y_2029": 970.8
+    },
+    "장위제3동": {
+        "current_price_per_pyeong": 1369.4,
+        "predicted_price_1y_2027": 2245.5,
+        "predicted_price_3y_2029": 2289.9
+    },
+    "장지동": {
+        "current_price_per_pyeong": 1389.4,
+        "predicted_price_1y_2027": 2405.7,
+        "predicted_price_3y_2029": 2395.1
+    },
+    "장충동": {
+        "current_price_per_pyeong": 417.2,
+        "predicted_price_1y_2027": 174.1,
+        "predicted_price_3y_2029": 157.4
+    },
+    "전농제1동": {
+        "current_price_per_pyeong": 2093.7,
+        "predicted_price_1y_2027": 1985.5,
+        "predicted_price_3y_2029": 1984.7
+    },
+    "전농제2동": {
+        "current_price_per_pyeong": 1324.5,
+        "predicted_price_1y_2027": 2110.4,
+        "predicted_price_3y_2029": 2216.1
+    },
+    "정릉제1동": {
+        "current_price_per_pyeong": 1540.3,
+        "predicted_price_1y_2027": 1619.9,
+        "predicted_price_3y_2029": 1639.1
+    },
+    "정릉제2동": {
+        "current_price_per_pyeong": 1582.6,
+        "predicted_price_1y_2027": 1996.1,
+        "predicted_price_3y_2029": 2069.2
+    },
+    "정릉제3동": {
+        "current_price_per_pyeong": 1278.6,
+        "predicted_price_1y_2027": 1843.7,
+        "predicted_price_3y_2029": 1757.4
+    },
+    "정릉제4동": {
+        "current_price_per_pyeong": 1223.0,
+        "predicted_price_1y_2027": 1640.9,
+        "predicted_price_3y_2029": 1635.5
+    },
+    "제기동": {
+        "current_price_per_pyeong": 1333.2,
+        "predicted_price_1y_2027": 1393.3,
+        "predicted_price_3y_2029": 1404.8
+    },
+    "조원동": {
+        "current_price_per_pyeong": 1364.5,
+        "predicted_price_1y_2027": 669.4,
+        "predicted_price_3y_2029": 693.7
+    },
+    "종로1.2.3.4가동": {
+        "current_price_per_pyeong": 1038.1,
+        "predicted_price_1y_2027": 379.7,
+        "predicted_price_3y_2029": 371.5
+    },
+    "종로5.6가동": {
+        "current_price_per_pyeong": 1712.1,
+        "predicted_price_1y_2027": 545.3,
+        "predicted_price_3y_2029": 573.4
+    },
+    "종암동": {
+        "current_price_per_pyeong": 1630.4,
+        "predicted_price_1y_2027": 1094.6,
+        "predicted_price_3y_2029": 1114.3
+    },
+    "중계1동": {
+        "current_price_per_pyeong": 1500.2,
+        "predicted_price_1y_2027": 2482.8,
+        "predicted_price_3y_2029": 2451.2
+    },
+    "중계2.3동": {
+        "current_price_per_pyeong": 1185.0,
+        "predicted_price_1y_2027": 1211.2,
+        "predicted_price_3y_2029": 1216.1
+    },
+    "중계4동": {
+        "current_price_per_pyeong": 1114.3,
+        "predicted_price_1y_2027": 1304.3,
+        "predicted_price_3y_2029": 1299.5
+    },
+    "중계본동": {
+        "current_price_per_pyeong": 1344.2,
+        "predicted_price_1y_2027": 1854.7,
+        "predicted_price_3y_2029": 1777.7
+    },
+    "중곡제1동": {
+        "current_price_per_pyeong": 1163.3,
+        "predicted_price_1y_2027": 1607.7,
+        "predicted_price_3y_2029": 1602.6
+    },
+    "중곡제2동": {
+        "current_price_per_pyeong": 1595.2,
+        "predicted_price_1y_2027": 1892.4,
+        "predicted_price_3y_2029": 1892.4
+    },
+    "중곡제3동": {
+        "current_price_per_pyeong": 837.9,
+        "predicted_price_1y_2027": 2132.4,
+        "predicted_price_3y_2029": 2347.4
+    },
+    "중곡제4동": {
+        "current_price_per_pyeong": 1410.7,
+        "predicted_price_1y_2027": 2068.9,
+        "predicted_price_3y_2029": 2137.4
+    },
+    "중림동": {
+        "current_price_per_pyeong": 1687.7,
+        "predicted_price_1y_2027": 1130.0,
+        "predicted_price_3y_2029": 1030.8
+    },
+    "중앙동": {
+        "current_price_per_pyeong": 1497.7,
+        "predicted_price_1y_2027": 890.7,
+        "predicted_price_3y_2029": 703.1
+    },
+    "중화제1동": {
+        "current_price_per_pyeong": 1570.0,
+        "predicted_price_1y_2027": 1650.1,
+        "predicted_price_3y_2029": 1663.0
+    },
+    "중화제2동": {
+        "current_price_per_pyeong": 1138.8,
+        "predicted_price_1y_2027": 1673.6,
+        "predicted_price_3y_2029": 1666.8
+    },
+    "증산동": {
+        "current_price_per_pyeong": 1803.7,
+        "predicted_price_1y_2027": 1601.5,
+        "predicted_price_3y_2029": 1601.5
+    },
+    "진관동": {
+        "current_price_per_pyeong": 1208.1,
+        "predicted_price_1y_2027": 1745.1,
+        "predicted_price_3y_2029": 1741.5
+    },
+    "창신제1동": {
+        "current_price_per_pyeong": 1373.8,
+        "predicted_price_1y_2027": 1673.4,
+        "predicted_price_3y_2029": 1690.6
+    },
+    "창신제2동": {
+        "current_price_per_pyeong": 1047.7,
+        "predicted_price_1y_2027": 1711.7,
+        "predicted_price_3y_2029": 1653.9
+    },
+    "창신제3동": {
+        "current_price_per_pyeong": 1459.2,
+        "predicted_price_1y_2027": 1719.1,
+        "predicted_price_3y_2029": 1749.3
+    },
+    "창제1동": {
+        "current_price_per_pyeong": 1109.6,
+        "predicted_price_1y_2027": 1695.7,
+        "predicted_price_3y_2029": 1693.6
+    },
+    "창제2동": {
+        "current_price_per_pyeong": 1349.1,
+        "predicted_price_1y_2027": 1866.6,
+        "predicted_price_3y_2029": 1795.7
+    },
+    "창제3동": {
+        "current_price_per_pyeong": 1021.7,
+        "predicted_price_1y_2027": 2158.3,
+        "predicted_price_3y_2029": 2130.2
+    },
+    "창제4동": {
+        "current_price_per_pyeong": 1125.3,
+        "predicted_price_1y_2027": 1580.3,
+        "predicted_price_3y_2029": 1590.2
+    },
+    "창제5동": {
+        "current_price_per_pyeong": 1230.7,
+        "predicted_price_1y_2027": 1686.1,
+        "predicted_price_3y_2029": 1738.5
+    },
+    "천연동": {
+        "current_price_per_pyeong": 1735.0,
+        "predicted_price_1y_2027": 2072.7,
+        "predicted_price_3y_2029": 2113.8
+    },
+    "천호제1동": {
+        "current_price_per_pyeong": 1466.5,
+        "predicted_price_1y_2027": 2020.7,
+        "predicted_price_3y_2029": 2034.5
+    },
+    "천호제2동": {
+        "current_price_per_pyeong": 2123.1,
+        "predicted_price_1y_2027": 2251.2,
+        "predicted_price_3y_2029": 2255.1
+    },
+    "천호제3동": {
+        "current_price_per_pyeong": 2036.1,
+        "predicted_price_1y_2027": 2200.1,
+        "predicted_price_3y_2029": 2313.2
+    },
+    "청구동": {
+        "current_price_per_pyeong": 1952.6,
+        "predicted_price_1y_2027": 2431.3,
+        "predicted_price_3y_2029": 2406.8
+    },
+    "청담동": {
+        "current_price_per_pyeong": 2824.9,
+        "predicted_price_1y_2027": 3423.5,
+        "predicted_price_3y_2029": 3377.4
+    },
+    "청량리동": {
+        "current_price_per_pyeong": 1144.1,
+        "predicted_price_1y_2027": 1433.2,
+        "predicted_price_3y_2029": 1465.8
+    },
+    "청룡동": {
+        "current_price_per_pyeong": 1640.7,
+        "predicted_price_1y_2027": 1096.1,
+        "predicted_price_3y_2029": 1158.1
+    },
+    "청림동": {
+        "current_price_per_pyeong": 1656.1,
+        "predicted_price_1y_2027": 1968.5,
+        "predicted_price_3y_2029": 1989.6
+    },
+    "청운효자동": {
+        "current_price_per_pyeong": 1225.2,
+        "predicted_price_1y_2027": 2019.4,
+        "predicted_price_3y_2029": 2088.6
+    },
+    "청파동": {
+        "current_price_per_pyeong": 1470.4,
+        "predicted_price_1y_2027": 1638.6,
+        "predicted_price_3y_2029": 1683.8
+    },
+    "충현동": {
+        "current_price_per_pyeong": 1397.8,
+        "predicted_price_1y_2027": 822.9,
+        "predicted_price_3y_2029": 764.2
+    },
+    "평창동": {
+        "current_price_per_pyeong": 1250.7,
+        "predicted_price_1y_2027": 1857.9,
+        "predicted_price_3y_2029": 1845.8
+    },
+    "풍납1동": {
+        "current_price_per_pyeong": 1935.8,
+        "predicted_price_1y_2027": 2071.2,
+        "predicted_price_3y_2029": 2109.6
+    },
+    "풍납2동": {
+        "current_price_per_pyeong": 1941.0,
+        "predicted_price_1y_2027": 2160.5,
+        "predicted_price_3y_2029": 2142.7
+    },
+    "필동": {
+        "current_price_per_pyeong": 1555.5,
+        "predicted_price_1y_2027": 574.8,
+        "predicted_price_3y_2029": 583.8
+    },
+    "하계1동": {
+        "current_price_per_pyeong": 1217.7,
+        "predicted_price_1y_2027": 1390.8,
+        "predicted_price_3y_2029": 1401.7
+    },
+    "하계2동": {
+        "current_price_per_pyeong": 1153.5,
+        "predicted_price_1y_2027": 1575.0,
+        "predicted_price_3y_2029": 1532.3
+    },
+    "한강로동": {
+        "current_price_per_pyeong": 1796.4,
+        "predicted_price_1y_2027": 1249.8,
+        "predicted_price_3y_2029": 1223.0
+    },
+    "한남동": {
+        "current_price_per_pyeong": 2290.4,
+        "predicted_price_1y_2027": 748.0,
+        "predicted_price_3y_2029": 749.3
+    },
+    "합정동": {
+        "current_price_per_pyeong": 2156.3,
+        "predicted_price_1y_2027": 2315.0,
+        "predicted_price_3y_2029": 2619.5
+    },
+    "항동": {
+        "current_price_per_pyeong": 1156.1,
+        "predicted_price_1y_2027": 913.7,
+        "predicted_price_3y_2029": 914.3
+    },
+    "행당제1동": {
+        "current_price_per_pyeong": 2085.0,
+        "predicted_price_1y_2027": 1137.7,
+        "predicted_price_3y_2029": 841.6
+    },
+    "행당제2동": {
+        "current_price_per_pyeong": 1928.3,
+        "predicted_price_1y_2027": 1913.1,
+        "predicted_price_3y_2029": 2006.7
+    },
+    "행운동": {
+        "current_price_per_pyeong": 1421.3,
+        "predicted_price_1y_2027": 1877.8,
+        "predicted_price_3y_2029": 1827.2
+    },
+    "혜화동": {
+        "current_price_per_pyeong": 1712.8,
+        "predicted_price_1y_2027": 661.3,
+        "predicted_price_3y_2029": 657.3
+    },
+    "홍은제1동": {
+        "current_price_per_pyeong": 1515.9,
+        "predicted_price_1y_2027": 1708.1,
+        "predicted_price_3y_2029": 1693.5
+    },
+    "홍은제2동": {
+        "current_price_per_pyeong": 1384.1,
+        "predicted_price_1y_2027": 1557.7,
+        "predicted_price_3y_2029": 1614.0
+    },
+    "홍제제1동": {
+        "current_price_per_pyeong": 1577.7,
+        "predicted_price_1y_2027": 1599.6,
+        "predicted_price_3y_2029": 1631.2
+    },
+    "홍제제2동": {
+        "current_price_per_pyeong": 1687.6,
+        "predicted_price_1y_2027": 1789.0,
+        "predicted_price_3y_2029": 1754.2
+    },
+    "홍제제3동": {
+        "current_price_per_pyeong": 1390.2,
+        "predicted_price_1y_2027": 2001.0,
+        "predicted_price_3y_2029": 1798.8
+    },
+    "화곡본동": {
+        "current_price_per_pyeong": 1745.4,
+        "predicted_price_1y_2027": 1840.1,
+        "predicted_price_3y_2029": 1825.1
+    },
+    "화곡제1동": {
+        "current_price_per_pyeong": 1740.8,
+        "predicted_price_1y_2027": 1694.7,
+        "predicted_price_3y_2029": 1720.5
+    },
+    "화곡제2동": {
+        "current_price_per_pyeong": 1119.2,
+        "predicted_price_1y_2027": 1760.3,
+        "predicted_price_3y_2029": 1826.6
+    },
+    "화곡제3동": {
+        "current_price_per_pyeong": 1396.1,
+        "predicted_price_1y_2027": 2410.4,
+        "predicted_price_3y_2029": 2340.9
+    },
+    "화곡제4동": {
+        "current_price_per_pyeong": 1087.4,
+        "predicted_price_1y_2027": 1537.9,
+        "predicted_price_3y_2029": 1522.1
+    },
+    "화곡제6동": {
+        "current_price_per_pyeong": 1546.3,
+        "predicted_price_1y_2027": 1955.0,
+        "predicted_price_3y_2029": 2043.0
+    },
+    "화곡제8동": {
+        "current_price_per_pyeong": 1670.2,
+        "predicted_price_1y_2027": 2235.5,
+        "predicted_price_3y_2029": 2278.1
+    },
+    "화양동": {
+        "current_price_per_pyeong": 1344.2,
+        "predicted_price_1y_2027": 224.5,
+        "predicted_price_3y_2029": 253.8
+    },
+    "황학동": {
+        "current_price_per_pyeong": 1841.1,
+        "predicted_price_1y_2027": 2321.9,
+        "predicted_price_3y_2029": 2305.0
+    },
+    "회기동": {
+        "current_price_per_pyeong": 1257.3,
+        "predicted_price_1y_2027": 571.3,
+        "predicted_price_3y_2029": 591.4
+    },
+    "회현동": {
+        "current_price_per_pyeong": 1812.9,
+        "predicted_price_1y_2027": 2535.6,
+        "predicted_price_3y_2029": 2550.1
+    },
+    "효창동": {
+        "current_price_per_pyeong": 2432.0,
+        "predicted_price_1y_2027": 2812.0,
+        "predicted_price_3y_2029": 2844.3
+    },
+    "후암동": {
+        "current_price_per_pyeong": 1227.2,
+        "predicted_price_1y_2027": 1743.2,
+        "predicted_price_3y_2029": 1743.3
+    },
+    "휘경제1동": {
+        "current_price_per_pyeong": 1708.2,
+        "predicted_price_1y_2027": 2389.4,
+        "predicted_price_3y_2029": 2447.1
+    },
+    "휘경제2동": {
+        "current_price_per_pyeong": 1489.9,
+        "predicted_price_1y_2027": 2312.3,
+        "predicted_price_3y_2029": 2304.2
+    },
+    "흑석동": {
+        "current_price_per_pyeong": 2199.6,
+        "predicted_price_1y_2027": 2200.6,
+        "predicted_price_3y_2029": 2215.4
+    }
+}
