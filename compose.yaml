@@ -50,10 +50,14 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-spot_fit}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Copy .env.example to .env first}
       MODEL_CACHE_DIR: /model-cache
+      MLFLOW_TRACKING_URI: ${MLFLOW_TRACKING_URI:-http://mlflow:5000}
+      CRIME_SAFETY_MODEL_URI: ${CRIME_SAFETY_MODEL_URI:-models:/crime_safety_direct_score_1y/1}
+      CRIME_SAFETY_MODEL_VERSION: ${CRIME_SAFETY_MODEL_VERSION:-1}
       WATCHFILES_FORCE_POLLING: ${WATCH_USE_POLLING:-true}
     volumes:
       - ./backend:/app
       - ./artifacts:/artifacts:ro
+      - ./data/interim:/data/interim:ro
       - ./model_registry:/model_registry:ro
       - model_cache:/model-cache
     depends_on:

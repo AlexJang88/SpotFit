@@ -62,12 +62,36 @@ SEOUL_DATASETS = {
         "domain": "environment",
         "snapshot_only": True,
     },
+    "parking_enforcement_cctv": {
+        "service": "TbOpendataFixedcctv",
+        "title": "서울시 불법주정차·전용차로 위반 단속 고정형 CCTV 위치정보",
+        "source": "https://data.seoul.go.kr/dataList/OA-20471/A/1/datasetView.do",
+        "domain": "traffic_safety",
+        "snapshot_only": True,
+    },
     "apartment": {
         "service": "OpenAptInfo",
         "title": "서울시 공동주택 아파트 정보",
         "source": "https://data.seoul.go.kr/dataList/OA-15818/A/1/datasetView.do",
         "domain": "housing",
         "snapshot_only": True,
+    },
+    "danran_bar": {
+        "service": "LOCALDATA_072301",
+        "title": "서울시 단란주점영업 인허가 정보",
+        "source": "https://data.seoul.go.kr/dataList/OA-16095/S/1/datasetView.do",
+        "domain": "harmful_facility",
+        # 인허가일과 폐업일이 있어 각 연도 말의 영업 상태를 재구성할 수 있다.
+        "snapshot_only": False,
+        "temporal_reconstruction": "APVPERMYMD <= year_end < DCBYMD",
+    },
+    "entertainment_bar": {
+        "service": "LOCALDATA_072302",
+        "title": "서울시 유흥주점영업 인허가 정보",
+        "source": "https://data.seoul.go.kr/dataList/OA-16096/S/1/datasetView.do",
+        "domain": "harmful_facility",
+        "snapshot_only": False,
+        "temporal_reconstruction": "APVPERMYMD <= year_end < DCBYMD",
     },
 }
 

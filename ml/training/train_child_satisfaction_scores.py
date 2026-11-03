@@ -110,6 +110,68 @@ def safe_sum(frame: pd.DataFrame, column: str) -> float:
     return frame[column].sum(min_count=1) if column in frame else np.nan
 
 
+def build_added_raw_features() -> pd.DataFrame:
+    """MinIO에서 추가된 원천자료를 자치구×연도 feature로 정규화한다."""
+    keys = ["year", "gu"]
+    income = read_survey(ROOT / "data/raw/가구소득/가구소득_2015_2025.csv").rename(columns={
+        "연도": "year", "자치구명": "gu", "소득구간_코드": "income_band",
+        "표본_가구수": "sample_households", "미취학아동_포함_표본가구수": "preschool_households",
+        "표준화_가중치_합계": "weight_sum",
+    })
+    for column in ("year", "income_band", "sample_households", "preschool_households", "weight_sum"):
+        income[column] = numeric(income[column])
+    income_rows = []
+    for (year, gu), part in income.groupby(keys):
+        valid = part["income_band"].notna() & part["weight_sum"].gt(0)
+        income_rows.append({
+            "year": int(year), "gu": gu,
+            "household_income_band_weighted_mean": weighted_mean(
+                part.loc[valid, "income_band"], part.loc[valid, "weight_sum"]),
+            "preschool_household_sample_share_pct": (
+                part["preschool_households"].sum() / part["sample_households"].sum() * 100
+                if part["sample_households"].sum() else np.nan),
+        })
+    added = pd.DataFrame(income_rows)
+
+    crime = read_survey(ROOT / "data/raw/범죄/범죄_2014_2025.csv").rename(columns={
+        "연도": "year", "자치구": "gu", "소계_발생건": "crime_total_count",
+        "강간·강제추행_발생건": "sexual_violence_count", "폭력_발생건": "violence_count",
+    })
+    crime = crime[[*keys, "crime_total_count", "sexual_violence_count", "violence_count"]]
+    for column in crime.columns.difference(keys):
+        crime[column] = numeric(crime[column])
+    added = added.merge(crime, on=keys, how="outer", validate="one_to_one")
+
+    progression = read_survey(ROOT / "data/raw/중학교_고등학교_진학률_2011_2025.csv").rename(columns={
+        "연도": "year", "지역": "gu", "고등학교_유형": "high_school_type", "진학률_pct": "rate",
+    })
+    type_features = {"전체": "middle_to_high_school_rate", "특수목적고": "middle_to_special_purpose_high_rate",
+                     "자율고": "middle_to_autonomous_high_rate"}
+    progression = progression[progression["high_school_type"].isin(type_features)].copy()
+    progression["feature"] = progression["high_school_type"].map(type_features)
+    progression["rate"] = numeric(progression["rate"])
+    progression = progression.pivot_table(index=keys, columns="feature", values="rate", aggfunc="first").reset_index()
+    progression.columns.name = None
+    progression = progression[progression["gu"].ne("서울특별시")]
+    added = added.merge(progression, on=keys, how="outer", validate="one_to_one")
+
+    center_rows = []
+    for path in sorted((ROOT / "data/raw/지역아동센터").glob("20??_*.xlsx")):
+        year = int(path.name[:4])
+        frame = pd.read_excel(path, sheet_name=0, header=2)
+        sido = next((c for c in frame if "시도" in str(c)), None)
+        district = next((c for c in frame if "시군구" in str(c)), None)
+        if sido is None or district is None:
+            continue
+        seoul = frame[frame[sido].astype(str).str.contains("서울", na=False)]
+        for gu, count in seoul.groupby(district).size().items():
+            center_rows.append({"year": year, "gu": gu, "community_child_center_count": int(count)})
+    centers = pd.DataFrame(center_rows)
+    if not centers.empty:
+        added = added.merge(centers, on=keys, how="outer", validate="one_to_one")
+    return added
+
+
 def build_district_features() -> tuple[pd.DataFrame, pd.DataFrame]:
     population, population_audit = load_population(CORE)
     panel, feature_audit = merge_features(population)
@@ -138,10 +200,15 @@ def build_district_features() -> tuple[pd.DataFrame, pd.DataFrame]:
         district_rows.append(row)
     result = pd.DataFrame(district_rows)
     result["school_age_population"] = result[["children_elementary", "children_middle", "children_high"]].sum(axis=1)
+    result = result.merge(build_added_raw_features(), on=["year", "gu"], how="left", validate="one_to_one")
 
     def per1000(numerator: str, denominator: str, output: str) -> None:
         result[output] = result[numerator].div(result[denominator].replace(0, np.nan)) * 1000
 
+    per1000("crime_total_count", "total_population", "crime_total_per_1000_residents")
+    per1000("sexual_violence_count", "total_population", "sexual_violence_per_1000_residents")
+    per1000("violence_count", "total_population", "violence_per_1000_residents")
+    per1000("community_child_center_count", "school_age_population", "community_child_centers_per_1000_school_age")
     per1000("daycare_count_reconstructed", "children_infant", "daycare_per_1000_preschool")
     per1000("school_count_유치원", "children_infant", "kindergarten_per_1000_preschool")
     per1000("children_park_count_reconstructed", "children_infant", "children_parks_per_1000_preschool")
