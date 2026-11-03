@@ -9,7 +9,7 @@ import joblib, mlflow, mlflow.sklearn, numpy as np, pandas as pd
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.inspection import permutation_importance
 from sklearn.model_selection import RepeatedKFold
-from apt_sale_data import DATA, JUSO, KINDS, OLD, OUT, Y
+from apt_sale_data import DATA, JUSO, KINDS, OLD, OUT, PROC, Y
 warnings.simplefilter('ignore')
 
 REPEAT = 20
@@ -31,9 +31,8 @@ def mean():                                                                     
 MODELS = {'random_forest': ('랜덤포레스트', 'RF', rf), 'xgboost': ('XGBoost', 'XGB', xgb), 'ridge': ('릿지', 'Ridge', ridge), 'mean': ('기준(평균으로 찍기)', 'Mean', mean)}   # 이름: (한글 이름, 파일 이름용 약자, 모델 만드는 함수)
 
 def add_area(d, kind='apt'):        # 동네 매매 거래의 평균 전용면적 (apt_sale_data.py 와 같은 거래 기준, kind='villa' 이면 빌라 거래)
-    t = pd.read_csv(JUSO + KINDS[kind][1], low_memory=False, usecols=['행정동_코드', '연결방식', 'cdealType', 'excluUseAr'])
-    t = t[t['cdealType'].isna() & (t['연결방식'] == '지번 일치')]
-    return d.join(t.groupby(t['행정동_코드'].astype(int).replace(OLD))['excluUseAr'].mean().rename(AREA))
+    t = pd.read_csv(PROC + KINDS[kind][1], low_memory=False, usecols=['행정동_코드(상권분석)', '전용면적(㎡)'])
+    return d.join(t.groupby(t['행정동_코드(상권분석)'].astype(int))['전용면적(㎡)'].mean().rename(AREA))
 
 def add_age(d):         # 상주인구 연령대 비율 6개 (값이 이상한 2022년 4분기~2023년 3분기는 빼고 분기 평균)
     p = pd.read_csv(DATA + '../raw/서울시 상권분석서비스(상주인구-행정동).csv', encoding='cp949')
@@ -46,7 +45,7 @@ def add_age(d):         # 상주인구 연령대 비율 6개 (값이 이상한 2
     share = p[raw].div(p[raw].sum(axis=1), axis=0).mul(100).set_axis(AGE_COLS, axis=1)
     return d.join(share.groupby(p['행정동_코드']).mean())
 
-def compare(d, old, new, name, run, why, old_alg='random_forest', new_alg='random_forest', kind='apt'):
+def compare(d, old, new, name, run, why, old_alg='random_forest', new_alg='random_forest', kind='apt', allow_missing=False):
     """old, new = ('버전', [X 목록]). 같은 분할에서 두 버전을 나란히 학습해 비교하고 new 결과를 저장·기록. old_alg, new_alg = MODELS의 이름"""
     (ko_o, _, mk_o), (ko_n, ab_n, mk_n) = MODELS[old_alg], MODELS[new_alg]
     pre = KINDS[kind][0] + '매매'                                                                     # 저장 파일 이름 앞부분: 아파트매매 / 빌라매매
@@ -54,7 +53,7 @@ def compare(d, old, new, name, run, why, old_alg='random_forest', new_alg='rando
     ap.add_argument('--tracking-uri'); ap.add_argument('--experiment', default='house-price-forecast-comparison'); ap.add_argument('--task-id', default='unassigned')
     a = ap.parse_args()
     (vo, Xo), (vn, Xn) = old, new
-    assert d[Xo + Xn].notna().all().all(), '빈 값이 있는 동네가 있음'
+    assert allow_missing or d[Xo + Xn].notna().all().all(), '빈 값이 있는 동네가 있음'                       # allow_missing=True는 빈 값을 처리하는 XGBoost·랜덤포레스트일 때만 (릿지는 불가)
     y = d[Y]
     print(f'동네 {len(d)}곳 | {vo} {len(Xo)}개 항목 vs {vn} {len(Xn)}개 항목 | 뺀 항목 {[c for c in Xo if c not in Xn]} | 더한 항목 {[c for c in Xn if c not in Xo]}')
 

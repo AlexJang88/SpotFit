@@ -2,7 +2,8 @@
 #  → data/interim/기타/CCTV_행정동.csv (CCTV 한 줄마다 행정동), data/processed/행정동별_CCTV.csv (행정동별 카메라 대수 합)
 #  행정동 붙이는 순서: ① 도로명주소(도로명+건물번호) → ② 지번주소(동+번지) → ③ 번지 보완(같은 본번, 법정동에 행정동 하나뿐, 앞뒤 번지) → ④ 위경도로 가장 가까운 행정동 중심점 (연결방식 컬럼에 남김)
 #  이전 방식(AptHypothesis.cctv_count)은 모든 CCTV를 위경도로 가장 가까운 중심점에만 배정했음
-# 필요 파일: data/raw/기타/CCTV정보_서울특별시.csv, data/raw/기타/rnaddrkor_seoul.txt, data/raw/서울시 상권분석서비스(영역-행정동).csv
+# 생활방범 CCTV만 설치연도별로 따로 저장 → data/interim/기타/CCTV_생활방범_연도별/CCTV_생활방범_연도.csv, 행정동별 연도별 설치 대수 → data/processed/행정동별_생활방범CCTV_연도별.csv
+# 필요 파일: data/raw/기타/서울시_CCTV정보.csv, data/raw/기타/rnaddrkor_seoul.txt, data/raw/서울시 상권분석서비스(영역-행정동).csv
 import os
 import numpy as np, pandas as pd
 from pyproj import Transformer
@@ -27,7 +28,7 @@ one = one[one['nunique'] == 1].rename(columns={'first': '하나뿐동'})[['구',
 near = lot[lot['산'] == ''].drop_duplicates(['구', '동', '본']).sort_values('본')
 
 # 2) CCTV: 주소 읽기
-c = pd.read_csv(RAW + '기타/CCTV정보_서울특별시.csv', encoding='cp949', low_memory=False)
+c = pd.read_csv(RAW + '기타/서울시_CCTV정보.csv', encoding='cp949', low_memory=False)
 n0 = len(c)
 c['카메라대수'] = pd.to_numeric(c['카메라대수'], errors='coerce')
 print(f'CCTV {n0:,}건 | 카메라대수 빈 값 {c["카메라대수"].isna().sum()}건, 0 이하 {(c["카메라대수"] <= 0).sum()}건, 합 {c["카메라대수"].sum():,.0f}대')
@@ -105,3 +106,19 @@ t = pd.DataFrame({'CCTV 수': g['카메라대수'].sum(), 'CCTV 설치장소 수
 os.makedirs(DATA + 'processed/', exist_ok=True)
 t.to_csv(DATA + 'processed/행정동별_CCTV.csv', index=False, encoding='utf-8-sig')
 print(f'\n행정동 {len(t)}곳 | 카메라 {t["CCTV 수"].sum():,.0f}대 (원본 합 {c["카메라대수"].sum():,.0f}대) | 저장: {os.path.abspath(DATA + "processed/행정동별_CCTV.csv")}')
+
+# 5) 생활방범만 설치연도별로 따로 저장 (설치연월 YYYYMM → 연도)
+b = c[c['설치목적구분'] == '생활방범'].copy()
+ym = pd.to_numeric(b['설치연월'], errors='coerce')
+b['설치연도'] = (ym // 100).astype('Int64')
+print('\n설치목적구분:\n' + c['설치목적구분'].value_counts(dropna=False).to_string())
+print(f'\n생활방범 {len(b):,}건 | 설치연월 빈 값 {b["설치연도"].isna().sum()}건 | 행정동 연결 안 됨 {b["행정동_코드"].isna().sum()}건')
+out = DATA + 'interim/기타/CCTV_생활방범_연도별/'
+os.makedirs(out, exist_ok=True)
+for yr, grp in b.groupby(b['설치연도'].astype('float')):
+    grp.drop(columns=['설치연도']).to_csv(out + f'CCTV_생활방범_{int(yr)}.csv', index=False, encoding='utf-8-sig')
+b[b['설치연도'].isna()].drop(columns=['설치연도']).to_csv(out + 'CCTV_생활방범_연도모름.csv', index=False, encoding='utf-8-sig')
+w = b.dropna(subset=['행정동_코드', '설치연도']).pivot_table(index='행정동_코드', columns='설치연도', values='카메라대수', aggfunc='sum', fill_value=0)
+w.columns = [f'{int(y)}년 설치 카메라 수' for y in w.columns]
+w.reset_index().to_csv(DATA + 'processed/행정동별_생활방범CCTV_연도별.csv', index=False, encoding='utf-8-sig')
+print('연도별 (건수 / 카메라 대수):\n' + b.groupby('설치연도').agg(건수=('카메라대수', 'size'), 카메라=('카메라대수', 'sum')).to_string())
