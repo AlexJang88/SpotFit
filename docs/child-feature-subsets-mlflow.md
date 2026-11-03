@@ -144,3 +144,91 @@ python ml/training/train_child_feature_subsets.py --tracking-uri http://127.0.0.
 공식 문서:
 - https://www.mlflow.org/docs/latest/registry/
 - https://www.mlflow.org/docs/latest/api_reference/python_api/mlflow.sklearn.html
+
+## 어린이보호구역 시계열 모델 등록
+
+`train_child_safety_zone.py`도 위와 같은 원칙을 사용합니다. 한 번의 전체 실행은 부모 Run,
+연령군 4개와 후보 알고리즘 5개의 조합은 20개 자식 Run으로 기록됩니다. 모든 후보의
+파라미터·교차검증·시간 외 평가 결과는 보존하지만, 2023년 5-fold CV RMSE가 가장 낮은
+연령군별 우승 모델만 모델 아티팩트를 기록하고 Registry 등록 후보가 됩니다.
+
+등록 모델명은 다음과 같습니다.
+
+- `spotfit-child-safety-zone-infant`
+- `spotfit-child-safety-zone-elementary`
+- `spotfit-child-safety-zone-middle`
+- `spotfit-child-safety-zone-high`
+
+### 학습 시작 전 MinIO 데이터 동기화
+
+이 스크립트는 기본적으로 모델 학습보다 먼저 MinIO 데이터 버킷의 모든 데이터 객체를 로컬
+`data/` 아래에 내려받습니다. `.env.dev`가 있으면 우선 사용하고, 없으면 `.env`를 사용합니다.
+`S3_DATA_BUCKET`이 있으면 해당 버킷을 사용하며, 없으면 기존 구성과 같이
+`S3_MODEL_BUCKET`을 사용합니다. 같은 버킷의 `recommender/` 객체는 서비스 모델이므로 데이터
+동기화에서 제외합니다.
+
+다운로드는 임시파일이 완성된 후 원본 경로를 교체합니다. 네트워크·권한·인증 오류가 발생하면
+기존 로컬 데이터로 학습을 계속하지 않고 중단하므로, PC마다 다른 자료가 MLflow에 등록되는
+문제를 막습니다. 원격에 없는 로컬 파일을 자동 삭제하지는 않습니다.
+
+기본 실행:
+
+```powershell
+python ml/training/train_child_safety_zone.py
+```
+
+설정 파일을 직접 지정하려면:
+
+```powershell
+python ml/training/train_child_safety_zone.py --minio-env-file .env.dev
+```
+
+MinIO 객체가 실제로 `data/...` 접두사 아래 저장된 별도 구성이라면:
+
+```powershell
+python ml/training/train_child_safety_zone.py --data-prefix data/
+```
+
+이미 고정한 로컬 스냅샷을 오프라인 재현할 때만 다음 옵션을 명시합니다.
+
+```powershell
+python ml/training/train_child_safety_zone.py --skip-data-sync
+```
+
+로컬 검증만 수행하면 다음 명령을 사용합니다. Registry에는 등록하지 않습니다.
+
+```powershell
+python ml/training/train_child_safety_zone.py
+```
+
+서버 MLflow와 연결해 Run 및 평가자료를 기록하되 Registry 등록을 하지 않으려면:
+
+```powershell
+python ml/training/train_child_safety_zone.py `
+  --tracking-uri http://서버IP:5000
+```
+
+평가자료 기록과 연령군별 CV 우승 모델의 Registry 등록을 함께 수행하려면:
+
+```powershell
+python ml/training/train_child_safety_zone.py `
+  --tracking-uri http://서버IP:5000 `
+  --register-best
+```
+
+서버 MLflow가 PostgreSQL backend store와 MinIO artifact store로 구성되어 있다면 다음과 같이
+나뉘어 저장됩니다.
+
+- PostgreSQL: Experiment, Run, 파라미터, 지표, 태그, 등록 모델, Model Version 메타데이터
+- MinIO: MLflow가 기록한 모델, joblib, 비교 CSV, 보고서, 그래프
+- 로컬 `artifacts/child_safety_zone`: 실행자가 바로 확인할 수 있는 동일 결과 사본
+
+스크립트가 PostgreSQL에 직접 INSERT하지는 않습니다. 클라이언트는 Tracking URI로 MLflow
+서버에 요청하고, 서버가 자신의 backend store 설정에 따라 PostgreSQL에 기록합니다. 원격
+서버 연결이 실패하면 로컬 SQLite로 자동 전환하지 않으므로 잘못된 저장소에 성공한 것으로
+오인하지 않습니다.
+
+등록된 버전에는 `validation_status=exploratory_not_production` 태그를 설정합니다. 현재 자료는
+연간 전환이 두 개뿐이고 시간 외 R²가 기준 모델을 넘지 못했으므로 `candidate` 또는 `champion`
+별칭을 자동 지정하거나 MinIO 서비스 배포 경로에 자동 복사하지 않습니다. 추가 연도와 독립
+검증에서 성능이 확인된 뒤 사람이 Registry 버전을 검토하고 별칭과 배포 여부를 결정합니다.
