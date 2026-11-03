@@ -11,7 +11,7 @@ from pypdf import PdfReader  # noqa: E402
 
 
 pdf = next((ROOT / "data" / "raw").rglob("2024_건강보험통계연보.pdf"))
-output = ROOT / "data" / "interim" / "안전" / "자치구별_의료보장사업장수_2024.csv"
+output = ROOT / "data" / "interim" / "안전" / "교통사고" / "자치구별_의료보장사업장수_2024.csv"
 reader = PdfReader(pdf)
 text = reader.pages[101].extract_text() or ""  # printed page 20, Table I-5
 seoul_block = text.split("서 울", 1)[1].split("부 산", 1)[0]

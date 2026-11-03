@@ -13,8 +13,11 @@ import pandas as pd
 
 
 ROOT = Path(__file__).resolve().parents[1]
-RAW_DIR = ROOT / "data" / "raw" / "안전" / "교통사고_기준표보강" / "주민등록인구"
-OUTPUT = ROOT / "data" / "interim" / "안전" / "자치구별_주민등록인구_2017_2025.csv"
+RAW_DIR = ROOT / "data" / "raw" / "AI수집" / "안전" / "교통사고" / "교통사고_기준표보강" / "주민등록인구"
+OUTPUTS = [
+    ROOT / "data" / "interim" / "안전" / "생활안전" / "자치구별_주민등록인구_2017_2025.csv",
+    ROOT / "data" / "interim" / "안전" / "교통사고" / "자치구별_주민등록인구_2017_2025.csv",
+]
 URL = "https://data.seoul.go.kr/bsp/wgs/gis/map.do?vslzId=3&scopCd=SGG&statsYr={year}"
 
 DISTRICTS = {
@@ -36,7 +39,8 @@ def fetch(year: int) -> dict:
 
 def main() -> None:
     RAW_DIR.mkdir(parents=True, exist_ok=True)
-    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
+    for output in OUTPUTS:
+        output.parent.mkdir(parents=True, exist_ok=True)
     records: list[dict] = []
     for year in range(2017, 2026):
         payload = fetch(year)
@@ -67,8 +71,9 @@ def main() -> None:
         raise ValueError(f"Key coverage mismatch: missing={expected-actual}, extra={actual-expected}")
     if data.duplicated(["연도", "자치구"]).any():
         raise ValueError("Duplicate year-district keys")
-    data.to_csv(OUTPUT, index=False, encoding="utf-8-sig")
-    print(f"saved={OUTPUT}")
+    for output in OUTPUTS:
+        data.to_csv(output, index=False, encoding="utf-8-sig")
+        print(f"saved={output}")
     print(f"rows={len(data)}, years={data['연도'].min()}-{data['연도'].max()}, districts={data['자치구'].nunique()}")
 
 

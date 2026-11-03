@@ -17,7 +17,7 @@ import requests
 
 
 ROOT = Path(__file__).resolve().parents[1]
-RAW = ROOT / "data" / "raw" / "모델보강"
+RAW = ROOT / "data" / "raw" / "AI수집" / "안전" / "교통사고" / "모델보강"
 
 DISTRICTS = {
     "종로구": (37.5735, 126.9790), "중구": (37.5641, 126.9979),

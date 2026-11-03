@@ -15,9 +15,9 @@ import pandas as pd
 
 
 ROOT = Path(__file__).resolve().parents[1]
-RAW = ROOT / "data" / "raw" / "안전" / "교통사고_기준표보강" / "교통단속CCTV_최신"
-OUT_DETAIL = ROOT / "data" / "interim" / "안전" / "서울_교통단속CCTV_최신_상세.csv"
-OUT_AGG = ROOT / "data" / "interim" / "안전" / "자치구별_교통단속CCTV_최신.csv"
+RAW = ROOT / "data" / "raw" / "AI수집" / "안전" / "교통사고" / "교통사고_기준표보강" / "교통단속CCTV_최신"
+OUT_DETAIL = ROOT / "data" / "interim" / "안전" / "교통사고" / "서울_교통단속CCTV_최신_상세.csv"
+OUT_AGG = ROOT / "data" / "interim" / "안전" / "교통사고" / "자치구별_교통단속CCTV_최신.csv"
 BASE = "https://www.data.go.kr/download/standard.json"
 PK = "15028200"
 TABLE = "tn_pubr_public_unmanned_traffic_camera_svc"

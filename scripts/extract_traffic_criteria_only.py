@@ -7,7 +7,7 @@ from openpyxl.utils import get_column_letter
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SAFE = ROOT / "data" / "interim" / "안전"
+SAFE = ROOT / "data" / "interim" / "안전" / "교통사고"
 SOURCE = SAFE / "교통사고_안전기준표_관련데이터_통합.xlsx"
 OUTPUT = SAFE / "교통사고_안전기준표_전용데이터.xlsx"
 

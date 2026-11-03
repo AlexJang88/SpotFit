@@ -10,8 +10,8 @@ from openpyxl.utils import get_column_letter
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SAFE = ROOT / "data" / "interim" / "안전"
-OUTPUT = SAFE / "교통사고_안전기준표_관련데이터_통합.xlsx"
+SAFE = ROOT / "data" / "interim" / "안전" / "교통사고"
+OUTPUT = SAFE / "교통사고_안전기준표_전체통합.xlsx"
 KEYS = ["연도", "자치구"]
 
 
@@ -39,8 +39,12 @@ def main() -> None:
     population = read_csv("자치구별_인구활동량_1차.csv")
     weighted = read_csv("자치구별_교통사고안전_가중점수_2017_2025.csv")
     road = read_csv("자치구별_도로교통시설_2026_1차.csv")
+    registered = read_csv("자치구별_주민등록인구_2017_2025.csv")
+    workplaces = read_csv("자치구별_의료보장사업장수_2024.csv")
+    cctv_latest = read_csv("자치구별_교통단속CCTV_최신.csv")
+    cctv_detail = read_csv("서울_교통단속CCTV_최신_상세.csv")
 
-    for frame in (accident, driver, population, weighted, road):
+    for frame in (accident, driver, population, weighted, road, registered, workplaces):
         frame["연도"] = pd.to_numeric(frame["연도"], errors="raise").astype(int)
 
     accident_cols = KEYS + [
@@ -71,16 +75,26 @@ def main() -> None:
         "CCTV포함5지표_연도내순위_14개구내",
     ]
     integrated = integrated.merge(weighted[score_cols], on=KEYS, how="left", validate="one_to_one")
+    integrated = integrated.merge(
+        registered[["연도", "자치구", "주민등록인구_계"]],
+        on=KEYS, how="left", validate="one_to_one"
+    ).merge(
+        workplaces[["연도", "자치구", "의료보장사업장수"]],
+        on=KEYS, how="left", validate="one_to_one"
+    )
+    official_pop = integrated["주민등록인구_계"].replace(0, np.nan)
+    integrated["인구1만명당_교통사고사망자수"] = integrated["사망자수"] / official_pop * 10_000
+    integrated["인구1만명당_의료보장사업장수"] = integrated["의료보장사업장수"] / official_pop * 10_000
     integrated = integrated.sort_values(KEYS).reset_index(drop=True)
 
     definitions = pd.DataFrame([
-        ["위험", "인구만명당 교통사고 사망자수", 50.00, "부분", "사망자수÷생활인구×10,000", "주민등록인구 대신 생활인구 사용"],
-        ["경감", "도로면적당 교통단속 CCTV대수", 17.24, "부분", "CCTV 원자료 및 생활인구 대리지표 수록", "정확한 도로면적 분모 없음; CCTV는 14개 구"],
+        ["위험", "인구만명당 교통사고 사망자수", 50.00, "완전", "사망자수÷공식 주민등록인구×10,000", "2017~2025 산출"],
+        ["경감", "도로면적당 교통단속 CCTV대수", 17.24, "부분", "과속·신호위반 CCTV 최신 집계와 상세 별도 수록", "도로면적 미확보; CCTV는 2026 최신 스냅샷"],
         ["의식", "운전자 안전벨트 착용률", 8.99, "완전", "운전자안전벨트착용률", "기준표와 직접 일치"],
         ["의식", "음주운전 경험률", -8.70, "완전", "음주운전율", "기준표와 직접 대응"],
         ["의식", "자동차등록대수당 교통법규위반건수", -2.31, "부분", "자동차등록대수와 차량밀도 대리지표 수록", "전체 교통법규위반건수 없음"],
         ["취약", "인구만명당 재난약자수", 7.91, "미확보", "-", "관련 원자료 없음"],
-        ["취약", "인구만명당 의료보장 사업장수", 2.09, "미확보", "-", "관련 원자료 없음"],
+        ["취약", "인구만명당 의료보장 사업장수", 2.09, "완전(2024)", "의료보장사업장수÷공식 주민등록인구×10,000", "2024 건강보험통계연보"],
         ["경감", "지역교통 안전환경개선사업 지출액", 2.76, "미확보", "-", "관련 원자료 없음"],
     ], columns=["지표유형", "안전기준표 항목", "가중치", "확보상태", "통합파일 적용", "주의사항"])
 
@@ -106,6 +120,9 @@ def main() -> None:
         ["인구 대리자료", "자치구별_인구활동량_1차.csv", "2017~2025", "생활·상주·유동인구"],
         ["가중점수", "자치구별_교통사고안전_가중점수_2017_2025.csv", "2017~2025", "안전기준표 가중평가 결과"],
         ["도로시설", "자치구별_도로교통시설_2026_1차.csv", "2026", "교차로·횡단보도 현황; 연도 불일치로 통합데이터에는 미병합"],
+        ["공식 인구", "자치구별_주민등록인구_2017_2025.csv", "2017~2025", "인구 1만명당 지표의 공식 분모"],
+        ["의료보장 사업장", "자치구별_의료보장사업장수_2024.csv", "2024", "건강보험통계연보 제Ⅰ-5표"],
+        ["교통단속 CCTV", "자치구별_교통단속CCTV_최신.csv", "2026 최신", "경찰 관리 과속·신호위반 CCTV; 과거 모델 입력 금지"],
     ], columns=["분류", "원본파일", "기간", "내용"])
 
     with pd.ExcelWriter(OUTPUT, engine="openpyxl") as writer:
@@ -116,13 +133,17 @@ def main() -> None:
         driver[driver_cols].to_excel(writer, sheet_name="운전자_CCTV_장기", index=False)
         population[population_cols].to_excel(writer, sheet_name="인구활동량", index=False)
         road.to_excel(writer, sheet_name="도로시설_2026", index=False)
+        registered.to_excel(writer, sheet_name="공식인구_2017_2025", index=False)
+        workplaces.to_excel(writer, sheet_name="의료보장사업장_2024", index=False)
+        cctv_latest.to_excel(writer, sheet_name="교통단속CCTV_최신집계", index=False)
+        cctv_detail.to_excel(writer, sheet_name="교통단속CCTV_최신상세", index=False)
         sources.to_excel(writer, sheet_name="출처_구성", index=False)
         for ws in writer.book.worksheets:
             format_sheet(ws)
 
     print(f"saved={OUTPUT}")
     print(f"integrated_rows={len(integrated)} columns={len(integrated.columns)}")
-    print(f"sheets={8}")
+    print(f"sheets={12}")
 
 
 if __name__ == "__main__":

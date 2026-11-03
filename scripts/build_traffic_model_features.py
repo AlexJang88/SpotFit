@@ -51,7 +51,7 @@ def read_csv_auto(path, **kwargs):
 
 def build_living_population():
     monthly_parts = []
-    zips = sorted((RAW / "모델보강" / "생활인구").glob("*.zip"))
+    zips = sorted((RAW / "AI수집" / "안전" / "교통사고" / "모델보강" / "생활인구").glob("*.zip"))
     for zp in zips:
         year = int(re.search(r"(20\d{2})", zp.name).group(1))
         with zipfile.ZipFile(zp) as z:
@@ -118,11 +118,11 @@ def build_commercial_population():
 
 
 def build_weather():
-    p = RAW / "모델보강" / "기상" / "OpenMeteo_ERA5Land_자치구일별_2010_2025.csv.gz"
+    p = RAW / "AI수집" / "안전" / "교통사고" / "모델보강" / "기상" / "OpenMeteo_ERA5Land_자치구일별_2010_2025.csv.gz"
     if p.exists():
         d = pd.read_csv(p)
     else:
-        cached = sorted((RAW / "모델보강" / "기상" / "district_cache").glob("*.csv.gz"))
+        cached = sorted((RAW / "AI수집" / "안전" / "교통사고" / "모델보강" / "기상" / "district_cache").glob("*.csv.gz"))
         d = pd.concat([pd.read_csv(x) for x in cached], ignore_index=True)
     d["time"] = pd.to_datetime(d["time"]); d["year"] = d.time.dt.year; d["month"] = d.time.dt.month
     d["강수일"] = (d.precipitation_sum >= 1).astype(int)
@@ -139,7 +139,7 @@ def build_weather():
 
 
 def build_transit():
-    p=RAW/"모델보강"/"대중교통"/"서울데이터허브_자치구월별대중교통_2024_2025.csv"
+    p=RAW/"AI수집"/"안전"/"교통사고"/"모델보강"/"대중교통"/"서울데이터허브_자치구월별대중교통_2024_2025.csv"
     d=pd.read_csv(p)
     cols={"all_psgr_cnt":"대중교통_승객수","bus_psgr_cnt":"버스_승객수","sbwy_psgr_cnt":"지하철_승객수",
           "bus_sttn_cnt":"버스정류장수","sbwstt_cnt":"지하철역수","bus_route_cnt":"버스노선수","sbwy_route_cnt":"지하철노선수"}
@@ -154,7 +154,7 @@ def build_transit():
 
 
 def build_intersections():
-    p=next((RAW/"모델보강"/"도로시설").glob("*.xlsx"))
+    p=next((RAW/"AI수집"/"안전"/"교통사고"/"모델보강"/"도로시설").glob("*.xlsx"))
     d=pd.read_excel(p)
     out=d.groupby("자치구",as_index=False).agg(
         교차로수=("교차로관리번호",lambda x:x.dropna().nunique()),
@@ -197,7 +197,7 @@ def build_child_accidents():
 
 
 def build_drunk_enforcement():
-    p=next((RAW/"모델보강"/"음주단속").glob("*.csv")); d=read_csv_auto(p)
+    p=next((RAW/"AI수집"/"안전"/"교통사고"/"모델보강"/"음주단속").glob("*.csv")); d=read_csv_auto(p)
     police={"중부":"중구","남대문":"중구","종로":"종로구","혜화":"종로구","용산":"용산구","성동":"성동구","광진":"광진구","동대문":"동대문구","중랑":"중랑구","성북":"성북구","종암":"성북구","강북":"강북구","도봉":"도봉구","노원":"노원구","은평":"은평구","서부":"은평구","서대문":"서대문구","마포":"마포구","양천":"양천구","강서":"강서구","구로":"구로구","금천":"금천구","영등포":"영등포구","동작":"동작구","관악":"관악구","서초":"서초구","방배":"서초구","강남":"강남구","수서":"강남구","송파":"송파구","강동":"강동구"}
     def map_station(s):
         s=str(s)
