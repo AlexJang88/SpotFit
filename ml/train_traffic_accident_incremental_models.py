@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import argparse
 from datetime import datetime, timedelta, timezone
 from itertools import combinations
 from pathlib import Path
@@ -109,10 +110,11 @@ def log_candidate(version: int, kind: str, model_name: str, features: list[str],
         return run.info.run_id
 
 
-def train_version(version: int, title: str, added_pool: list[str], frame: pd.DataFrame) -> dict:
+def train_version(version: int, title: str, added_pool: list[str], frame: pd.DataFrame,
+                  base_features: list[str], baseline_label: str) -> dict:
     out = MODEL_ROOT / f"{version}차"
     out.mkdir(parents=True, exist_ok=True)
-    required = INITIAL_FEATURES + added_pool
+    required = base_features + added_pool
     labeled = frame[
         frame["연도"].between(2017, 2024) & frame[TARGET].notna() & frame[required].notna().all(axis=1)
     ].copy()
@@ -124,13 +126,13 @@ def train_version(version: int, title: str, added_pool: list[str], frame: pd.Dat
     comparison_rows, all_fold_rows = [], []
     baseline_best = float("inf")
     for model_name in candidates():
-        summary, folds = cv_result(final_train, INITIAL_FEATURES, model_name)
-        run_id = log_candidate(version, "initial_baseline", model_name, INITIAL_FEATURES, summary, folds,
+        summary, folds = cv_result(final_train, base_features, model_name)
+        run_id = log_candidate(version, "base_model", model_name, base_features, summary, folds,
                                False, 0, final_train)
-        comparison_rows.append({"후보구분": "1차_동일표본기준", "알고리즘": model_name,
-                                "추가변수": "없음", "전체변수": " | ".join(INITIAL_FEATURES),
+        comparison_rows.append({"후보구분": f"{baseline_label}_동일표본기준", "알고리즘": model_name,
+                                "추가변수": "없음", "전체변수": " | ".join(base_features),
                                 "run_id": run_id, **summary})
-        all_fold_rows.extend({"후보구분": "1차_동일표본기준", "알고리즘": model_name,
+        all_fold_rows.extend({"후보구분": f"{baseline_label}_동일표본기준", "알고리즘": model_name,
                               "추가변수": "없음", **row} for row in folds)
         baseline_best = min(baseline_best, summary["cv_mae"])
 
@@ -138,7 +140,7 @@ def train_version(version: int, title: str, added_pool: list[str], frame: pd.Dat
     record_number = 0
     expanded = []
     for added in feature_subsets(added_pool):
-        features = INITIAL_FEATURES + added
+        features = base_features + added
         for model_name in candidates():
             summary, folds = cv_result(final_train, features, model_name)
             record = summary["cv_mae"] < incumbent
@@ -183,14 +185,15 @@ def train_version(version: int, title: str, added_pool: list[str], frame: pd.Dat
     metadata = {
         "모델구분": f"안전-교통사고-{version}차", "실험정의": title, "예측목표": TARGET,
         "선정모델": winner["알고리즘"], "입력변수": winner_features, "추가후보변수": added_pool,
-        "학습행": len(final_train), "최종검증행": len(final_test), "동일표본_1차최고_CV_MAE": baseline_best,
+        "학습행": len(final_train), "최종검증행": len(final_test), "기준모델": baseline_label,
+        "동일표본_기준모델최고_CV_MAE": baseline_best,
         "선정모델_CV_MAE": float(winner.cv_mae), "CV_MAE_개선": baseline_best - float(winner.cv_mae),
-        "1차대비개선여부": improved, "최종검증지표": final_metrics,
+        "기준모델대비개선여부": improved, "최종검증지표": final_metrics,
         "안전점수": "추가 예측변수에는 가중치를 주지 않고 1차 기준표 산식을 유지",
         "mlflow_run_id": winner.run_id,
     }
     (out / "모델정보.json").write_text(json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8")
-    report = f"""# 교통사고 {version}차 모델\n\n- 실험: {title}\n- 선정 모델: {winner['알고리즘']}\n- 선정 추가변수: {winner['추가변수']}\n- 동일 표본 1차 최고 CV MAE: {baseline_best:.2f}건\n- {version}차 최고 CV MAE: {winner.cv_mae:.2f}건\n- 개선 폭: {baseline_best-float(winner.cv_mae):.2f}건\n- 개선 판정: {'개선' if improved else '개선 없음'}\n- 2025 최종 MAE: {final_metrics['MAE']:.2f}건\n- 2025 최종 RMSE: {final_metrics['RMSE']:.2f}건\n- 2025 최종 R²: {final_metrics['R2']:.4f}\n- 2025 최종 WMAPE: {final_metrics['WMAPE(%)']:.2f}%\n\n추가 변수는 사고 건수 예측용이며 안전지수 가중치에는 포함하지 않았습니다.\n"""
+    report = f"""# 교통사고 {version}차 모델\n\n- 실험: {title}\n- 기준 모델: {baseline_label}\n- 선정 모델: {winner['알고리즘']}\n- 선정 추가변수: {winner['추가변수']}\n- 동일 표본 {baseline_label} 최고 CV MAE: {baseline_best:.2f}건\n- {version}차 최고 CV MAE: {winner.cv_mae:.2f}건\n- 개선 폭: {baseline_best-float(winner.cv_mae):.2f}건\n- 개선 판정: {'개선' if improved else '개선 없음'}\n- 2025 최종 MAE: {final_metrics['MAE']:.2f}건\n- 2025 최종 RMSE: {final_metrics['RMSE']:.2f}건\n- 2025 최종 R²: {final_metrics['R2']:.4f}\n- 2025 최종 WMAPE: {final_metrics['WMAPE(%)']:.2f}%\n\n추가 변수는 사고 건수 예측용이며 안전지수 가중치에는 포함하지 않았습니다.\n"""
     (out / "모델결과보고서.md").write_text(report, encoding="utf-8")
     with mlflow.start_run(run_id=winner.run_id, nested=True):
         mlflow.set_tags({"selection_status": "improved" if improved else "no_improvement",
@@ -203,6 +206,9 @@ def train_version(version: int, title: str, added_pool: list[str], frame: pd.Dat
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--versions", nargs="+", type=int, choices=range(2, 9), default=list(range(2, 9)))
+    args = parser.parse_args()
     frame = add_safety_score(add_incremental_features(load_data()))
     TRACKING_ROOT.mkdir(parents=True, exist_ok=True)
     mlflow.set_tracking_uri("sqlite:///" + (TRACKING_ROOT / "tracking.db").as_posix())
@@ -210,19 +216,25 @@ def main() -> None:
         mlflow.create_experiment(EXPERIMENT, artifact_location=(TRACKING_ROOT / "runs").as_uri())
     mlflow.set_experiment(EXPERIMENT)
     stamp = datetime.now(timezone(timedelta(hours=9))).strftime("%Y%m%d_%H%M%S")
-    definitions = [
-        (2, "1차 + 현재연도 교통사고 건수", [CURRENT]),
-        (3, "1차 + 사고 이력 파생변수 조합", HISTORY_FEATURES),
-        (4, "1차 + 자동차 등록 대수", [VEHICLES]),
-        (5, "1차 + 생활인구 변수 조합", LIVING_FEATURES),
-    ]
-    with mlflow.start_run(run_name=f"traffic_incremental_v2_v5_{stamp}"):
+    second_features = INITIAL_FEATURES + [CURRENT]
+    definitions = {
+        2: ("1차 + 현재연도 교통사고 건수", [CURRENT], INITIAL_FEATURES, "1차"),
+        3: ("1차 + 사고 이력 파생변수 조합", HISTORY_FEATURES, INITIAL_FEATURES, "1차"),
+        4: ("1차 + 자동차 등록 대수", [VEHICLES], INITIAL_FEATURES, "1차"),
+        5: ("1차 + 생활인구 변수 조합", LIVING_FEATURES, INITIAL_FEATURES, "1차"),
+        6: ("2차 + 사고 이력 파생변수 조합", HISTORY_FEATURES, second_features, "2차"),
+        7: ("2차 + 자동차 등록 대수", [VEHICLES], second_features, "2차"),
+        8: ("2차 + 생활인구 변수 조합", LIVING_FEATURES, second_features, "2차"),
+    }
+    selected_label = "_".join(map(str, args.versions))
+    with mlflow.start_run(run_name=f"traffic_incremental_v{selected_label}_{stamp}"):
         source_files = [INTERIM / "자치구별_교통사고_2차.xlsx", INTERIM / "자치구별_운전자안전_2차.csv",
                         INTERIM / "자치구별_인구활동량_1차.csv"]
         mlflow.log_params({"validation": "expanding_window_2021_2024", "final_test": "2025",
                            "seed": RANDOM_STATE, "base_features": json.dumps(INITIAL_FEATURES, ensure_ascii=False),
                            **{f"sha256_{i}": hashlib.sha256(p.read_bytes()).hexdigest() for i, p in enumerate(source_files)}})
-        summaries = [train_version(version, title, pool, frame) for version, title, pool in definitions]
+        summaries = [train_version(version, definitions[version][0], definitions[version][1], frame,
+                                   definitions[version][2], definitions[version][3]) for version in args.versions]
         mlflow.log_dict(summaries, "versions_summary.json")
     print(json.dumps(summaries, ensure_ascii=False, indent=2))
 
