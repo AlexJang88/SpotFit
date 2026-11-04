@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[3]
 SAFE = ROOT / "data" / "processed" / "안전"
 OUT = ROOT / "artifacts" / "traffic_accident_weighted_score"
 OUT.mkdir(parents=True, exist_ok=True)

@@ -3,7 +3,7 @@ from pathlib import Path
 import pandas as pd
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 RAW = ROOT / "data" / "raw" / "AI수집" / "안전" / "교통사고"
 RAW_TRAFFIC = ROOT / "data" / "raw" / "안전" / "교통사고"
 INTERIM = ROOT / "data" / "interim" / "안전" / "교통사고"

@@ -16,7 +16,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[3]
 DATA = ROOT / "data" / "processed" / "안전"
 OUT = ROOT / "artifacts" / "traffic_accident_next_year_v2"
 OUT.mkdir(parents=True, exist_ok=True)

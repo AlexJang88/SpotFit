@@ -13,7 +13,7 @@ from create_traffic_models_v1_v5_presentation import (
 )
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[3]
 MODEL_ROOT = ROOT / "models" / "안전" / "교통사고"
 SOURCE = Path.home() / "Desktop" / "교통사고_1차~11차_모델비교.pptx"
 OUTPUT_DIR = ROOT / "artifacts" / "reports" / "traffic_models_v1_v12"

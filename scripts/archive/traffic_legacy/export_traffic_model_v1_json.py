@@ -7,7 +7,7 @@ import joblib
 import pandas as pd
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[3]
 MODEL_DIR = ROOT / "models" / "안전" / "교통사고" / "1차"
 REPORT_DIR = ROOT / "artifacts" / "reports" / "traffic_model_v1"
 OUTPUT = REPORT_DIR / "교통사고_1차_초기모델.json"

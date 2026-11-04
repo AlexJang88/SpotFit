@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 RAW = ROOT / "data" / "raw"
 OUT = ROOT / "data" / "processed" / "안전" / "교통사고_모델보강"
 OUT.mkdir(parents=True, exist_ok=True)

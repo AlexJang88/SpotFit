@@ -27,7 +27,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[3]
 SAFETY_DIR = ROOT / "data" / "processed" / "안전"
 OUTPUT_DIR = ROOT / "artifacts" / "traffic_accident_next_year"
 RANDOM_STATE = 42

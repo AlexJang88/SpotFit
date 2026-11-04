@@ -6,7 +6,7 @@ from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 SAFE = ROOT / "data" / "interim" / "안전" / "교통사고"
 POPULATION = SAFE / "자치구별_주민등록인구_2017_2025.csv"
 OUTPUT = SAFE / "교통사고_안전기준표_전용데이터_공식인구보강.xlsx"

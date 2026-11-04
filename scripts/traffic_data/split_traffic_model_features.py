@@ -4,7 +4,7 @@ from pathlib import Path
 import pandas as pd
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 INPUT = ROOT / "data" / "raw" / "안전" / "교통사고" / "교통사고_모델보강_전체통합.csv"
 OUTPUT = ROOT / "data" / "interim" / "교통사고_모델보강"
 KEYS = ["year", "district"]

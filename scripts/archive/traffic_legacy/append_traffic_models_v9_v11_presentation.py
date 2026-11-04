@@ -8,7 +8,7 @@ from create_traffic_models_v1_v5_presentation import (
 )
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[3]
 SOURCE = ROOT / "artifacts" / "reports" / "traffic_models_v1_v8" / "교통사고_1차~8차_모델비교.pptx"
 OUTPUT_DIR = ROOT / "artifacts" / "reports" / "traffic_models_v1_v11"
 OUTPUT = OUTPUT_DIR / "교통사고_1차~11차_모델비교.pptx"

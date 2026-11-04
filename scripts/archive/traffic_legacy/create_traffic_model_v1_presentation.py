@@ -2,7 +2,7 @@ from pathlib import Path
 import os
 import shutil
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[3]
 os.environ.setdefault("MPLCONFIGDIR", str(ROOT / ".matplotlib_cache"))
 
 import matplotlib.pyplot as plt
