@@ -11,13 +11,15 @@ export type HousingPoint = {
   monthly: number;
 };
 
-export function buildHousingSeries(basePrice: number, annualGrowth: number): HousingPoint[] {
+export function buildHousingSeries(basePrice: number, annualGrowth: number, jeonsePrice?: number): HousingPoint[] {
   return YEARS.map(year => {
     const sale = basePrice * Math.pow(1 + annualGrowth / 100, year - 2026);
     return {
       year,
       sale,
-      jeonse: sale * (0.54 + (year - 2026) * 0.004),
+      jeonse: jeonsePrice == null
+        ? sale * (0.54 + (year - 2026) * 0.004)
+        : jeonsePrice * Math.pow(1 + annualGrowth / 100, year - 2026),
       monthly: sale * (0.0031 + (year - 2026) * 0.00003),
     };
   });

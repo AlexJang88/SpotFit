@@ -10,7 +10,7 @@ const GRADE_COLORS: Record<SafetyGrade, string> = {
   E: "#d95555",
 };
 
-/** 지역안전지수 예상등급에 따라 서울 자치구 경계를 반투명하게 채운다. */
+/** 지역점수 예상등급에 따라 서울 자치구 경계를 반투명하게 채운다. */
 export function addSafetyGradeBoundaries(
   map: L.Map,
   forecasts: CrimeSafetyForecast[],
@@ -35,15 +35,8 @@ export function addSafetyGradeBoundaries(
           return {
             renderer: L.canvas(), color, weight: 1.5, opacity: 0.9,
             fill: true, fillColor: color, fillOpacity: forecast ? 0.48 : 0.14,
+            interactive: false,
           };
-        },
-        onEachFeature: (feature, boundary) => {
-          const district = String(feature.properties?.name ?? "");
-          const forecast = byDistrict.get(district);
-          if (!forecast) return;
-          const tooltip = document.createElement("span");
-          tooltip.textContent = `${district} · ${forecast.predicted_grade}등급`;
-          boundary.bindTooltip(tooltip, { sticky: true });
         },
       }).addTo(layer);
     })

@@ -52,6 +52,9 @@ services:
     volumes:
       - ./backend:/app
       - ./artifacts:/artifacts:ro
+      - ./models/recommender/v1:/models/recommender/v1:ro
+      - ./data/raw:/data/raw:ro
+      - ./data/interim:/data/interim:ro
       - ./model_registry:/model_registry:ro
       - dev_model_cache:/model-cache
     healthcheck:

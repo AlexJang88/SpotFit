@@ -1,147 +1,242 @@
-import os
+"""Train the apartment sale and jeonse price models used by SpotFit.
+
+The models estimate price per pyeong for a supplied transaction profile. They
+are not one-year/three-year market-forecast models: Random Forest cannot safely
+extrapolate future market trends. Validation is time based (train through 2024,
+hold out 2025), and the deployment model is then refit on all complete years.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+from pathlib import Path
+from typing import Any
+
 import joblib
-import pandas as pd
 import numpy as np
-import mlflow
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import r2_score, mean_absolute_error
-from sklearn.preprocessing import StandardScaler
+import pandas as pd
+from sklearn.compose import TransformedTargetRegressor
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.impute import SimpleImputer
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from sklearn.pipeline import Pipeline
 
-def train_and_save_rf_models():
-    base_dir = r"C:\Users\M\Desktop\final_project_develop\SpotFit\data\raw"
-    model_save_dir = r"C:\Users\M\Desktop\final_project_develop\SpotFit\models"
-    os.makedirs(model_save_dir, exist_ok=True)
-    
-    mlflow.set_tracking_uri("http://192.168.0.3:5000/")
-    redev_file = os.path.join(base_dir, "★(26년 6월기준) 서울시 정비사업 추진현황.xlsx")
-    
-    # 정비사업 데이터 로드 및 집계
-    print("1. 서울시 정비사업 추진현황 데이터 로드 중...")
-    if os.path.exists(redev_file):
-        df_redev = pd.read_excel(redev_file, header=3)
-        dong_col = next((c for c in df_redev.columns if '행정동명' in str(c)), None)
-        if dong_col:
-            df_redev_agg = df_redev.groupby(dong_col).size().reset_index(name='재개발_정비사업_구역수')
-            df_redev_agg.rename(columns={dong_col: '행정동'}, inplace=True)
-        else:
-            df_redev_agg = pd.DataFrame(columns=['행정동', '재개발_정비사업_구역수'])
-    else:
-        df_redev_agg = pd.DataFrame(columns=['행정동', '재개발_정비사업_구역수'])
 
-    ext_features = ['거리_to_GBD(km)', '거리_to_CBD(km)', '거리_to_YBD(km)', 
-                    '접근성_score_GBD', '접근성_score_CBD', '접근성_score_YBD', '재개발_정비사업_구역수']
+ROOT = Path(__file__).resolve().parents[3]
+RAW_DIR = ROOT / "data" / "raw"
+DEFAULT_OUTPUT_DIR = ROOT / "models" / "recommender" / "v1"
+MAX_COMPLETE_YEAR = 2025
+MIN_YEAR = 2021
 
-    # ==========================================
-    # [Case 1] 아파트 매매 RandomForest 모델 학습 및 .joblib 저장
-    # ==========================================
-    print("\n--------------------------------------------------")
-    print("🚀 [아파트 매매] 최종 RandomForest 모델 학습 및 .joblib 저장")
-    print("--------------------------------------------------")
-    mlflow.set_experiment("Feature_Improvement_Trade_All")
-    
-    trade_file = os.path.join(base_dir, "아파트_매매.csv")
-    if os.path.exists(trade_file):
-        df_trade = pd.read_csv(trade_file)
-        t_col = next((c for c in ['물건금액(만원)', '거래금액(만원)', '거래금액'] if c in df_trade.columns), None)
-        df_trade = df_trade.dropna(subset=[t_col, '전용면적(평)'])
-        df_trade = df_trade[df_trade['전용면적(평)'] > 0]
-        df_trade['평당금액'] = df_trade[t_col] / df_trade['전용면적(평)']
-        
-        if '행정동' in df_trade.columns and not df_redev_agg.empty:
-            df_trade = pd.merge(df_trade, df_redev_agg, on='행정동', how='left')
-            df_trade['재개발_정비사업_구역수'] = df_trade['재개발_정비사업_구역수'].fillna(0)
-        else:
-            df_trade['재개발_정비사업_구역수'] = 0
+COMMON_FEATURES = [
+    "거리_to_GBD(km)",
+    "거리_to_CBD(km)",
+    "거리_to_YBD(km)",
+    "접근성_score_GBD",
+    "접근성_score_CBD",
+    "접근성_score_YBD",
+]
+SALE_FEATURES = [
+    "계약연도",
+    "전용면적(㎡)",
+    "전용면적(평)",
+    "층",
+    "건축년도",
+    "건물 나이(년)",
+] + COMMON_FEATURES
+JEONSE_FEATURES = [
+    "계약연도",
+    "임대면적(㎡)",
+    "임대면적(평)",
+    "층",
+    "건축년도",
+    "건물 나이(년)",
+] + COMMON_FEATURES
 
-        trade_base_features = ['계약연도', '전용면적(㎡)', '전용면적(평)', '층', '건축년도', '건물 나이(년)']
-        features_trade = [c for c in trade_base_features + ext_features if c in df_trade.columns]
-        
-        X_t = df_trade[features_trade].fillna(0)
-        y_t = df_trade['평당금액']
-        
-        X_tr_t, X_te_t, y_tr_t, y_te_t = train_test_split(X_t, y_t, test_size=0.2, random_state=42)
-        scaler_t = StandardScaler()
-        X_tr_t_s = scaler_t.fit_transform(X_tr_t)
-        X_te_t_s = scaler_t.transform(X_te_t)
-        
-        with mlflow.start_run(run_name="Trade_Final_RandomForest"):
-            rf_trade = RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1)
-            rf_trade.fit(X_tr_t_s, y_tr_t)
-            
-            preds = rf_trade.predict(X_te_t_s)
-            r2 = r2_score(y_te_t, preds)
-            mae = mean_absolute_error(y_te_t, preds)
-            
-            mlflow.log_metric("final_r2", r2)
-            mlflow.log_metric("final_mae", mae)
-            
-            # 💡 확장자를 .joblib으로 변경하여 저장
-            local_model_path = os.path.join(model_save_dir, "trade_random_forest.joblib")
-            local_scaler_path = os.path.join(model_save_dir, "trade_scaler.joblib")
-            joblib.dump(rf_trade, local_model_path)
-            joblib.dump(scaler_t, local_scaler_path)
-            
-            print(f"  [완료] 매매 모델 R²: {r2:.4f} | MAE: {mae:.1f}")
-            print(f"  📂 로컬 모델 저장 경로: {local_model_path}")
 
-    # ==========================================
-    # [Case 2] 아파트 전월세 RandomForest 모델 학습 및 .joblib 저장
-    # ==========================================
-    print("\n--------------------------------------------------")
-    print("🚀 [아파트 전월세] 최종 RandomForest 모델 학습 및 .joblib 저장")
-    print("--------------------------------------------------")
-    mlflow.set_experiment("Feature_Improvement_Rent_All")
-    
-    rent_file = os.path.join(base_dir, "아파트_전월세.csv")
-    if os.path.exists(rent_file):
-        df_rent = pd.read_csv(rent_file)
-        r_col = next((c for c in ['보증금(만원)', '임대보증금(만원)', '보증금'] if c in df_rent.columns), None)
-        df_rent = df_rent.dropna(subset=[r_col, '임대면적(평)'])
-        df_rent = df_rent[df_rent['임대면적(평)'] > 0]
-        
-        if '전월세구분' in df_rent.columns:
-            df_rent['전월세구분'] = df_rent['전월세구분'].map({'전세': 0, '월세': 1}).fillna(0)
-            
-        df_rent['평당보증금'] = df_rent[r_col] / df_rent['임대면적(평)']
-        
-        if '행정동' in df_rent.columns and not df_redev_agg.empty:
-            df_rent = pd.merge(df_rent, df_redev_agg, on='행정동', how='left')
-            df_rent['재개발_정비사업_구역수'] = df_rent['재개발_정비사업_구역수'].fillna(0)
-        else:
-            df_rent['재개발_정비사업_구역수'] = 0
+def read_csv(path: Path) -> pd.DataFrame:
+    if not path.exists():
+        raise FileNotFoundError(f"Input data not found: {path}")
+    return pd.read_csv(path, encoding="utf-8-sig", low_memory=False)
 
-        rent_base_features = ['계약연도', '전월세구분', '임대면적(㎡)', '임대면적(평)', '층', '건축년도', '건물 나이(년)']
-        features_rent = [c for c in rent_base_features + ext_features if c in df_rent.columns]
-        
-        X_r = df_rent[features_rent].fillna(0)
-        y_r = df_rent['평당보증금']
-        
-        X_tr_r, X_te_r, y_tr_r, y_te_r = train_test_split(X_r, y_r, test_size=0.2, random_state=42)
-        scaler_r = StandardScaler()
-        X_tr_r_s = scaler_r.fit_transform(X_tr_r)
-        X_te_r_s = scaler_r.transform(X_te_r)
-        
-        with mlflow.start_run(run_name="Rent_Final_RandomForest"):
-            rf_rent = RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1)
-            rf_rent.fit(X_tr_r_s, y_tr_r)
-            
-            preds = rf_rent.predict(X_te_r_s)
-            r2 = r2_score(y_te_r, preds)
-            mae = mean_absolute_error(y_te_r, preds)
-            
-            mlflow.log_metric("final_r2", r2)
-            mlflow.log_metric("final_mae", mae)
-            
-            # 💡 확장자를 .joblib으로 변경하여 저장
-            local_model_path = os.path.join(model_save_dir, "rent_random_forest.joblib")
-            local_scaler_path = os.path.join(model_save_dir, "rent_scaler.joblib")
-            joblib.dump(rf_rent, local_model_path)
-            joblib.dump(scaler_r, local_scaler_path)
-            
-            print(f"  [완료] 전월세 모델 R²: {r2:.4f} | MAE: {mae:.1f}")
-            print(f"  📂 로컬 모델 저장 경로: {local_model_path}")
+
+def numeric(df: pd.DataFrame, columns: list[str]) -> None:
+    missing = [column for column in columns if column not in df.columns]
+    if missing:
+        raise ValueError(f"Required columns are missing: {missing}")
+    for column in columns:
+        df[column] = pd.to_numeric(df[column], errors="coerce")
+
+
+def prepare_sale(raw_dir: Path) -> tuple[pd.DataFrame, pd.Series]:
+    df = read_csv(raw_dir / "아파트_매매.csv")
+    numeric(df, SALE_FEATURES + ["거래금액(만원)", "평당 금액(만원)"])
+
+    calculated = df["거래금액(만원)"] / df["전용면적(평)"]
+    target = df["평당 금액(만원)"].where(df["평당 금액(만원)"] > 0, calculated)
+    valid = (
+        df["계약연도"].between(MIN_YEAR, MAX_COMPLETE_YEAR)
+        & (df["전용면적(평)"] > 0)
+        & target.notna()
+        & (target > 0)
+    )
+    return df.loc[valid, SALE_FEATURES].copy(), target.loc[valid].copy()
+
+
+def prepare_jeonse(raw_dir: Path) -> tuple[pd.DataFrame, pd.Series]:
+    df = read_csv(raw_dir / "아파트_전월세.csv")
+    if "전월세구분" not in df.columns:
+        raise ValueError("Required column is missing: 전월세구분")
+    df = df.loc[df["전월세구분"].astype(str).str.strip().eq("전세")].copy()
+    numeric(df, JEONSE_FEATURES + ["보증금(만원)", "평당 보증금(만원)"])
+
+    calculated = df["보증금(만원)"] / df["임대면적(평)"]
+    target = df["평당 보증금(만원)"].where(df["평당 보증금(만원)"] > 0, calculated)
+    valid = (
+        df["계약연도"].between(MIN_YEAR, MAX_COMPLETE_YEAR)
+        & (df["임대면적(평)"] > 0)
+        & target.notna()
+        & (target > 0)
+    )
+    return df.loc[valid, JEONSE_FEATURES].copy(), target.loc[valid].copy()
+
+
+def build_model() -> Pipeline:
+    regressor = RandomForestRegressor(
+        n_estimators=200,
+        min_samples_leaf=3,
+        max_features=0.8,
+        random_state=42,
+        n_jobs=-1,
+    )
+    return Pipeline(
+        [
+            ("imputer", SimpleImputer(strategy="median", add_indicator=True)),
+            (
+                "regressor",
+                TransformedTargetRegressor(
+                    regressor=regressor,
+                    func=np.log1p,
+                    inverse_func=np.expm1,
+                ),
+            ),
+        ]
+    )
+
+
+def metrics(y_true: pd.Series, prediction: np.ndarray) -> dict[str, float]:
+    error_ratio = np.abs((y_true.to_numpy() - prediction) / y_true.to_numpy())
+    return {
+        "mae": float(mean_absolute_error(y_true, prediction)),
+        "rmse": float(mean_squared_error(y_true, prediction) ** 0.5),
+        "r2": float(r2_score(y_true, prediction)),
+        "mape_percent": float(np.mean(error_ratio) * 100),
+    }
+
+
+def train_one(
+    name: str,
+    X: pd.DataFrame,
+    y: pd.Series,
+    output_dir: Path,
+    target_name: str,
+    unit: str,
+) -> dict[str, Any]:
+    year_counts = X["계약연도"].value_counts().sort_index()
+    eligible_years = year_counts[year_counts >= 100].index
+    if len(eligible_years) < 2:
+        raise ValueError(f"{name}: at least two years with 100+ rows are required")
+    holdout_year = int(eligible_years.max())
+    train_mask = X["계약연도"] < holdout_year
+    test_mask = X["계약연도"] == holdout_year
+    if not train_mask.any() or not test_mask.any():
+        raise ValueError(f"{name}: time split cannot be formed for {holdout_year}")
+
+    validation_model = build_model()
+    validation_model.fit(X.loc[train_mask], y.loc[train_mask])
+    score = metrics(y.loc[test_mask], validation_model.predict(X.loc[test_mask]))
+
+    deployment_model = build_model()
+    deployment_model.fit(X, y)
+    model_dir = output_dir / name
+    model_dir.mkdir(parents=True, exist_ok=True)
+
+    metadata: dict[str, Any] = {
+        "model_name": name,
+        "task": "transaction_profile_price_estimation",
+        "is_future_forecast": False,
+        "target": target_name,
+        "unit": unit,
+        "features": list(X.columns),
+        "training_years": sorted(int(year) for year in X["계약연도"].unique()),
+        "validation": {
+            "method": "time_holdout",
+            "train_years": sorted(int(year) for year in X.loc[train_mask, "계약연도"].unique()),
+            "holdout_year": holdout_year,
+            "train_rows": int(train_mask.sum()),
+            "holdout_rows": int(test_mask.sum()),
+            **score,
+        },
+        "deployment_rows": int(len(X)),
+        "algorithm": "RandomForestRegressor with median imputation and log1p target",
+        "limitation": (
+            "This estimates a transaction profile's price per pyeong. It is not a "
+            "one-year or three-year future market forecast and does not extrapolate trends."
+        ),
+    }
+    bundle = {"pipeline": deployment_model, "metadata": metadata}
+    joblib.dump(bundle, model_dir / "model_bundle.joblib", compress=3)
+    (model_dir / "model_contract.json").write_text(
+        json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+    return metadata
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--raw-dir", type=Path, default=RAW_DIR)
+    parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+    args.output_dir.mkdir(parents=True, exist_ok=True)
+
+    sale_X, sale_y = prepare_sale(args.raw_dir)
+    jeonse_X, jeonse_y = prepare_jeonse(args.raw_dir)
+    results = [
+        train_one(
+            "apart_sale",
+            sale_X,
+            sale_y,
+            args.output_dir,
+            "평당 금액(만원)",
+            "만원/평",
+        ),
+        train_one(
+            "apart_rent",
+            jeonse_X,
+            jeonse_y,
+            args.output_dir,
+            "평당 보증금(만원)",
+            "만원/평",
+        ),
+    ]
+    summary = pd.DataFrame(
+        [
+            {
+                "model": item["model_name"],
+                **item["validation"],
+                "deployment_rows": item["deployment_rows"],
+            }
+            for item in results
+        ]
+    )
+    summary.to_csv(args.output_dir / "property_model_summary.csv", index=False, encoding="utf-8-sig")
+    print(summary.to_string(index=False))
+
 
 if __name__ == "__main__":
-    train_and_save_rf_models()
-    
+    main()
