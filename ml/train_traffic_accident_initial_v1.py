@@ -196,26 +196,10 @@ def main() -> None:
         "selected_model": selected_name,
     }
     joblib.dump(model_payload, OUT / "교통사고_1차_초기모델.joblib")
-    labeled.to_csv(OUT / "교통사고_1차_모델링데이터_2017_2025.csv", index=False, encoding="utf-8-sig")
     folds.to_csv(OUT / "내부_순차검증_결과.csv", index=False, encoding="utf-8-sig")
     comparison.to_csv(OUT / "후보모델_비교.csv", index=False, encoding="utf-8-sig")
     validation.to_csv(OUT / "2025년_최종검증_예측결과.csv", index=False, encoding="utf-8-sig")
     importance_df.to_csv(OUT / "변수중요도.csv", index=False, encoding="utf-8-sig")
-    frame[frame["연도"].between(2017, 2024)].to_csv(
-        OUT / "안전점수와등급_2017_2024.csv", index=False, encoding="utf-8-sig"
-    )
-
-    with pd.ExcelWriter(OUT / "교통사고_1차_초기모델_결과.xlsx", engine="openpyxl") as writer:
-        pd.DataFrame([{"선정모델": selected_name, **final_metrics}]).to_excel(
-            writer, sheet_name="최종검증_요약", index=False
-        )
-        comparison.to_excel(writer, sheet_name="후보모델_비교", index=False)
-        folds.to_excel(writer, sheet_name="내부_순차검증", index=False)
-        validation.to_excel(writer, sheet_name="2025_자치구별예측", index=False)
-        importance_df.to_excel(writer, sheet_name="변수중요도", index=False)
-        frame[frame["연도"].between(2017, 2024)].to_excel(
-            writer, sheet_name="안전점수_등급", index=False
-        )
 
     metadata = {
         "모델구분": "안전-교통사고-1차 초기모델",

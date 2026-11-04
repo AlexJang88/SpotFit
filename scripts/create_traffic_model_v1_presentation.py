@@ -16,7 +16,8 @@ from pptx.util import Inches, Pt
 
 
 MODEL = ROOT / "models" / "안전" / "교통사고" / "1차"
-OUTPUT = MODEL / "교통사고_1차_초기모델_발표자료.pptx"
+REPORT_DIR = ROOT / "artifacts" / "reports" / "traffic_model_v1"
+OUTPUT = REPORT_DIR / "교통사고_1차_초기모델_발표자료.pptx"
 
 NAVY = RGBColor(20, 45, 78)
 BLUE = RGBColor(36, 105, 170)
@@ -97,7 +98,6 @@ def save_charts(tmp: Path):
     comp = pd.read_csv(MODEL / "후보모델_비교.csv")
     valid = pd.read_csv(MODEL / "2025년_최종검증_예측결과.csv")
     imp = pd.read_csv(MODEL / "변수중요도.csv")
-    score = pd.read_csv(MODEL / "안전점수와등급_2017_2024.csv")
 
     fig, ax = plt.subplots(figsize=(9, 4.6))
     comp = comp.sort_values("내부검증_MAE", ascending=True)
@@ -127,7 +127,7 @@ def save_charts(tmp: Path):
     ax.spines[["top","right","left"]].set_visible(False); ax.grid(axis="x",alpha=.2)
     fig.tight_layout(); p3=tmp/"importance.png"; fig.savefig(p3,dpi=180); plt.close(fig)
 
-    grade = score[score["연도"].eq(2024)]["안전등급"].value_counts().sort_index()
+    grade = valid["안전등급"].value_counts().sort_index()
     fig, ax = plt.subplots(figsize=(7,4.3))
     ax.bar(grade.index.astype(str), grade.values, color=["#1d8e86","#58a88a","#9eb3c7","#e4a85f","#c44141"])
     for x,v in zip(grade.index.astype(str),grade.values): ax.text(x,v+.15,str(v),ha="center",fontweight="bold")
@@ -138,6 +138,7 @@ def save_charts(tmp: Path):
 
 
 def build():
+    REPORT_DIR.mkdir(parents=True, exist_ok=True)
     prs = Presentation()
     prs.slide_width = Inches(13.333); prs.slide_height = Inches(7.5)
     blank = prs.slide_layouts[6]

@@ -57,6 +57,11 @@ def scores(y,p):
     return dict(mae=float(mean_absolute_error(y,p)),rmse=float(np.sqrt(mean_squared_error(y,p))),r2=float(r2_score(y,p)))
 
 
+def improved_mae(candidate, incumbent, minimum=0.0):
+    """회귀 '정확도 향상'을 CV MAE의 엄격한 감소로 판정한다."""
+    return float(incumbent)-float(candidate)>float(minimum)
+
+
 def main():
     root=Path(__file__).resolve().parents[2]
     p=argparse.ArgumentParser(description=__doc__)
@@ -65,9 +70,12 @@ def main():
     p.add_argument('--ages',nargs='+',default=['infant','elementary','middle','high'],choices=['infant','elementary','middle','high'])
     p.add_argument('--tracking-uri')
     p.add_argument('--folds',type=int,default=5)
+    p.add_argument('--min-record-improvement',type=float,default=0.0,
+        help='MLflow에 모델을 저장할 최소 CV MAE 개선 폭. 기본값 0은 엄격한 개선을 모두 저장')
     p.add_argument('--evaluate-reference-test',action='store_true',help='이미 본 기존 테스트를 참고 평가. 기본은 미평가')
     a=p.parse_args()
     if a.folds<3:p.error('교차검증은 최소 3폴드가 필요합니다.')
+    if a.min_record_improvement<0:p.error('--min-record-improvement는 0 이상이어야 합니다.')
     d=pd.read_csv(a.data,dtype={'dong_code':str})
     d=d[d.year==d.year.max()].copy()
     s=pd.read_csv(a.split_file,dtype={'dong_code':str})
@@ -102,12 +110,15 @@ def main():
             y=dev['children_'+age];x=dev[facilities]
             if y.isna().any():raise ValueError('타깃 결측')
             top_by_fold=[top_features(x.iloc[t],y.iloc[t]) for t,v in folds]
+            full_ranked_features=top_features(x,y)
             baseline=[]
             for fold,(t,v) in enumerate(folds):
                 score=scores(y.iloc[v],np.repeat(y.iloc[t].mean(),len(v)))
                 baseline.append(score['mae'])
                 all_folds.append(dict(age=age,algorithm='dummy_mean',combo='none',fold=fold,features='none',fit_seconds=0,predict_seconds=0,**score))
             summaries=[]
+            incumbent_mae=float(np.mean(baseline))
+            record_number=0
             for alg in ALGORITHMS:
                 for combo in combos:
                     cid='-'.join(str(i+1) for i in combo);records=[]
@@ -123,12 +134,30 @@ def main():
                         fit_seconds=float(r.fit_seconds.mean()),predict_seconds=float(r.predict_seconds.mean()),
                         baseline_cv_mae=float(np.mean(baseline)),fold_wins=int((r.mae.to_numpy()<baseline).sum()))
                     summary['relative_improvement']=1-summary['cv_mae']/summary['baseline_cv_mae']
+                    final_features=[full_ranked_features[i] for i in combo]
+                    is_record=improved_mae(summary['cv_mae'],incumbent_mae,a.min_record_improvement)
                     with mlflow.start_run(run_name=f'{age}_{alg}_rank{cid}',nested=True) as child:
                         summary['run_id']=child.info.run_id
                         mlflow.log_params({'age':age,'algorithm':alg,'rank_subset':cid,'feature_count':len(combo),
+                            'features':json.dumps(final_features,ensure_ascii=False),
                             'estimator_params':json.dumps(build(alg).steps[-1][1].get_params(),default=str)})
                         mlflow.log_metrics({k:v for k,v in summary.items() if isinstance(v,(float,int))})
                         mlflow.log_dict(records,'fold_results.json')
+                        mlflow.log_dict({'rank_subset':cid,'full_development_features':final_features,
+                            'fold_features':[top_by_fold[fold] for fold in range(a.folds)]},'features.json')
+                        if is_record:
+                            previous_mae=incumbent_mae;incumbent_mae=summary['cv_mae'];record_number+=1
+                            fitted=build(alg);fitted.fit(x[final_features],y)
+                            checkpoint=out/f'{age}_record_{record_number:02d}.joblib'
+                            joblib.dump({'model':fitted,'features':final_features,'target':'children_'+age,
+                                'algorithm':alg,'cv_mae':summary['cv_mae']},checkpoint)
+                            mlflow.log_metrics({'previous_best_cv_mae':previous_mae,
+                                'absolute_cv_mae_improvement':previous_mae-summary['cv_mae']})
+                            mlflow.set_tags({'record_breaker':'true','record_number':str(record_number),
+                                'model_database_status':'stored_by_mlflow_tracking_backend'})
+                            mlflow.log_artifact(str(checkpoint),artifact_path='record_model')
+                            mlflow.sklearn.log_model(fitted,name='model',serialization_format='cloudpickle',
+                                input_example=x[final_features].head(3))
                         mlflow.set_tag('mlflow.note.content','순위 위치 조합이므로 실제 시설은 폴드별로 다를 수 있음. fold_results.json 참조. 동일 검증에서 다수 후보를 탐색한 성능은 낙관적일 수 있음.')
                     summaries.append(summary)
                 print(age,alg,'완료',flush=True)
@@ -150,15 +179,17 @@ def main():
             table['decision']=np.where(table.run_id==chosen.run_id,'exploratory_candidate' if eligible else 'selection_deferred',
                 np.where(table.cv_mae>threshold,'outside_one_se_band','less_simple_within_band'))
             table.to_csv(out/(age+'_comparison.csv'),index=False,encoding='utf-8-sig');all_summary.extend(table.to_dict('records'))
-            cols=[top_features(x,y)[int(i)-1] for i in chosen.combo.split('-')]
+            cols=[full_ranked_features[int(i)-1] for i in chosen.combo.split('-')]
             model=build(chosen.algorithm);model.fit(x[cols],y)
             joblib.dump({'model':model,'features':cols,'target':'children_'+age},out/(age+'_candidate.joblib'))
             decision=dict(age=age,algorithm=chosen.algorithm,features=cols,run_id=chosen.run_id,eligible=bool(eligible),reason=reason)
             with mlflow.start_run(run_id=chosen.run_id,nested=True):
                 mlflow.set_tags({'selection_status':'exploratory_candidate' if eligible else 'selection_deferred','mlflow.note.content':reason})
                 mlflow.log_artifact(str(out/(age+'_candidate.joblib')),artifact_path='candidate')
-                # 모델 표준 저장까지 하되 Registry 버전 생성과 배포는 자동으로 하지 않는다.
-                mlflow.sklearn.log_model(model,name='model',serialization_format='cloudpickle',input_example=x[cols].head(3))
+                # record breaker가 아니었던 최종 선정 모델도 선정 근거와 함께 표준 저장한다.
+                selected_run=mlflow.MlflowClient().get_run(chosen.run_id)
+                if selected_run.data.tags.get('record_breaker')!='true':
+                    mlflow.sklearn.log_model(model,name='model',serialization_format='cloudpickle',input_example=x[cols].head(3))
                 if a.evaluate_reference_test:
                     pred=model.predict(test[cols]);metrics=scores(test['children_'+age],pred)
                     mlflow.log_metrics({'reference_test_'+k:v for k,v in metrics.items()})

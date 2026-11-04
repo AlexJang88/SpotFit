@@ -9,7 +9,8 @@ import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
 MODEL_DIR = ROOT / "models" / "안전" / "교통사고" / "1차"
-OUTPUT = MODEL_DIR / "교통사고_1차_초기모델.json"
+REPORT_DIR = ROOT / "artifacts" / "reports" / "traffic_model_v1"
+OUTPUT = REPORT_DIR / "교통사고_1차_초기모델.json"
 
 
 def records(path: Path) -> list[dict]:
@@ -18,6 +19,7 @@ def records(path: Path) -> list[dict]:
 
 
 def main() -> None:
+    REPORT_DIR.mkdir(parents=True, exist_ok=True)
     metadata = json.loads((MODEL_DIR / "모델정보.json").read_text(encoding="utf-8"))
     saved = joblib.load(MODEL_DIR / "교통사고_1차_초기모델.joblib")
     pipeline = saved["pipeline"]

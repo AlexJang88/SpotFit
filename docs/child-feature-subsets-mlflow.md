@@ -7,6 +7,25 @@
 > 새 결과를 기존 exporter에 전달하지 마세요. 선정/보류 근거와 변경 규칙은
 > [팀 규칙 12절](model-team-workflow.md#12-알고리즘-비교선정-근거-필수-규칙-개정)을 참고하세요.
 
+### 정확도 개선 모델 기록 규칙
+
+기본 다중 알고리즘 실행은 시설 상관순위 부분집합 31개와 5개 회귀 알고리즘을 모두
+같은 교차검증 분할로 비교합니다. 회귀 문제이므로 여기서 "정확도 향상"은 이전 최고
+CV MAE보다 낮아지는 것을 뜻합니다. 평균 예측 기준 모델에서 시작해 새 최저 MAE가
+나올 때마다 해당 모델을 `record_breaker=true`인 MLflow 자식 Run에 저장합니다.
+
+- MLflow 파라미터 `features`와 `features.json`에 전체 개발자료로 재학습할 때 사용한
+  실제 feature 이름을 기록합니다. 폴드별 feature는 `features.json`과
+  `fold_results.json`에 별도로 남깁니다.
+- 각 개선 Run에는 이전 최고 MAE, 절대 개선 폭, 알고리즘, 순위 조합과 모델 아티팩트를
+  함께 기록합니다. 미세한 차이를 제외하려면 `--min-record-improvement`를 지정합니다.
+- 로컬 Tracking URI이면 위 메타데이터는 SQLite DB에, 서버 URI이면 MLflow 서버의
+  backend DB(PostgreSQL 구성 시 PostgreSQL)에 저장됩니다. 스크립트가 별도 업무 DB에
+  직접 INSERT하지 않으며, 원격 실패 시 로컬 DB로 자동 우회하지 않습니다.
+- 모든 비교 Run의 지표는 추적 DB에 보존하지만 모델 아티팩트는 성능이 개선된 Run과
+  최종 선정 Run에만 저장합니다. Registry 등록·candidate/champion 별칭·MinIO 서비스
+  배포는 검토 전 자동 수행하지 않습니다.
+
 ## README의 공유 저장 규칙 (중요)
 
 로컬 MLflow는 실험용 기록입니다. 프로젝트 공식 공유 모델은 README대로
