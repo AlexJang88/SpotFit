@@ -18,8 +18,8 @@ from pptx.util import Inches, Pt
 
 
 MODEL_ROOT = ROOT / "models" / "안전" / "교통사고"
-REPORT_DIR = ROOT / "artifacts" / "reports" / "traffic_models_v1_v8"
-OUTPUT = REPORT_DIR / "교통사고_1차~8차_모델비교.pptx"
+REPORT_DIR = ROOT / "artifacts" / "reports" / "traffic_models_v1_v11"
+OUTPUT = REPORT_DIR / "교통사고_1차~11차_모델비교.pptx"
 FONT = "맑은 고딕"
 NAVY = RGBColor(20, 45, 78)
 BLUE = RGBColor(36, 105, 170)
@@ -33,7 +33,7 @@ WHITE = RGBColor(255, 255, 255)
 
 
 def load_models():
-    return [json.loads((MODEL_ROOT / f"{v}차" / "모델정보.json").read_text(encoding="utf-8")) for v in range(1, 9)]
+    return [json.loads((MODEL_ROOT / f"{v}차" / "모델정보.json").read_text(encoding="utf-8")) for v in range(1, 12)]
 
 
 def style_run(run, size=18, bold=False, color=DARK):
@@ -65,7 +65,7 @@ def header(slide, title, subtitle, number):
     text(slide, .65, .35, 11.5, .5, title, 27, True, NAVY)
     text(slide, .67, .9, 11.6, .3, subtitle, 11, False, MID)
     text(slide, 12.35, .4, .45, .3, f"{number:02d}", 12, True, TEAL, PP_ALIGN.RIGHT)
-    text(slide, .67, 7.22, 8, .18, "안전 · 교통사고 · 1차~8차 모델 비교", 9, False, MID)
+    text(slide, .67, 7.22, 8, .18, "안전 · 교통사고 · 1차~11차 모델 비교", 9, False, MID)
 
 
 def card(slide, x, y, w, h, label, value, note="", accent=TEAL):
@@ -93,13 +93,13 @@ def add_table(slide, x, y, w, h, rows, widths=None):
 
 
 def make_chart(models, out):
-    labels = [f"{i}차" for i in range(1, 9)]
+    labels = [f"{i}차" for i in range(1, 12)]
     mae = [m["최종검증지표"]["MAE"] for m in models]
     wmape = [m["최종검증지표"]["WMAPE(%)"] for m in models]
     r2 = [m["최종검증지표"]["R2"] for m in models]
     plt.rcParams["font.family"] = "Malgun Gothic"; plt.rcParams["axes.unicode_minus"] = False
     fig, axes = plt.subplots(1, 2, figsize=(12, 4.6))
-    colors = ["#9eb3c7", "#1d8e86", "#58a88a", "#2470aa", "#e4a85f", "#516f95", "#ad7a99", "#8a9a5b"]
+    colors = ["#9eb3c7", "#1d8e86", "#58a88a", "#2470aa", "#e4a85f", "#516f95", "#ad7a99", "#8a9a5b", "#6d8f71", "#9a6d4f", "#725c9e"]
     axes[0].bar(labels, mae, color=colors)
     for i, v in enumerate(mae): axes[0].text(i, v+8, f"{v:.1f}", ha="center", fontweight="bold", fontsize=10)
     axes[0].set_title("2025 최종검증 MAE — 낮을수록 우수", loc="left", fontweight="bold")
@@ -119,9 +119,9 @@ def build():
     prs = Presentation(); prs.slide_width = Inches(13.333); prs.slide_height = Inches(7.5); blank = prs.slide_layouts[6]
 
     slide = prs.slides.add_slide(blank); slide.background.fill.solid(); slide.background.fill.fore_color.rgb = NAVY
-    text(slide, .8, 1.25, 11.7, .55, "교통사고 1차~8차 모델 비교", 34, True, WHITE)
+    text(slide, .8, 1.25, 11.7, .55, "교통사고 1차~11차 모델 비교", 34, True, WHITE)
     text(slide, .83, 2.0, 11.2, .35, "서울 25개 자치구 · 다음 연도 교통사고 건수 예측", 17, False, RGBColor(190, 220, 225))
-    text(slide, .83, 3.15, 11.3, 1.1, "1차 독립 확장(2~5차)과 최우수 2차 재확장(6~8차)의\n예측 성능과 해석 가능성을 비교", 25, True, WHITE)
+    text(slide, .83, 3.15, 11.3, 1.1, "1차 독립 확장, 2차 재확장, 7차 재확장으로 이어지는\n11개 모델의 예측 성능과 해석 가능성을 비교", 25, True, WHITE)
     text(slide, .83, 6.75, 6, .25, "최종검증: 2024년 X → 2025년 y", 12, False, RGBColor(190, 220, 225))
 
     slide = prs.slides.add_slide(blank); header(slide, "비교 설계", "모든 차수는 1차 변수를 유지한 독립 실험", 2)
@@ -132,29 +132,44 @@ def build():
     bullets(slide, .8, 3.15, 5.8, 2.9, ["1차 공통 변수 4개를 모든 모델에서 유지", "추가 변수군은 차수별로 독립 비교", "Ridge·RandomForest·ExtraTrees·GradientBoosting 비교", "추가 변수는 예측용이며 안전지수 가중치는 변경하지 않음"], 17)
     bullets(slide, 6.85, 3.15, 5.45, 2.9, ["위해: 인구만명당 교통사고 사망자수", "취약: 인구만명당 의료보장 사업장수", "의식: 운전자 안전벨트 착용률", "의식: 음주운전 경험률", "경감자료 미확보 → 62.5 : 12.5 : 25 재배분"], 17)
 
-    slide = prs.slides.add_slide(blank); header(slide, "모델 구성과 선정 결과", "각 차수에서 가장 낮은 내부검증 MAE 모델", 3)
+    slide = prs.slides.add_slide(blank); header(slide, "모델 구성: 1~5차", "1차 기준의 독립 변수군 확장", 3)
     rows = [["차수", "기준", "추가 변수", "선정 기법", "변수 수", "학습행"]]
     additions = ["없음", "현재연도 사고 건수", "사고 이력 파생 4개", "자동차 등록 대수", "생활인구 2개",
-                 "최근 3년 사고 평균", "자동차 등록 대수", "생활인구 월변동성"]
-    bases = ["-", "1차", "1차", "1차", "1차", "2차", "2차", "2차"]
-    for i, m in enumerate(models, 1):
+                 "최근 3년 사고 평균", "자동차 등록 대수", "생활인구 월변동성",
+                 "최근 3년 사고 평균", "생활인구 월변동성", "3년 평균+생활인구 변동성"]
+    bases = ["-", "1차", "1차", "1차", "1차", "2차", "2차", "2차", "7차", "7차", "7차"]
+    for i, m in enumerate(models[:5], 1):
         rows.append([f"{i}차", bases[i-1], additions[i-1], m["선정모델"], len(m["입력변수"]), m.get("학습행", 175)])
-    add_table(slide, .55, 1.3, 12.25, 5.55, rows, [.8, .8, 3.35, 2.15, 1.25, 1.3])
-    text(slide, .75, 6.92, 11.8, .25, "3·6차는 3년 이력 계산으로 학습 표본이 125행", 10, True, ORANGE)
+    add_table(slide, .55, 1.35, 12.25, 4.7, rows, [.8, .8, 3.35, 2.15, 1.25, 1.3])
+    text(slide, .75, 6.35, 11.8, .3, "각 차수는 1차 공통변수를 유지하며 추가 변수군의 독립 기여를 검증", 12, True, TEAL)
 
-    slide = prs.slides.add_slide(blank); header(slide, "성능 비교", "2025년 서울 25개 자치구 최종검증", 4)
+    slide = prs.slides.add_slide(blank); header(slide, "모델 구성: 6~11차", "2차 및 7차 기준 재확장", 4)
+    rows = [["차수", "기준", "추가 변수", "선정 기법", "변수 수", "학습행"]]
+    for i, m in enumerate(models[5:], 6):
+        rows.append([f"{i}차", bases[i-1], additions[i-1], m["선정모델"], len(m["입력변수"]), m.get("학습행", 175)])
+    add_table(slide, .55, 1.3, 12.25, 5.35, rows, [.8, .8, 3.35, 2.15, 1.25, 1.3])
+    text(slide, .75, 6.78, 11.8, .25, "3년 이력 변수를 사용하는 6·9·11차는 학습 표본 125행", 10, True, ORANGE)
+
+    slide = prs.slides.add_slide(blank); header(slide, "성능 비교", "2025년 서울 25개 자치구 최종검증", 5)
     slide.shapes.add_picture(str(chart), Inches(.55), Inches(1.35), width=Inches(12.2))
     text(slide, .75, 6.45, 11.8, .35, "전체 최우선은 2차 Ridge — MAE 99.69건·WMAPE 7.30%·R² 0.9626", 15, True, TEAL)
 
-    slide = prs.slides.add_slide(blank); header(slide, "수치로 보는 1차~5차", "MAE·RMSE·WMAPE는 낮을수록, R²는 높을수록 우수", 5)
+    slide = prs.slides.add_slide(blank); header(slide, "수치로 보는 1차~5차", "MAE·RMSE·WMAPE는 낮을수록, R²는 높을수록 우수", 6)
     rows = [["차수", "선정 기법", "MAE", "RMSE", "R²", "WMAPE"]]
-    for i, m in enumerate(models, 1):
+    for i, m in enumerate(models[:5], 1):
         met = m["최종검증지표"]
         rows.append([f"{i}차", m["선정모델"], f"{met['MAE']:.2f}", f"{met['RMSE']:.2f}", f"{met['R2']:.4f}", f"{met['WMAPE(%)']:.2f}%"])
     add_table(slide, .65, 1.25, 12.05, 5.85, rows, [1.0, 2.5, 1.7, 1.7, 1.7, 1.7])
     text(slide, .75, 7.12, 11.8, .2, "100−WMAPE는 등급 적중률이 아닌 오차 기반 참고값", 9, False, MID)
 
-    slide = prs.slides.add_slide(blank); header(slide, "모델별 핵심 해석", "무엇을 추가했을 때 성능이 좋아졌는가", 6)
+    slide = prs.slides.add_slide(blank); header(slide, "수치로 보는 6차~11차", "기준모델 대비 CV 판정과 별개로 2025 최종성능을 나란히 표시", 7)
+    rows = [["차수", "선정 기법", "MAE", "RMSE", "R²", "WMAPE"]]
+    for i, m in enumerate(models[5:], 6):
+        met = m["최종검증지표"]
+        rows.append([f"{i}차", m["선정모델"], f"{met['MAE']:.2f}", f"{met['RMSE']:.2f}", f"{met['R2']:.4f}", f"{met['WMAPE(%)']:.2f}%"])
+    add_table(slide, .65, 1.25, 12.05, 5.85, rows, [1.0, 2.5, 1.7, 1.7, 1.7, 1.7])
+
+    slide = prs.slides.add_slide(blank); header(slide, "모델별 핵심 해석", "무엇을 추가했을 때 성능이 좋아졌는가", 8)
     items = [
         ("1차", "안전기준표 O 항목만 사용", "초기 기준선 · 설명력 제한", MID),
         ("2차", "현재연도 사고 건수 추가", "사고 수준의 강한 지속성을 포착 · 최고 성능", TEAL),
@@ -168,7 +183,7 @@ def build():
         text(slide, 2.25, y+.06, 4.25, .3, desc, 15, True, NAVY)
         text(slide, 6.6, y+.06, 5.7, .45, note, 14, False, DARK)
 
-    slide = prs.slides.add_slide(blank); header(slide, "2차 기반 재확장: 6~8차", "내부 시간순 CV로 2차 대비 개선 여부 판정", 7)
+    slide = prs.slides.add_slide(blank); header(slide, "2차 기반 재확장: 6~8차", "내부 시간순 CV로 2차 대비 개선 여부 판정", 9)
     rows = [
         ["차수", "추가 변수", "선정 기법", "2차기준 CV MAE", "확장 CV MAE", "판정", "2025 MAE"],
         ["6차", "최근 3년 사고 평균", "Ridge", "125.80", "107.81", "개선", "111.18"],
@@ -178,11 +193,21 @@ def build():
     add_table(slide, .45, 1.45, 12.45, 3.55, rows, [.8, 2.4, 1.5, 1.75, 1.65, 1.45, 1.45])
     bullets(slide, .75, 5.35, 11.8, 1.35, ["6차는 같은 125행 표본의 2차 기준보다 CV 개선", "7차는 2025 MAE가 근소하게 낮지만 CV가 악화되어 채택하지 않음", "8차도 CV 개선이 없어 2차 우선순위를 유지"], 15)
 
-    slide = prs.slides.add_slide(blank); header(slide, "결론과 권고", "예측 성능과 활용 목적을 함께 고려", 8)
+    slide = prs.slides.add_slide(blank); header(slide, "7차 기반 재확장: 9~11차", "동일 표본의 7차 기준과 내부 시간순 CV 비교", 10)
+    rows = [
+        ["차수", "추가 변수", "선정 기법", "7차기준 CV MAE", "확장 CV MAE", "개선 폭", "2025 MAE"],
+        ["9차", "최근 3년 사고 평균", "Ridge", "126.92", "107.68", "19.24", "105.43"],
+        ["10차", "생활인구 월변동성", "Ridge", "97.34", "96.00", "1.34", "103.39"],
+        ["11차", "두 변수 모두", "ExtraTrees", "126.92", "124.42", "2.49", "108.97"],
+    ]
+    add_table(slide, .4, 1.4, 12.55, 3.65, rows, [.8, 2.35, 1.5, 1.75, 1.65, 1.35, 1.45])
+    bullets(slide, .75, 5.35, 11.8, 1.35, ["9차는 축소된 125행 동일 표본에서 가장 뚜렷한 CV 개선", "10·11차도 수치상 개선이나 폭은 작음", "세 모델 모두 2025 MAE가 7차 99.19건보다 높아 최우선은 유지"], 15)
+
+    slide = prs.slides.add_slide(blank); header(slide, "결론과 권고", "예측 성능과 활용 목적을 함께 고려", 11)
     card(slide, .75, 1.35, 3.7, 1.35, "최고 성능", "2차 Ridge", "MAE 99.69 · R² 0.9626", TEAL)
-    card(slide, 4.8, 1.35, 3.7, 1.35, "조건부 개선", "6차 Ridge", "축소 표본 CV 개선 · MAE 111.18", BLUE)
-    card(slide, 8.85, 1.35, 3.7, 1.35, "보류", "7차·8차", "2차 대비 CV 개선 없음", ORANGE)
-    bullets(slide, .85, 3.2, 11.7, 2.8, ["다음 연도 사고 건수 예측의 현재 최우선은 2차 모델", "6차는 사고 이력 3년이 확보되는 경우의 보조 후보", "7·8차는 최종 테스트값으로 판정을 뒤집지 않고 보류", "추가 변수는 예측용이며 안전지수 가중치는 기존 산식 유지", "단일 연도 2025 최종검증이므로 추가 연도에서 재검증 필요"], 18)
+    card(slide, 4.8, 1.35, 3.7, 1.35, "최저 2025 MAE", "7차 Ridge", "MAE 99.19 · CV는 2차보다 열세", BLUE)
+    card(slide, 8.85, 1.35, 3.7, 1.35, "7차 확장 후보", "9차 Ridge", "동일표본 CV 19.24건 개선", ORANGE)
+    bullets(slide, .85, 3.2, 11.7, 2.8, ["사전 내부 CV 기준 최우선은 2차, 2025 MAE 최저는 7차", "9차는 7차 기반 확장 중 가장 의미 있는 CV 개선", "10·11차는 개선 폭이 작아 추가 연도 확인 전 보류", "추가 변수는 예측용이며 안전지수 가중치는 기존 산식 유지", "단일 연도 최종검증이므로 새로운 연도에서 우선순위를 재확인"], 18)
     text(slide, .85, 6.55, 11.6, .3, "주의: R²는 정확도 자체가 아니며, 모델 간 비교는 동일한 2025 최종검증 기준", 12, True, RED)
 
     prs.save(OUTPUT)

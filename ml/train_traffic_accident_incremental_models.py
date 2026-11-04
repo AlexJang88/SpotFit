@@ -111,7 +111,7 @@ def log_candidate(version: int, kind: str, model_name: str, features: list[str],
 
 
 def train_version(version: int, title: str, added_pool: list[str], frame: pd.DataFrame,
-                  base_features: list[str], baseline_label: str) -> dict:
+                  base_features: list[str], baseline_label: str, fixed_all: bool = False) -> dict:
     out = MODEL_ROOT / f"{version}차"
     out.mkdir(parents=True, exist_ok=True)
     required = base_features + added_pool
@@ -139,7 +139,8 @@ def train_version(version: int, title: str, added_pool: list[str], frame: pd.Dat
     incumbent = baseline_best
     record_number = 0
     expanded = []
-    for added in feature_subsets(added_pool):
+    added_sets = [added_pool] if fixed_all else feature_subsets(added_pool)
+    for added in added_sets:
         features = base_features + added
         for model_name in candidates():
             summary, folds = cv_result(final_train, features, model_name)
@@ -207,7 +208,7 @@ def train_version(version: int, title: str, added_pool: list[str], frame: pd.Dat
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--versions", nargs="+", type=int, choices=range(2, 9), default=list(range(2, 9)))
+    parser.add_argument("--versions", nargs="+", type=int, choices=range(2, 12), default=list(range(2, 12)))
     args = parser.parse_args()
     frame = add_safety_score(add_incremental_features(load_data()))
     TRACKING_ROOT.mkdir(parents=True, exist_ok=True)
@@ -217,6 +218,7 @@ def main() -> None:
     mlflow.set_experiment(EXPERIMENT)
     stamp = datetime.now(timezone(timedelta(hours=9))).strftime("%Y%m%d_%H%M%S")
     second_features = INITIAL_FEATURES + [CURRENT]
+    seventh_features = second_features + [VEHICLES]
     definitions = {
         2: ("1차 + 현재연도 교통사고 건수", [CURRENT], INITIAL_FEATURES, "1차"),
         3: ("1차 + 사고 이력 파생변수 조합", HISTORY_FEATURES, INITIAL_FEATURES, "1차"),
@@ -225,6 +227,10 @@ def main() -> None:
         6: ("2차 + 사고 이력 파생변수 조합", HISTORY_FEATURES, second_features, "2차"),
         7: ("2차 + 자동차 등록 대수", [VEHICLES], second_features, "2차"),
         8: ("2차 + 생활인구 변수 조합", LIVING_FEATURES, second_features, "2차"),
+        9: ("7차 + 최근 3년 사고 건수 평균", [HISTORY_FEATURES[1]], seventh_features, "7차"),
+        10: ("7차 + 생활인구 월변동성", [LIVING_FEATURES[2]], seventh_features, "7차"),
+        11: ("7차 + 최근 3년 사고 건수 평균 + 생활인구 월변동성",
+             [HISTORY_FEATURES[1], LIVING_FEATURES[2]], seventh_features, "7차", True),
     }
     selected_label = "_".join(map(str, args.versions))
     with mlflow.start_run(run_name=f"traffic_incremental_v{selected_label}_{stamp}"):
@@ -234,7 +240,9 @@ def main() -> None:
                            "seed": RANDOM_STATE, "base_features": json.dumps(INITIAL_FEATURES, ensure_ascii=False),
                            **{f"sha256_{i}": hashlib.sha256(p.read_bytes()).hexdigest() for i, p in enumerate(source_files)}})
         summaries = [train_version(version, definitions[version][0], definitions[version][1], frame,
-                                   definitions[version][2], definitions[version][3]) for version in args.versions]
+                                   definitions[version][2], definitions[version][3],
+                                   definitions[version][4] if len(definitions[version]) > 4 else False)
+                     for version in args.versions]
         mlflow.log_dict(summaries, "versions_summary.json")
     print(json.dumps(summaries, ensure_ascii=False, indent=2))
 
