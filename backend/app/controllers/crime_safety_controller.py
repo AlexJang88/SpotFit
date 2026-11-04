@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 
 from app.schemas.crime_safety import CrimeSafetyForecastResponse
 from app.services.crime_safety_forecast import CrimeSafetyForecastError, predict_all_districts
+from app.services.recommender_v1 import RecommenderV1Error
 from app.services.safety_category_scores import get_safety_category_scores
 
 
@@ -13,7 +14,12 @@ router = APIRouter(prefix="/safety/crime", tags=["crime_safety"])
 @router.get("/category-scores")
 def category_scores() -> dict:
     """교통사고·범죄·안전 인프라의 자치구별 백분위 점수를 반환한다."""
-    return get_safety_category_scores()
+    try:
+        return get_safety_category_scores()
+    except (RecommenderV1Error, OSError, ValueError, KeyError) as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(error)
+        ) from error
 
 
 @router.get("/district-forecasts", response_model=CrimeSafetyForecastResponse)

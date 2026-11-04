@@ -8,4 +8,5 @@
 .grade-a{background:#176b4d}.grade-b{background:#4b8e62}.grade-c{background:#b29137}.grade-d{background:#c66f39}.grade-e{background:#a54141}
 .safety-ranking{max-height:440px;overflow:auto}.safety-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px;background:#edf5ef;margin-top:6px;padding:9px;border-radius:8px;font-size:12px}
 .safety-row span{display:grid;gap:3px}.safety-row small{color:#6c8174}.direction{font-size:10px;font-style:normal;padding:3px 5px;border-radius:5px}.direction-상승{color:#176b4d;background:#d8eee4}.direction-유지{color:#596b60;background:#e1e8e3}.direction-하락{color:#923e3e;background:#f5dddd}
+.grade-guide{gap:8px}.grade-a{background:#168b67}.grade-b{background:#65b97f}.grade-c{background:#e5bd45;color:#493b0b}.grade-d{background:#e8893f}.grade-e{background:#d95555}
 

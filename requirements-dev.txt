@@ -14,3 +14,11 @@ shapely>=2.0,<3.0
 # libpysal: 인접 행정동 공간가중치 생성과 공간 자기상관 분석에 사용합니다.
 geopandas>=1.0,<2.0
 libpysal>=4.12,<5.0
+
+# Child-environment panel preprocessing and paper-compatible classification
+pandas>=3.0,<4.0
+scipy>=1.15,<2.0
+jenkspy>=0.4,<0.5
+xlrd>=2.0,<3.0
+scikit-learn>=1.7,<2.0
+joblib>=1.5,<2.0

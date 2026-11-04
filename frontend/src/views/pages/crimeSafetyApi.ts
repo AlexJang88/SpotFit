@@ -44,7 +44,7 @@ export type SafetyCategoryResponse = {
 
 export async function fetchCrimeSafety(signal?: AbortSignal): Promise<CrimeSafetyResponse> {
   const response = await fetch("/api/safety/crime/district-forecasts", { signal });
-  if (!response.ok) throw new Error(`지역안전지수 조회 실패 (${response.status})`);
+  if (!response.ok) throw new Error(`지역점수 조회 실패 (${response.status})`);
   return response.json() as Promise<CrimeSafetyResponse>;
 }
 
