@@ -43,7 +43,9 @@ def load_data() -> pd.DataFrame:
         if frame.duplicated(keys).any():
             raise ValueError("연도·자치구 중복이 있습니다.")
 
-    base = accidents[accidents["연도"].between(2017, 2025)][keys + ["사고건수", "사망자수"]].copy()
+    base = accidents[accidents["연도"].between(2017, 2025)][
+        keys + ["사고건수", "사망자수", "부상자수", "어린이사고_사고건수"]
+    ].copy()
     base = base.merge(population[keys + ["주민등록인구_계"]], on=keys, validate="one_to_one")
     base = base.merge(
         workplaces[keys + ["인구만명당_의료보장사업장수"]], on=keys, how="left", validate="one_to_one"

@@ -43,10 +43,17 @@ HISTORY_FEATURES = [
 ]
 VEHICLES = "자동차 등록 대수"
 LIVING_FEATURES = ["생활인구 연평균", "생활인구 연중시간최대", "생활인구 월변동성"]
+INJURIES_PER_ACCIDENT = "사고당 부상자수"
+CHILD_ACCIDENT_SHARE = "어린이 사고 비율"
+SEVERITY_FEATURES = [INJURIES_PER_ACCIDENT, CHILD_ACCIDENT_SHARE]
 
 
 def add_incremental_features(frame: pd.DataFrame) -> pd.DataFrame:
     out = frame.copy().sort_values(["자치구", "연도"]).reset_index(drop=True)
+    if (out["사고건수"] <= 0).any():
+        raise ValueError("사고당 비율을 계산할 수 없는 사고건수 0 이하 행이 있습니다.")
+    out[INJURIES_PER_ACCIDENT] = out["부상자수"] / out["사고건수"]
+    out[CHILD_ACCIDENT_SHARE] = out["어린이사고_사고건수"] / out["사고건수"]
     grouped = out.groupby("자치구", sort=False)["사고건수"]
     out[CURRENT] = out["사고건수"]
     out[HISTORY_FEATURES[0]] = grouped.shift(1)
@@ -208,7 +215,7 @@ def train_version(version: int, title: str, added_pool: list[str], frame: pd.Dat
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--versions", nargs="+", type=int, choices=range(2, 12), default=list(range(2, 12)))
+    parser.add_argument("--versions", nargs="+", type=int, choices=range(2, 13), default=list(range(2, 13)))
     args = parser.parse_args()
     frame = add_safety_score(add_incremental_features(load_data()))
     TRACKING_ROOT.mkdir(parents=True, exist_ok=True)
@@ -231,6 +238,8 @@ def main() -> None:
         10: ("7차 + 생활인구 월변동성", [LIVING_FEATURES[2]], seventh_features, "7차"),
         11: ("7차 + 최근 3년 사고 건수 평균 + 생활인구 월변동성",
              [HISTORY_FEATURES[1], LIVING_FEATURES[2]], seventh_features, "7차", True),
+        12: ("2차 + 사고당 부상자수 + 어린이 사고 비율",
+             SEVERITY_FEATURES, second_features, "2차", True),
     }
     selected_label = "_".join(map(str, args.versions))
     with mlflow.start_run(run_name=f"traffic_incremental_v{selected_label}_{stamp}"):
