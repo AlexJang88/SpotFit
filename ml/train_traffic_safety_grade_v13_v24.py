@@ -27,6 +27,8 @@ from train_traffic_accident_initial_v1 import RANDOM_STATE, candidates, load_dat
 
 ROOT = Path(__file__).resolve().parents[1]
 MODEL_ROOT = ROOT / "models" / "안전" / "교통사고"
+BASELINE_ROOT = MODEL_ROOT / "1~12차"
+SAFETY_GRADE_ROOT = MODEL_ROOT / "13~26차"
 TRACKING_ROOT = ROOT / "artifacts" / "mlflow_traffic_safety_grade"
 EXPERIMENT = "traffic-safety-grade-v13-v24"
 TARGET_SCORE = "다음연도 안전점수"
@@ -71,7 +73,7 @@ def load_version_features() -> dict[int, list[str]]:
     result = {}
     for old_version in range(1, 13):
         metadata = json.loads(
-            (MODEL_ROOT / f"{old_version}차" / "모델정보.json").read_text(encoding="utf-8")
+            (BASELINE_ROOT / f"{old_version}차" / "모델정보.json").read_text(encoding="utf-8")
         )
         result[old_version + 12] = metadata["입력변수"]
     result[25] = [
@@ -262,7 +264,7 @@ def log_candidate(version: int, model_name: str, features: list[str], weights: p
 
 
 def train_version(version: int, base_frame: pd.DataFrame, features: list[str]) -> dict:
-    out_dir = MODEL_ROOT / f"{version}차"
+    out_dir = SAFETY_GRADE_ROOT / f"{version}차"
     out_dir.mkdir(parents=True, exist_ok=True)
     weights = internal_weights(features)
     scored = add_historical_score(base_frame, features, weights)

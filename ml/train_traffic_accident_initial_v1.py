@@ -17,7 +17,7 @@ from sklearn.preprocessing import StandardScaler
 
 ROOT = Path(__file__).resolve().parents[1]
 INTERIM = ROOT / "data" / "interim" / "안전" / "교통사고"
-OUT = ROOT / "models" / "안전" / "교통사고" / "1차"
+OUT = ROOT / "models" / "안전" / "교통사고" / "1~12차" / "1차"
 OUT.mkdir(parents=True, exist_ok=True)
 RANDOM_STATE = 42
 

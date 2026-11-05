@@ -33,7 +33,8 @@ def main() -> None:
     parser.add_argument("--version", type=int, choices=range(13, 27), default=13)
     args = parser.parse_args()
     version = args.version
-    metadata_path = MODEL_ROOT / f"{version}차" / "모델정보.json"
+    group = "1~12차" if version <= 12 else "13~26차"
+    metadata_path = MODEL_ROOT / group / f"{version}차" / "모델정보.json"
     metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
     features: list[str] = metadata["입력변수"]
 

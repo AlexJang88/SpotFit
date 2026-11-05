@@ -17,7 +17,7 @@ from pptx.enum.text import MSO_ANCHOR, PP_ALIGN
 from pptx.util import Inches, Pt
 
 
-MODEL_ROOT = ROOT / "models" / "안전" / "교통사고"
+MODEL_ROOT = ROOT / "models" / "안전" / "교통사고" / "1~12차"
 REPORT_DIR = ROOT / "artifacts" / "reports" / "traffic_models_v1_v11"
 OUTPUT = REPORT_DIR / "교통사고_1차~11차_모델비교.pptx"
 FONT = "맑은 고딕"

@@ -28,7 +28,7 @@ from train_traffic_accident_initial_v1 import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
-MODEL_ROOT = ROOT / "models" / "안전" / "교통사고"
+MODEL_ROOT = ROOT / "models" / "안전" / "교통사고" / "1~12차"
 TRACKING_ROOT = ROOT / "artifacts" / "mlflow_traffic_accident"
 EXPERIMENT = "traffic-accident-incremental-models"
 FOLD_TARGET_YEARS = range(2021, 2025)

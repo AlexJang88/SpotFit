@@ -34,8 +34,13 @@ ADDITIONS = [
 ]
 
 
+def version_dir(version: int) -> Path:
+    group = "1~12차" if version <= 12 else "13~26차"
+    return MODEL_ROOT / group / f"{version}차"
+
+
 def load_metadata(version: int) -> dict:
-    return json.loads((MODEL_ROOT / f"{version}차" / "모델정보.json").read_text(encoding="utf-8"))
+    return json.loads((version_dir(version) / "모델정보.json").read_text(encoding="utf-8"))
 
 
 def replace_footer_range(prs: Presentation) -> None:
@@ -198,8 +203,8 @@ def build_focus_13_19() -> Path:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     model13 = load_metadata(13)
     model19 = load_metadata(19)
-    candidate13 = __import__("pandas").read_csv(MODEL_ROOT / "13차" / "후보모델_비교.csv")
-    candidate19 = __import__("pandas").read_csv(MODEL_ROOT / "19차" / "후보모델_비교.csv")
+    candidate13 = __import__("pandas").read_csv(version_dir(13) / "후보모델_비교.csv")
+    candidate19 = __import__("pandas").read_csv(version_dir(19) / "후보모델_비교.csv")
 
     prs = Presentation(); prs.slide_width = Inches(13.333); prs.slide_height = Inches(7.5)
     blank = prs.slide_layouts[6]
