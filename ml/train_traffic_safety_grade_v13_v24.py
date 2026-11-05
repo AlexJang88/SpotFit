@@ -50,6 +50,8 @@ CATEGORY = {
     "생활인구 월변동성": "취약",
     "사고당 부상자수": "위해",
     "어린이 사고 비율": "위해",
+    "인구만명당 연령기반 재난약자수": "취약",
+    "차량통행속도 연평균": "취약",
 }
 
 HIGHER_IS_SAFER = {
@@ -72,7 +74,57 @@ def load_version_features() -> dict[int, list[str]]:
             (MODEL_ROOT / f"{old_version}차" / "모델정보.json").read_text(encoding="utf-8")
         )
         result[old_version + 12] = metadata["입력변수"]
+    result[25] = [
+        *result[19],
+        "인구만명당 연령기반 재난약자수",
+    ]
+    result[26] = [
+        *result[19],
+        "차량통행속도 연평균",
+    ]
     return result
+
+
+def add_age_vulnerability_proxy(frame: pd.DataFrame) -> pd.DataFrame:
+    """연령자료로 공식 재난약자 지표의 대리변수를 만든다.
+
+    실제 재학생 수가 없으므로 3~12세 주민등록인구와 65세 이상 인구를 사용한다.
+    """
+    path = ROOT / "data" / "interim" / "안전" / "교통사고" / "자치구별_연령별인구현황_2017_2025.csv"
+    age = pd.read_csv(path)
+    keys = ["연도", "자치구"]
+    if age.duplicated(keys).any():
+        raise ValueError("연령자료에 연도·자치구 중복이 있습니다.")
+    vulnerable_columns = [f"{value}세" for value in range(3, 13)] + [
+        f"{value}세" for value in range(65, 100)
+    ] + ["100세 이상"]
+    age = age.copy()
+    age["연령기반 재난약자수"] = age[vulnerable_columns].sum(axis=1)
+    age["인구만명당 연령기반 재난약자수"] = (
+        age["연령기반 재난약자수"] / age["총인구수"] * 10_000
+    )
+    return frame.merge(
+        age[keys + ["인구만명당 연령기반 재난약자수"]],
+        on=keys,
+        how="left",
+        validate="one_to_one",
+    )
+
+
+def add_traffic_speed(frame: pd.DataFrame) -> pd.DataFrame:
+    path = ROOT / "data" / "interim" / "안전" / "교통사고" / "자치구별_차량통행속도_2017_2025.csv"
+    speed = pd.read_csv(path).rename(
+        columns={"차량통행속도_연평균_kmh": "차량통행속도 연평균"}
+    )
+    keys = ["연도", "자치구"]
+    if speed.duplicated(keys).any():
+        raise ValueError("차량통행속도 자료에 연도·자치구 중복이 있습니다.")
+    return frame.merge(
+        speed[keys + ["차량통행속도 연평균"]],
+        on=keys,
+        how="left",
+        validate="one_to_one",
+    )
 
 
 def grade_by_rank(frame: pd.DataFrame, score_col: str) -> pd.Series:
@@ -293,7 +345,7 @@ def train_version(version: int, base_frame: pd.DataFrame, features: list[str]) -
 
     metadata = {
         "모델구분": f"안전-교통사고-{version}차",
-        "체계": "안전등급 모델 13~24차",
+        "체계": "안전등급 모델 13~26차",
         "기존대응차수": version - 12,
         "최종출력": "다음연도 안전등급(1~5)",
         "중간출력": "다음연도 안전점수",
@@ -304,6 +356,15 @@ def train_version(version: int, base_frame: pd.DataFrame, features: list[str]) -
         "적용영역가중치_pct": NO_MITIGATION_WEIGHTS,
         "경감지표처리": "완전한 경감지표 없음; 모든 행에 동일하게 위해 62.5·취약 12.5·의식 25로 비례 재배분",
         "의료보장_2025처리": "2024년 최근 공표값을 2025년에 이월",
+        "연령기반_재난약자_정의": (
+            "3~12세와 65세 이상 주민등록인구의 합계를 총인구수로 나눈 인구만명당 대리지표; "
+            "실제 유치원생·초등학생 재학생 수를 사용한 공식 지표는 아님"
+            if "인구만명당 연령기반 재난약자수" in features else None
+        ),
+        "차량통행속도_정의": (
+            "서울시 영업용택시 GPS 기반 자치구별 월평균 통행속도의 연평균; 취약영역에 배분"
+            if "차량통행속도 연평균" in features else None
+        ),
         "학습행": len(development),
         "최종검증행": len(final_test),
         "CV성능": {key: float(winner[key]) for key in winner.index if key.startswith("cv_")},
@@ -334,9 +395,9 @@ def train_version(version: int, base_frame: pd.DataFrame, features: list[str]) -
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--versions", nargs="+", type=int, choices=range(13, 25), default=list(range(13, 25)))
+    parser.add_argument("--versions", nargs="+", type=int, choices=range(13, 27), default=list(range(13, 25)))
     args = parser.parse_args()
-    frame = add_incremental_features(load_data())
+    frame = add_traffic_speed(add_age_vulnerability_proxy(add_incremental_features(load_data())))
     frame["인구만명당 의료보장 사업장수"] = frame.groupby("자치구")[
         "인구만명당 의료보장 사업장수"
     ].ffill()
@@ -353,6 +414,8 @@ def main() -> None:
         ROOT / "data" / "interim" / "안전" / "교통사고" / "자치구별_교통사고_2차.xlsx",
         ROOT / "data" / "interim" / "안전" / "교통사고" / "자치구별_운전자안전_2차.csv",
         ROOT / "data" / "interim" / "안전" / "교통사고" / "자치구별_인구활동량_1차.csv",
+        ROOT / "data" / "interim" / "안전" / "교통사고" / "자치구별_연령별인구현황_2017_2025.csv",
+        ROOT / "data" / "interim" / "안전" / "교통사고" / "자치구별_차량통행속도_2017_2025.csv",
     ]
     stamp = datetime.now(timezone(timedelta(hours=9))).strftime("%Y%m%d_%H%M%S")
     selected_label = "_".join(map(str, args.versions))

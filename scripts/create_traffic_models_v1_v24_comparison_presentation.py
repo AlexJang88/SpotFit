@@ -1,6 +1,7 @@
 """교통사고 1~12차 사고건수 모델과 13~24차 안전등급 모델 비교 PPT를 생성한다."""
 from __future__ import annotations
 
+import argparse
 import json
 import os
 from pathlib import Path
@@ -24,6 +25,7 @@ from create_traffic_models_v1_v5_presentation import (
 MODEL_ROOT = ROOT / "models" / "안전" / "교통사고"
 OUT_DIR = ROOT / "artifacts" / "reports" / "traffic_models_v1_v24_comparison"
 OUTPUT = OUT_DIR / "교통사고_1차~12차_vs_13차~24차_모델비교.pptx"
+FOCUS_OUTPUT = OUT_DIR / "교통사고_13차_vs_19차_핵심모델비교.pptx"
 
 ADDITIONS = [
     "초기 기준 4개", "현재연도 사고건수", "사고이력 파생변수", "자동차 등록대수",
@@ -191,5 +193,144 @@ def build() -> Path:
     return OUTPUT
 
 
+def build_focus_13_19() -> Path:
+    """13차 기준모델과 19차 최우선 모델을 쉬운 한국어로 비교한다."""
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    model13 = load_metadata(13)
+    model19 = load_metadata(19)
+    candidate13 = __import__("pandas").read_csv(MODEL_ROOT / "13차" / "후보모델_비교.csv")
+    candidate19 = __import__("pandas").read_csv(MODEL_ROOT / "19차" / "후보모델_비교.csv")
+
+    prs = Presentation(); prs.slide_width = Inches(13.333); prs.slide_height = Inches(7.5)
+    blank = prs.slide_layouts[6]
+
+    slide = prs.slides.add_slide(blank); slide.background.fill.solid(); slide.background.fill.fore_color.rgb = NAVY
+    text(slide, .8, 1.15, 11.8, .65, "교통사고 안전등급 핵심 모델 비교", 34, True, WHITE)
+    text(slide, .83, 2.0, 11.4, .42, "13차 기준모델  vs  19차 최고성능 모델", 21, False, RGBColor(190, 220, 225))
+    text(slide, .83, 3.05, 11.4, 1.25,
+         "무엇을 넣었고, 왜 넣었고,\n왜 이 모델을 선택했는지 결정 순서대로 설명", 27, True, WHITE)
+    text(slide, .83, 6.7, 8, .25, "최종 결과: 다음연도 안전점수와 안전등급(1~5)", 12, False, RGBColor(190, 220, 225))
+
+    slide = prs.slides.add_slide(blank); header(slide, "먼저 결론", "두 모델의 역할은 서로 다름", 2)
+    card(slide, .75, 1.45, 5.7, 1.55, "13차", "기준모델", "안전기준표의 확보된 기본변수 4개", BLUE)
+    card(slide, 6.9, 1.45, 5.7, 1.55, "19차", "현재 최우선 모델", "기본변수 + 현재 사고건수 + 자동차 등록대수", TEAL)
+    bullets(slide, .9, 3.55, 11.6, 2.15, [
+        "13차는 새 안전등급 체계가 제대로 작동하는지 확인하는 출발점",
+        "19차는 같은 규칙을 지키면서 예측에 도움이 되는 변수 2개를 추가",
+        "새 모델은 항상 13차와 비교하고, 현재 최고인 19차도 함께 비교",
+    ], 19)
+    text(slide, .9, 6.25, 11.5, .4, "기준을 설명할 때는 13차, 실제 예측 후보를 설명할 때는 19차가 핵심", 15, True, ORANGE)
+
+    slide = prs.slides.add_slide(blank); header(slide, "공통으로 지킨 계산 규칙", "모델이 마음대로 영역 가중치를 바꾸지 않음", 3)
+    rows = [
+        ["영역", "원래 기준", "현재 적용", "이유"],
+        ["위해", "50%", "62.5%", "경감자료가 없어 비례 환산"],
+        ["취약", "10%", "12.5%", "경감자료가 없어 비례 환산"],
+        ["경감", "20%", "0%", "완전한 연도별 자료 없음"],
+        ["의식", "20%", "25.0%", "경감자료가 없어 비례 환산"],
+    ]
+    add_table(slide, .75, 1.25, 11.85, 3.65, rows, [2.0, 2.0, 2.0, 5.85])
+    bullets(slide, .9, 5.3, 11.5, 1.15, [
+        "경감지표가 하나라도 충분히 확보되면 원래 50·10·20·20으로 복원",
+        "일부 지역만 자료가 없다고 그 지역에만 가중치를 더 주지 않음",
+    ], 15)
+    text(slide, .9, 6.65, 11.5, .3, "현재 결과는 ‘경감지표 제외 환산 안전등급’", 13, True, RED)
+
+    slide = prs.slides.add_slide(blank); header(slide, "13차: 왜 이 변수들을 선택했나?", "안전기준표에서 실제 확보된 기본항목만 사용", 4)
+    rows = [
+        ["변수", "영역", "가중치", "선택 이유"],
+        ["인구 1만명당 사고 사망자수", "위해", "62.50%", "실제 피해 결과를 나타내는 핵심 지표"],
+        ["인구 1만명당 의료보장 사업장수", "취약", "12.50%", "안전기준표의 취약 항목"],
+        ["안전벨트 착용률", "의식", "12.70%", "안전 행동을 나타내며 높을수록 안전"],
+        ["음주운전 경험률", "의식", "12.30%", "위험 행동을 나타내며 높을수록 불리"],
+    ]
+    add_table(slide, .45, 1.2, 12.45, 4.65, rows, [3.35, 1.25, 1.45, 6.4])
+    text(slide, .75, 6.15, 11.8, .65,
+         "왜 13차가 기준인가?  새로운 보조변수를 넣기 전에 안전기준표 기본정보만으로 만든 출발점이기 때문", 15, True, TEAL)
+
+    slide = prs.slides.add_slide(blank); header(slide, "13차: 왜 RandomForest인가?", "같은 데이터와 같은 시간순 검증에서 4개 기법 비교", 5)
+    rows = [["후보 기법", "등급 정확도", "±1등급", "판단"]]
+    for row in candidate13.itertuples(index=False):
+        judgment = "선택" if row.알고리즘 == "RandomForest" else "보류"
+        rows.append([row.알고리즘, f"{row.cv_grade_accuracy*100:.0f}%", f"{row.cv_grade_within1_accuracy*100:.0f}%", judgment])
+    add_table(slide, .75, 1.25, 11.85, 3.7, rows, [3.0, 2.3, 2.3, 4.25])
+    bullets(slide, .9, 5.25, 11.5, 1.15, [
+        "RandomForest의 정확한 등급 일치율이 43%로 가장 높았음",
+        "Ridge는 ±1등급 비율은 높지만 정확한 등급 일치가 36%로 낮았음",
+    ], 15)
+    text(slide, .9, 6.62, 11.5, .3, "선택 기준: 최종 목표가 안전등급이므로 ‘정확한 등급 일치율’을 먼저 봄", 13, True, ORANGE)
+
+    slide = prs.slides.add_slide(blank); header(slide, "19차: 무엇을 더 넣었나?", "13차에 현재 사고건수와 자동차 등록대수를 추가", 6)
+    card(slide, .7, 1.35, 3.75, 1.45, "추가 변수 1", "현재연도 사고건수", "위해지표 · 사고가 반복되는 수준", RED)
+    card(slide, 4.8, 1.35, 3.75, 1.45, "추가 변수 2", "자동차 등록대수", "취약지표 · 교통 노출 규모", ORANGE)
+    card(slide, 8.9, 1.35, 3.75, 1.45, "총 입력", "6개 변수", "13차 4개 + 신규 2개", TEAL)
+    rows = [
+        ["영역", "영역 안의 변수", "영역 가중치", "변수별 배분"],
+        ["위해", "사망자수 + 현재 사고건수", "62.5%", "31.25%씩"],
+        ["취약", "의료보장 + 자동차 등록", "12.5%", "6.25%씩"],
+        ["의식", "안전벨트 + 음주운전", "25.0%", "12.70% + 12.30%"],
+    ]
+    add_table(slide, .75, 3.25, 11.85, 2.65, rows, [1.8, 4.25, 2.15, 3.65])
+    text(slide, .9, 6.28, 11.5, .45, "새 변수가 들어와도 자기 영역의 한도를 넘지 않도록 같은 영역 안에서만 나눔", 14, True, TEAL)
+
+    slide = prs.slides.add_slide(blank); header(slide, "19차: 왜 ExtraTrees인가?", "점수 오차보다 최종 등급 정확도를 우선", 7)
+    rows = [["후보 기법", "등급 정확도", "±1등급", "점수 MAE", "판단"]]
+    for row in candidate19.itertuples(index=False):
+        judgment = "선택" if row.알고리즘 == "ExtraTrees" else "보류"
+        rows.append([row.알고리즘, f"{row.cv_grade_accuracy*100:.0f}%", f"{row.cv_grade_within1_accuracy*100:.0f}%", f"{row.cv_score_mae:.2f}", judgment])
+    add_table(slide, .55, 1.25, 12.25, 3.85, rows, [2.7, 2.1, 2.1, 2.0, 3.35])
+    bullets(slide, .85, 5.35, 11.7, 1.0, [
+        "ExtraTrees의 등급 정확도가 56%로 가장 높았음",
+        "Ridge의 점수 MAE는 6.68로 아주 조금 낮지만 등급 정확도는 54%였음",
+    ], 15)
+    text(slide, .85, 6.55, 11.7, .35, "최종 제공값이 ‘등급’이므로 2%p 더 잘 맞힌 ExtraTrees를 선택", 14, True, ORANGE)
+
+    slide = prs.slides.add_slide(blank); header(slide, "13차와 19차 성능 비교", "2021~2024 시간순 내부검증을 우선 사용", 8)
+    rows = [
+        ["지표", "13차", "19차", "변화"],
+        ["정확한 등급 일치", "43%", "56%", "+13%p"],
+        ["±1등급 이내", "84%", "92%", "+8%p"],
+        ["안전점수 MAE", "12.36점", "6.69점", "5.67점 감소"],
+        ["안전점수 R²", "0.0216", "0.5200", "+0.4984"],
+        ["2025 등급 정확도", "48%", "48%", "동일"],
+        ["2025 ±1등급", "76%", "88%", "+12%p"],
+    ]
+    add_table(slide, .75, 1.15, 11.85, 5.15, rows, [3.4, 2.3, 2.3, 3.85])
+    text(slide, .9, 6.55, 11.5, .35, "결론: 여러 연도에서 반복 검증한 내부 성능이 좋아졌으므로 19차를 최우선으로 선택", 14, True, TEAL)
+
+    slide = prs.slides.add_slide(blank); header(slide, "선택 과정을 한눈에 보기", "각 단계마다 기준을 먼저 정하고 결과를 확인", 9)
+    steps = [
+        ("1", "최종 목표 결정", "사고건수가 아니라 안전등급 1~5"),
+        ("2", "기준모델 결정", "안전기준표 기본변수만 사용한 13차"),
+        ("3", "가중치 규칙 결정", "영역 한도 고정 · 경감 미확보 시 동일 환산"),
+        ("4", "새 변수 분류", "현재 사고건수=위해 · 자동차 등록=취약"),
+        ("5", "후보 기법 비교", "같은 시간순 검증에서 4개 알고리즘 비교"),
+        ("6", "최우선 결정", "등급 정확도가 가장 높은 19차 ExtraTrees"),
+    ]
+    for idx, (number, title_value, note) in enumerate(steps):
+        y = 1.25 + idx * .9
+        card(slide, .75, y, 1.0, .65, "단계", number, "", TEAL)
+        text(slide, 2.0, y+.02, 3.0, .3, title_value, 15, True, NAVY)
+        text(slide, 5.0, y+.02, 7.3, .4, note, 14, False, DARK)
+
+    slide = prs.slides.add_slide(blank); header(slide, "최종 정리", "무엇을 기억하면 되는가", 10)
+    card(slide, .75, 1.35, 5.7, 1.5, "13차", "설명의 기준", "기본변수 4개 · RandomForest", BLUE)
+    card(slide, 6.9, 1.35, 5.7, 1.5, "19차", "현재 예측 최우선", "변수 6개 · ExtraTrees", TEAL)
+    bullets(slide, .9, 3.4, 11.6, 2.35, [
+        "새 변수를 시험할 때 13차와 19차를 모두 비교",
+        "19차 내부 등급 정확도 56%, ±1등급 정확도 92%",
+        "경감지표가 확보되면 원래 50·10·20·20 가중치로 다시 계산",
+        "추가 연도 독립검증 전에는 공식 전체지표 등급이나 확정 배포 모델로 표현하지 않음",
+    ], 17)
+    text(slide, .9, 6.35, 11.5, .45, "한 줄 결론: 13차는 출발점, 19차는 현재 가장 믿을 만한 예측 후보", 16, True, ORANGE)
+
+    replace_footer_range(prs)
+    prs.save(FOCUS_OUTPUT)
+    return FOCUS_OUTPUT
+
+
 if __name__ == "__main__":
-    print(build())
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--focus-13-19", action="store_true", help="13차와 19차만 쉬운 한국어로 비교")
+    args = parser.parse_args()
+    print(build_focus_13_19() if args.focus_13_19 else build())
