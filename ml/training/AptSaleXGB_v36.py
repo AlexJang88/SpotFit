@@ -23,7 +23,7 @@ DROP = '유동인구 수'
 d = add_age(add_area(load()))
 
 DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data') + os.sep
-area = pd.read_csv(DATA + 'raw/서울시 상권분석서비스(영역-행정동).csv', encoding='cp949').drop_duplicates('행정동_코드').set_index('행정동_코드')
+area = pd.read_csv(DATA + 'raw/부동산/서울시 상권분석서비스(영역-행정동).csv', encoding='cp949').drop_duplicates('행정동_코드').set_index('행정동_코드')
 ctr = area.reindex(d.index)[['엑스좌표_값', '와이좌표_값']]
 assert ctr.notna().all().all(), '중심점이 없는 동네가 있음'
 hp = pd.read_csv(DATA + 'raw/기타/한강공원 위치현황.csv', encoding='cp949').iloc[1:]                      # 첫 줄은 영문 컬럼명 중복이라 제외

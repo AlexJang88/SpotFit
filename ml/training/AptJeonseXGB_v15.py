@@ -24,7 +24,7 @@ ap.add_argument('--tracking-uri'); ap.add_argument('--experiment', default='hous
 a = ap.parse_args()
 d = add_age(load())
 cx = pd.read_csv(DATA + '행정동별_단지정보.csv', encoding='utf-8-sig').set_index('행정동_코드')
-area = pd.read_csv(DATA + '../raw/서울시 상권분석서비스(영역-행정동).csv', encoding='cp949').drop_duplicates('행정동_코드').set_index('행정동_코드').reindex(d.index)
+area = pd.read_csv(DATA + '../raw/부동산/서울시 상권분석서비스(영역-행정동).csv', encoding='cp949').drop_duplicates('행정동_코드').set_index('행정동_코드').reindex(d.index)
 hp = pd.read_csv(DATA + '../raw/기타/한강공원 위치현황.csv', encoding='cp949').iloc[1:]                                  # 경도·위도 컬럼 이름이 바뀌어 있어 반대로 읽음 (매매 v33과 같음)
 hx, hy = Transformer.from_crs('EPSG:4326', 'EPSG:5181', always_xy=True).transform(hp['위도'].astype(float).values, hp['경도'].astype(float).values)
 d[NEW] = cKDTree(np.c_[hx, hy]).query(area[['엑스좌표_값', '와이좌표_값']].values)[0] / 1000

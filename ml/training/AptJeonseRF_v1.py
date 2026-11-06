@@ -41,7 +41,7 @@ g = a.groupby('행정동_코드').agg(**{'거래 수': (Y, 'size'), Y: (Y, 'medi
 
 # 동네 특징 4개를 원자료에서 직접 만듦 (output/평당금액_행정동표.csv 를 쓰지 않음)
 K = '행정동_코드'
-daily = lambda name: pd.read_csv(RAW + f'서울시 상권분석서비스({name}).csv', encoding='cp949')
+daily = lambda name: pd.read_csv(RAW + f'부동산/서울시 상권분석서비스({name}).csv', encoding='cp949')
 feat = pd.DataFrame({'유동인구 수': daily('길단위인구-행정동').groupby(K)['총_유동인구_수'].mean(),                  # 분기별 값의 전체 기간 평균 (매매 v1과 같음)
                      '직장인구 수': daily('직장인구-행정동').groupby(K)['총_직장_인구_수'].mean()})
 one = pd.read_csv(INTERIM + '1인가구/1인가구_전체.csv', encoding='cp949').groupby(['행정동코드', '행정동명'])[['1인가구수', '총인구']].sum().reset_index()

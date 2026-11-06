@@ -35,7 +35,7 @@ def add_area(d, kind='apt'):        # 동네 매매 거래의 평균 전용면�
     return d.join(t.groupby(t['행정동_코드(상권분석)'].astype(int))['전용면적(㎡)'].mean().rename(AREA))
 
 def add_age(d):         # 상주인구 연령대 비율 6개 (값이 이상한 2022년 4분기~2023년 3분기는 빼고 분기 평균)
-    p = pd.read_csv(DATA + '../raw/서울시 상권분석서비스(상주인구-행정동).csv', encoding='cp949')
+    p = pd.read_csv(DATA + '../raw/부동산/서울시 상권분석서비스(상주인구-행정동).csv', encoding='cp949')
     raw = [f'연령대_{k}_상주인구_수' for k in AGES]
     tot = p.groupby('기준_년분기_코드')[raw].sum()
     start = pd.Series(tot.index, index=tot.index).groupby((tot.diff().abs().sum(axis=1) > 0).cumsum()).transform('min')   # 값이 바뀐 분기 = 그 자료의 시작 분기

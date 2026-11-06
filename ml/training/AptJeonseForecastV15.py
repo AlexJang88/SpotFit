@@ -18,7 +18,7 @@ HG = '가장 가까운 한강공원까지 거리(km)'
 GUARD = '100세대당 경비 인원'
 d = add_age(load())
 cx = pd.read_csv(DATA + '행정동별_단지정보.csv', encoding='utf-8-sig').set_index('행정동_코드')
-area = pd.read_csv(DATA + '../raw/서울시 상권분석서비스(영역-행정동).csv', encoding='cp949').drop_duplicates('행정동_코드').set_index('행정동_코드').reindex(d.index)
+area = pd.read_csv(DATA + '../raw/부동산/서울시 상권분석서비스(영역-행정동).csv', encoding='cp949').drop_duplicates('행정동_코드').set_index('행정동_코드').reindex(d.index)
 hp = pd.read_csv(DATA + '../raw/기타/한강공원 위치현황.csv', encoding='cp949').iloc[1:]
 hx, hy = Transformer.from_crs('EPSG:4326', 'EPSG:5181', always_xy=True).transform(hp['위도'].astype(float).values, hp['경도'].astype(float).values)
 

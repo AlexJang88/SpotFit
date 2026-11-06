@@ -24,7 +24,7 @@ NEW = '가장 가까운 한강공원까지 거리(km)'
 d = add_age(add_area(load()))
 
 DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data') + os.sep
-area = pd.read_csv(DATA + 'raw/서울시 상권분석서비스(영역-행정동).csv', encoding='cp949').drop_duplicates('행정동_코드').set_index('행정동_코드')
+area = pd.read_csv(DATA + 'raw/부동산/서울시 상권분석서비스(영역-행정동).csv', encoding='cp949').drop_duplicates('행정동_코드').set_index('행정동_코드')
 ctr = area.reindex(d.index)[['엑스좌표_값', '와이좌표_값']]
 assert ctr.notna().all().all(), '중심점이 없는 동네가 있음'
 d[XY[0]], d[XY[1]] = ctr['엑스좌표_값'].values, ctr['와이좌표_값'].values
