@@ -13,6 +13,9 @@ export type CrimeSafetyForecast = {
   previous_grade: SafetyGrade;
   grade_change_expected: boolean;
   grade_change_direction: GradeDirection;
+  predicted_exposure_y?: number;
+  predicted_exposure_rate_per_10k?: number;
+  risk_rank?: number;
 };
 
 export type CrimeSafetyResponse = {
@@ -20,6 +23,8 @@ export type CrimeSafetyResponse = {
   model_version: string;
   algorithm: string;
   target: string;
+  target_formula?: string;
+  horizon_years: number;
   data_year: number;
   prediction_year: number;
   district_count: number;
@@ -42,14 +47,14 @@ export type SafetyCategoryResponse = {
   scores: SafetyCategoryScore[];
 };
 
-export async function fetchCrimeSafety(signal?: AbortSignal): Promise<CrimeSafetyResponse> {
-  const response = await fetch("/api/safety/crime/district-forecasts", { signal });
+export async function fetchCrimeSafety(horizon = 1, signal?: AbortSignal): Promise<CrimeSafetyResponse> {
+  const response = await fetch(`/api/safety/crime/district-forecasts?horizon=${horizon}`, { signal });
   if (!response.ok) throw new Error(`지역점수 조회 실패 (${response.status})`);
   return response.json() as Promise<CrimeSafetyResponse>;
 }
 
-export async function fetchSafetyCategoryScores(signal?: AbortSignal): Promise<SafetyCategoryResponse> {
-  const response = await fetch("/api/safety/crime/category-scores", { signal });
+export async function fetchSafetyCategoryScores(horizon = 1, signal?: AbortSignal): Promise<SafetyCategoryResponse> {
+  const response = await fetch(`/api/safety/crime/category-scores?horizon=${horizon}`, { signal });
   if (!response.ok) throw new Error(`안전영역 점수 조회 실패 (${response.status})`);
   return response.json() as Promise<SafetyCategoryResponse>;
 }
