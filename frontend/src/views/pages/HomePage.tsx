@@ -11,6 +11,7 @@ import { fetchRecommenderForecasts, type DistrictModelForecast, type Recommender
 import type { FeatureCollection } from "geojson";
 import "leaflet/dist/leaflet.css";
 import "./housing-map.css";
+import { fetchAdminBoundaryStatus, type AdminBoundaryStatus } from "./adminBoundaryApi";
 
 /**
  * React는 화면 상태를, Leaflet은 지도 DOM과 레이어를 관리한다.
@@ -45,7 +46,7 @@ const regions: Region[] = [
 const modes: Mode[] = ["현재 가격", "예측 가격", "예상 변동률", "지역점수"];
 const safetyCategories: { key: SafetyCategory; label: string; symbol: string }[] = [
   { key: "traffic", label: "교통사고", symbol: "🚦" },
-  { key: "crime", label: "범죄율", symbol: "🛡" },
+  { key: "crime", label: "아동 범죄노출", symbol: "🛡" },
   { key: "infrastructure", label: "육아환경", symbol: "🏥" },
 ];
 // 수동 단위 선택 시 사용할 확대 수준. atZoom은 자동 모드에서 반대로 단위를 구한다.
@@ -71,6 +72,7 @@ export function HomePage() {
   const [categoryScores, setCategoryScores] = useState<SafetyCategoryResponse | null>(null);
   const [recommender, setRecommender] = useState<RecommenderResponse | null>(null);
   const [administrativeRegions, setAdministrativeRegions] = useState<Region[]>([]);
+  const [boundaryStatus, setBoundaryStatus] = useState<AdminBoundaryStatus | null>(null);
   const [selectedCategories, setSelectedCategories] = useState<SafetyCategory[]>(["traffic", "crime", "infrastructure"]);
   const [safetyLoading, setSafetyLoading] = useState(true);
   const [safetyError, setSafetyError] = useState("");
@@ -163,16 +165,24 @@ export function HomePage() {
 
   useEffect(() => {
     const controller = new AbortController();
+    fetchAdminBoundaryStatus(controller.signal).then(setBoundaryStatus).catch(() => setBoundaryStatus(null));
+    return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
     setSafetyLoading(true);
-    Promise.all([
-      fetchCrimeSafety(controller.signal),
-      fetchSafetyCategoryScores(controller.signal),
+    Promise.allSettled([
+      fetchCrimeSafety(months / 12, controller.signal),
+      fetchSafetyCategoryScores(months / 12, controller.signal),
       fetchRecommenderForecasts(controller.signal),
     ])
       .then(([forecast, categories, modelForecasts]) => {
-        setSafety(forecast);
-        setCategoryScores(categories);
-        setRecommender(modelForecasts);
+        if (forecast.status === "rejected") throw forecast.reason;
+        if (categories.status === "rejected") throw categories.reason;
+        setSafety(forecast.value);
+        setCategoryScores(categories.value);
+        setRecommender(modelForecasts.status === "fulfilled" ? modelForecasts.value : null);
         setSafetyError("");
       })
       .catch(error => {
@@ -181,7 +191,7 @@ export function HomePage() {
       })
       .finally(() => { if (!controller.signal.aborted) setSafetyLoading(false); });
     return () => controller.abort();
-  }, []);
+  }, [months]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -282,7 +292,7 @@ export function HomePage() {
   }
   return <main className="housing-app">
     {/* 화면 구조: 헤더 → 사이드바와 지도 → 상세 dialog. Leaflet 캔버스 안은 React가 직접 그리지 않는다. */}
-    <header className="topbar"><a className="brand" href="/"><span className="brand-symbol">⌂</span> SpotFit<span className="brand-sub">아이와 함께, 더 안전한 동네</span></a><span className="prototype">PROTOTYPE · 안전등급 모델 연동</span><a className="header-link" href="#region-list">지역 둘러보기 ↗</a></header>
+    <header className="topbar"><a className="brand" href="/"><span className="brand-symbol">⌂</span> SpotFit<span className="brand-sub">아이와 함께, 더 안전한 동네</span></a><span className="prototype">PROTOTYPE · 안전등급 모델 연동</span>{boundaryStatus && <details className="boundary-status"><summary>행정동 {boundaryStatus.applied_year_month.replace("-", ".")} 기준{boundaryStatus.upcoming_changes.length ? ` · 변경예정 ${boundaryStatus.upcoming_changes.length}건` : ""}</summary><div><strong>현재 지도 적용 기준</strong><p>{boundaryStatus.applied_year_month.replace("-", "년 ")}월 · {boundaryStatus.neighborhood_count}개 행정동</p>{boundaryStatus.upcoming_changes.length ? boundaryStatus.upcoming_changes.map(change => <a key={change.id} href={change.source_url} target="_blank" rel="noreferrer"><b>{change.district}</b> {change.title}<small>{change.effective_from ? `${change.effective_from} 시행 예정` : "시행일 확인 중"}</small></a>) : <p>확인된 행정동 변경 예정이 없습니다.</p>}</div></details>}<a className="header-link" href="#region-list">지역 둘러보기 ↗</a></header>
     <div className={`workspace ${sidebarOpen ? "" : "sidebar-collapsed"}`}>
       <aside id="map-sidebar" className="sidebar" hidden={!sidebarOpen}>
         <div className="eyebrow">OUR NEXT NEIGHBORHOOD</div><h1>아이와 함께<br/>더 안전한 동네.</h1><p className="muted">주거 가격과 지역점수를<br/>하나의 지도에서 살펴보세요.</p>
@@ -297,8 +307,8 @@ export function HomePage() {
         <div className="search-box"><span>⌕</span><input id="region-search" value={query} onFocus={() => setSearchOpen(true)} onChange={e => { setQuery(e.target.value); setSearchOpen(true); }} placeholder="자치구 또는 행정동 검색" /><button aria-label="검색어 지우기" onClick={() => { setQuery(""); setSearchOpen(true); }}>×</button></div>
         {searchOpen && <div className="search-results"><div className="search-result-count">검색 결과 {found.length}개</div>{found.length ? found.map(r => <button key={r.id} onClick={() => { choose(r); setSearchOpen(false); }}>{r.parent} {r.name}<small>{r.level}</small></button>) : <p>일치하는 자치구 또는 행정동이 없습니다.</p>}</div>}
         <div className="section-title">예측 시점 <span>2026.10 기준 예시</span></div>
-        <div className="segmented">{[12, 36].map(n => <button key={n} aria-pressed={months === n} className={months === n ? "chosen" : ""} onClick={() => setMonths(n)}>{n / 12}년 후</button>)}</div>
-        <p className="muted">5년·10년 예측은 데이터 확보 후 개발 예정입니다.</p>
+        <div className="segmented">{[12, 24].map(n => <button key={n} aria-pressed={months === n} className={months === n ? "chosen" : ""} onClick={() => setMonths(n)}>{n / 12}년 후</button>)}</div>
+        <p className="muted">범죄 영역은 아동인구 대비 5대범죄 지역노출 예측을 사용합니다.</p>
         <details className="region-accordion" id="region-list" open><summary><span>지도에 표시한 지역</span><small>{visible.length}개</small></summary><div className="region-sort" aria-label="지역 정렬 기준"><button className={regionSort === "rank" ? "chosen" : ""} aria-pressed={regionSort === "rank"} onClick={() => setRegionSort("rank")}>순위별</button><button className={regionSort === "amount" ? "chosen" : ""} aria-pressed={regionSort === "amount"} onClick={() => setRegionSort("amount")}>금액 높은 순</button></div><section className="region-list">{sortedVisible.map((r, index) => <button key={r.id} className={`region-item ${selected.id === r.id ? "selected" : ""}`} onClick={() => choose(r)}><span><strong>{regionSort === "rank" ? `${index + 1}. ` : ""}{r.name}</strong><small>{r.parent || "서울 전체"}{r.level === "구" ? ` · 지역점수 ${safetyText(r)}` : ""}</small></span><b>{regionSort === "amount" && modelFor(r)?.apart_sale_amount != null ? `${format(modelFor(r)!.apart_sale_amount!)}만` : displayLabel(r, mode, months)}<small>{regionSort === "amount" ? "대표 매매금액" : mode === "현재 가격" || mode === "예측 가격" ? "만원/평" : mode}</small></b></button>)}</section></details>
         <p className="sidebar-foot">가격·시설은 UI 예시입니다.<br/>안전등급은 공식 등급이 아닌 모델 기반 상대평가입니다.</p>
       </aside>
@@ -318,7 +328,7 @@ export function HomePage() {
           <div className="level-tabs"><button className={auto ? "chosen" : ""} aria-pressed={auto} onClick={() => setAuto(true)}>자동</button>{(["시","구","행정동"] as Level[]).map(l => <button key={l} className={level === l ? "chosen" : ""} onClick={() => { setAuto(false); setLevel(l); map.current?.setZoom(zoomFor[l]); }}>{l}</button>)}</div>
         </div>
         <div className="map-notice" role="status">{!key ? "VWorld 키 미설정 · 가격 버튼을 누르면 선택 지역을 강조합니다." : tileError ? "배경지도 로딩 실패 · 키 권한·등록 도메인·네트워크를 확인하세요." : "가격 버튼을 누르면 해당 지역을 녹색 음영으로 강조합니다 · 가격·시설은 가상 데이터입니다."}</div>
-        {summaryOpen && <article className="summary-card" aria-live="polite"><div className="card-top"><span className="pill">{selected.level} · recommender v1</span><span className="muted">모델 결과</span><button className="summary-close" aria-label="지역 요약 닫기" onClick={() => setSummaryOpen(false)}>×</button></div><h2>{selected.name} <small>{selected.parent}</small></h2><p className="muted">{selected.level === "구" ? "하위 행정동 모델 예측값의 산술평균" : "최신 거래 특성 기준 행정동 대표가격 추정"}</p><div className="housing-forecast-row"><div><small>매매 평당금액</small><strong>{selectedModel?.apart_sale == null ? "-" : format(selectedModel.apart_sale)}<em>만원/평</em></strong></div><div><small>대표 매매금액</small><strong>{selectedModel?.apart_sale_amount == null ? "-" : format(selectedModel.apart_sale_amount)}<em>만원</em></strong></div><div><small>전세 평당금액</small><strong>{selectedModel?.apart_rent == null ? "-" : format(selectedModel.apart_rent)}<em>만원/평</em></strong></div></div>{selected.level === "구" && <div className="card-stats"><span>육아환경 3년 <b>{selectedModel?.child_environment_3y == null ? "-" : `${selectedModel.child_environment_3y.toFixed(1)}점`}</b></span><span>교통사고 예측 <b>{selectedModel?.traffic_accidents == null ? "-" : `${format(selectedModel.traffic_accidents)}건`}</b></span><span>지역점수 <b>{safetyText(selected)}</b></span></div>}{selectedSafety && <p className="estimate">선택영역 종합점수 <strong>{selectedSafety.predicted_score.toFixed(1)}</strong><small>{selectedCategories.length}개 영역 · 각 {categoryWeight.toFixed(selectedCategories.length === 3 ? 1 : 0)}% 반영</small></p>}<button className="detail-button" onClick={() => detail.current?.showModal()}>지역 자세히 보기 <span>↗</span></button></article>}
+        {summaryOpen && <article className="summary-card" aria-live="polite"><div className="card-top"><span className="pill">{selected.level} · recommender v1</span><span className="muted">모델 결과</span><button className="summary-close" aria-label="지역 요약 닫기" onClick={() => setSummaryOpen(false)}>×</button></div><h2>{selected.name} <small>{selected.parent}</small></h2><p className="muted">{selected.level === "구" ? "하위 행정동 모델 예측값의 산술평균" : "최신 거래 특성 기준 행정동 대표가격 추정"}</p><div className="housing-forecast-row"><div><small>매매 평당금액</small><strong>{selectedModel?.apart_sale == null ? "-" : format(selectedModel.apart_sale)}<em>만원/평</em></strong></div><div><small>대표 매매금액</small><strong>{selectedModel?.apart_sale_amount == null ? "-" : format(selectedModel.apart_sale_amount)}<em>만원</em></strong></div><div><small>전세 평당금액</small><strong>{selectedModel?.apart_rent == null ? "-" : format(selectedModel.apart_rent)}<em>만원/평</em></strong></div></div>{selected.level === "구" && <div className="card-stats"><span>육아환경 3년 <b>{selectedModel?.child_environment_3y == null ? "-" : `${selectedModel.child_environment_3y.toFixed(1)}점`}</b></span><span>교통사고 예측 <b>{selectedModel?.traffic_accidents == null ? "-" : `${format(selectedModel.traffic_accidents)}건`}</b></span><span>지역점수 <b>{safetyText(selected)}</b></span></div>}{selectedSafety?.predicted_exposure_rate_per_10k != null && <p className="crime-exposure">아동 지역범죄 노출 예측 <strong>{selectedSafety.predicted_exposure_rate_per_10k.toFixed(1)}</strong><small>아동 1만 명당 지역 5대범죄 환산 · 위험도 {selectedSafety.risk_rank}위 · {selectedSafety.prediction_year}년</small></p>}{selectedSafety && <p className="estimate">선택영역 종합점수 <strong>{selectedSafety.predicted_score.toFixed(1)}</strong><small>{selectedCategories.length}개 영역 · 각 {categoryWeight.toFixed(selectedCategories.length === 3 ? 1 : 0)}% 반영</small></p>}<button className="detail-button" onClick={() => detail.current?.showModal()}>지역 자세히 보기 <span>↗</span></button></article>}
         <div className="legend"><strong>{mode} <span>· {level} · {mode === "지역점수" ? `${selectedCategories.length}개 영역 동일가중` : `${months / 12}년 후 선택`}</span></strong><small>{mode === "지역점수" ? "자치구 색상: 선택 영역 종합등급" : "녹색 음영: 선택한 지역"}</small><small>{mode === "지역점수" ? "마우스 오버: 종합등급·서울 순위" : mode === "예상 변동률" ? "마우스 오버: 변동률 (%)" : "마우스 오버: 가격 (만원/평)"} · 등급은 자치구 단위</small></div>
       </section>
     </div>

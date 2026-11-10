@@ -37,6 +37,7 @@ export function buildCompositeSafety(
       const rank = index + 1;
       const old = previous.get(item.district);
       return {
+        ...old,
         district: item.district,
         data_year: base.data_year,
         prediction_year: Math.max(...selected.map(category => categories.source_years[category])),
