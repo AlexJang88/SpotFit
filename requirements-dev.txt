@@ -17,3 +17,11 @@ libpysal>=4.12,<5.0
 
 # 테스트
 pytest>=8.3,<9.0
+
+# Child-environment panel preprocessing and paper-compatible classification
+pandas>=3.0,<4.0
+scipy>=1.15,<2.0
+jenkspy>=0.4,<0.5
+xlrd>=2.0,<3.0
+scikit-learn>=1.7,<2.0
+joblib>=1.5,<2.0

@@ -1,0 +1,17 @@
+{
+  "applied_version": "seoul-admin-2026-10",
+  "applied_year_month": "2026-10",
+  "effective_from": "2026-10-01",
+  "verified_at": "2026-11-10T00:00:00+09:00",
+  "district_count": 25,
+  "neighborhood_count": 427,
+  "boundary_file": "seoul-dong.geojson",
+  "status": "applied",
+  "source": {
+    "code_authority": "행정안전부 주민등록주소코드 변경내역",
+    "geometry_authority": "SGIS 기반 행정동 경계",
+    "code_url": "https://www.mois.go.kr/frt/bbs/type001/commonSelectBoardList.do?bbsId=BBSMSTR_000000000052",
+    "geometry_url": "https://sgis.kostat.go.kr/developer/html/openApi/api/data.html"
+  },
+  "upcoming_changes": []
+}
