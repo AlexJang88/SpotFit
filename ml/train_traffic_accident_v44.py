@@ -15,7 +15,7 @@ from ml.train_traffic_accident_v42 import CV_YEARS, metric_values, pipeline
 
 
 VERSION = 44
-OUT = ROOT / "models" / "교통사고" / f"{VERSION}차"
+OUT = ROOT / "models" / "교통사고" / "41차~49차" / f"{VERSION}차"
 SCHOOL_FEATURE = "어린이1만명당_유치원초등학교수"
 ADDED_FEATURES = [
     "어린이1만명당_자동차등록대수",

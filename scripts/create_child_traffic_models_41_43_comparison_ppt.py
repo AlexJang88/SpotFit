@@ -20,7 +20,7 @@ OUT = ROOT / "artifacts" / "presentations" / "아동초기모델_41차_42차_43�
 
 def load_info(version: int) -> dict:
     return json.loads(
-        (ROOT / "models" / "교통사고" / f"{version}차" / "model_info.json").read_text(encoding="utf-8")
+        (ROOT / "models" / "교통사고" / "41차~49차" / f"{version}차" / "model_info.json").read_text(encoding="utf-8")
     )
 
 

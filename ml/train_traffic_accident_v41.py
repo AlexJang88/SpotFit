@@ -23,7 +23,7 @@ from ml.train_best_child_traffic_accident_rate import (
 
 VERSION = 41
 ALPHA = 0.1
-OUT = ROOT / "models" / "교통사고" / f"{VERSION}차"
+OUT = ROOT / "models" / "교통사고" / "41차~49차" / f"{VERSION}차"
 FEATURES = [
     CURRENT_RATE,
     "어린이피해자율_최근3년평균",

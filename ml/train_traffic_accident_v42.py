@@ -24,7 +24,7 @@ from ml.train_traffic_accident_v41 import FEATURES as V41_FEATURES
 
 
 VERSION = 42
-OUT = ROOT / "models" / "교통사고" / f"{VERSION}차"
+OUT = ROOT / "models" / "교통사고" / "41차~49차" / f"{VERSION}차"
 SEARCH_OUT = OUT / "변수조합탐색"
 RIDGE_ALPHAS = (0.1, 1.0, 10.0, 100.0)
 CV_YEARS = (2021, 2022, 2023, 2024)
@@ -55,7 +55,7 @@ def pipeline(model, scaled: bool = False) -> Pipeline:
 
 def load_candidate_features() -> tuple[list[str], list[str]]:
     prior = (
-        ROOT / "models" / "교통사고" / "41차" / "전체124개_부분집합탐색"
+        ROOT / "models" / "교통사고" / "41차~49차" / "41차" / "전체124개_부분집합탐색"
         / "상위_1000개_부분집합.csv"
     )
     row = pd.read_csv(prior, encoding="utf-8-sig").iloc[0]

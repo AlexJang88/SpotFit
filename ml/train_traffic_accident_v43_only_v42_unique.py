@@ -17,7 +17,7 @@ from ml.train_traffic_accident_v42 import CV_YEARS, metric_values, pipeline
 
 
 VERSION = 43
-OUT = ROOT / "models" / "교통사고" / f"{VERSION}차"
+OUT = ROOT / "models" / "교통사고" / "41차~49차" / f"{VERSION}차"
 ALPHAS = (0.1, 1.0, 10.0, 100.0)
 
 
@@ -25,7 +25,7 @@ def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     panel, all_features, _ = build_panel()
     v42_info = json.loads(
-        (ROOT / "models" / "교통사고" / "42차" / "model_info.json").read_text(encoding="utf-8")
+        (ROOT / "models" / "교통사고" / "41차~49차" / "42차" / "model_info.json").read_text(encoding="utf-8")
     )
     features = [feature for feature in v42_info["최종변수"] if feature not in V41_FEATURES]
     if len(features) != 15:

@@ -15,7 +15,7 @@ from ml.train_traffic_accident_v44 import FEATURES as V44_FEATURES, prepare_pane
 
 
 VERSION = 45
-OUT = ROOT / "models" / "교통사고" / f"{VERSION}차"
+OUT = ROOT / "models" / "교통사고" / "41차~49차" / f"{VERSION}차"
 ALPHAS = (0.1, 1.0, 10.0, 100.0, 300.0)
 
 
@@ -99,7 +99,7 @@ def main() -> None:
     prediction = np.maximum(holdout_model.predict(holdout[selected_features]), 0)
     holdout_metrics = metric_values(holdout[TARGET], prediction)
 
-    info44 = json.loads((ROOT / "models" / "교통사고" / "44차" / "model_info.json").read_text(encoding="utf-8"))
+    info44 = json.loads((ROOT / "models" / "교통사고" / "41차~49차" / "44차" / "model_info.json").read_text(encoding="utf-8"))
     metrics44 = info44["2025_독립검증"]
     rate_2023 = panel[panel["연도"] == 2023].set_index("자치구")[CURRENT_RATE]
     fixed_metrics = metric_values(holdout[TARGET], holdout["자치구"].map(rate_2023).to_numpy(float))

@@ -10,6 +10,8 @@ import joblib
 import numpy as np
 import pandas as pd
 
+from app.services.traffic_accident_v51 import forecast_payload as traffic_v51_forecast
+
 
 ROOT = Path(__file__).resolve().parents[3]
 MODEL_ROOT = ROOT / "models" / "recommender" / "v1"
@@ -122,21 +124,34 @@ def _crime_predictions() -> tuple[pd.DataFrame, dict]:
 
 
 def _traffic_predictions() -> tuple[pd.DataFrame, dict]:
-    path = MODEL_ROOT / "traffic_accident" / "2025년_최종검증_예측결과.csv"
-    frame = _read_csv(path)
-    result = frame[["자치구", "안전점수_100점", "예측 교통사고 건수"]].rename(
+    payload_2027 = traffic_v51_forecast(2)
+    payload_2028 = traffic_v51_forecast(3)
+    result_2027 = pd.DataFrame(payload_2027["forecasts"]).rename(
         columns={
-            "자치구": "district",
-            "안전점수_100점": "traffic_score",
-            "예측 교통사고 건수": "traffic_accidents",
+            "predicted_risk_score": "traffic_score_2027",
+            "predicted_risk_rank": "traffic_rank_2027",
+            "predicted_risk_grade": "traffic_grade_2027",
         }
-    )
-    result["traffic_rank"] = result["traffic_score"].rank(ascending=False, method="min").astype(int)
-    result["traffic_grade"] = result["traffic_rank"].map(_grade)
+    )[["district", "traffic_score_2027", "traffic_rank_2027", "traffic_grade_2027"]]
+    result_2028 = pd.DataFrame(payload_2028["forecasts"]).rename(
+        columns={
+            "predicted_risk_score": "traffic_score_2028",
+            "predicted_risk_rank": "traffic_rank_2028",
+            "predicted_risk_grade": "traffic_grade_2028",
+        }
+    )[["district", "traffic_score_2028", "traffic_rank_2028", "traffic_grade_2028"]]
+    result = result_2027.merge(result_2028, on="district", validate="one_to_one")
+    # Keep the original combined endpoint contract during the presentation.
+    result["traffic_score"] = result["traffic_score_2027"]
+    result["traffic_rank"] = result["traffic_rank_2027"]
+    result["traffic_grade"] = result["traffic_grade_2027"]
+    result["traffic_accidents"] = np.nan
     return result, {
-        "model": "교통사고_2차_모델.joblib",
-        "prediction_year": int(frame["예측대상연도"].max()),
-        "unit": {"traffic_score": "점", "traffic_accidents": "건"},
+        "models": ["traffic_accident_2y.joblib", "traffic_accident_3y.joblib"],
+        "temporary_model": True,
+        "base_year": 2025,
+        "prediction_years": [2027, 2028],
+        "unit": {"traffic_score_2027": "점", "traffic_score_2028": "점"},
     }
 
 

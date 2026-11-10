@@ -10,7 +10,7 @@ from ml.train_traffic_accident_v44 import prepare_panel
 
 
 VERSION = 46
-MODEL_DIR = ROOT / "models" / "교통사고" / f"{VERSION}차"
+MODEL_DIR = ROOT / "models" / "교통사고" / "41차~49차" / f"{VERSION}차"
 OUT_DIR = ROOT / "data" / "processed" / "안전" / "교통사고" / f"{VERSION}차"
 OUT_FILE = OUT_DIR / f"교통사고_{VERSION}차_최종모델데이터.xlsx"
 

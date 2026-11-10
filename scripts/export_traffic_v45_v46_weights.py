@@ -8,7 +8,7 @@ root = Path(__file__).resolve().parents[1]
 rows = []
 for version in (45, 46):
     bundle = joblib.load(
-        root / "models" / "교통사고" / f"{version}차" / f"교통사고_{version}차_예측모델.joblib"
+        root / "models" / "교통사고" / "41차~49차" / f"{version}차" / f"교통사고_{version}차_예측모델.joblib"
     )
     coefs = bundle["model"].named_steps["model"].coef_
     total = sum(abs(coefs))

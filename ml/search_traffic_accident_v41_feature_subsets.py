@@ -12,7 +12,7 @@ import pandas as pd
 from ml.train_best_child_traffic_accident_rate import CURRENT_RATE, ROOT, TARGET, build_panel
 
 
-OUT = ROOT / "models" / "교통사고" / "41차" / "변수부분집합탐색"
+OUT = ROOT / "models" / "교통사고" / "41차~49차" / "41차" / "변수부분집합탐색"
 RIDGE_ALPHAS = (0.1, 1.0, 10.0, 100.0)
 TOP_K = 1000
 

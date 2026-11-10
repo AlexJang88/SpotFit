@@ -13,7 +13,7 @@ from ml.train_traffic_accident_v44 import SCHOOL_FEATURE, prepare_panel
 
 
 VERSION = 46
-OUT = ROOT / "models" / "교통사고" / f"{VERSION}차"
+OUT = ROOT / "models" / "교통사고" / "41차~49차" / f"{VERSION}차"
 ALPHAS = (0.1, 1.0, 10.0, 100.0, 300.0)
 
 
@@ -21,7 +21,7 @@ def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     panel = prepare_panel()
     _, raw_features, _ = build_panel()
-    info45 = json.loads((ROOT / "models" / "교통사고" / "45차" / "model_info.json").read_text(encoding="utf-8"))
+    info45 = json.loads((ROOT / "models" / "교통사고" / "41차~49차" / "45차" / "model_info.json").read_text(encoding="utf-8"))
     base_features = info45["최종변수"]
     candidate_features = list(dict.fromkeys([*raw_features, SCHOOL_FEATURE]))
     feature_index = {feature: index for index, feature in enumerate(candidate_features)}

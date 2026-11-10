@@ -21,7 +21,7 @@ DESKTOP = Path.home() / "Desktop" / OUT.name
 
 
 def load(version: int) -> dict:
-    path = ROOT / "models" / "교통사고" / f"{version}차" / "model_info.json"
+    path = ROOT / "models" / "교통사고" / "41차~49차" / f"{version}차" / "model_info.json"
     return json.loads(path.read_text(encoding="utf-8"))
 
 
