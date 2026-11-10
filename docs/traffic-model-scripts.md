@@ -10,6 +10,7 @@
 | `ml/train_traffic_accident_initial_v1.py` | 기존 1차 사고건수 기준모델과 공통 데이터 로더 |
 | `ml/train_traffic_accident_incremental_models.py` | 기존 2~12차 사고건수 변수 확장 재현 |
 | `ml/train_traffic_safety_grade_v13_v24.py` | 신규 13~24차 안전등급 학습·검증·MLflow 기록 |
+| `ml/train_best_child_traffic_accident_rate.py` | 41차: 다음 연도 자치구별 어린이 인구 1만 명당 교통사고 피해자 수 예측 |
 
 신규 안전등급 모델 전체 재현:
 
