@@ -128,16 +128,16 @@ def _traffic_predictions() -> tuple[pd.DataFrame, dict]:
     payload_2028 = traffic_v51_forecast(3)
     result_2027 = pd.DataFrame(payload_2027["forecasts"]).rename(
         columns={
-            "predicted_risk_score": "traffic_score_2027",
-            "predicted_risk_rank": "traffic_rank_2027",
-            "predicted_risk_grade": "traffic_grade_2027",
+            "predicted_safety_score": "traffic_score_2027",
+            "predicted_safety_rank": "traffic_rank_2027",
+            "predicted_safety_grade": "traffic_grade_2027",
         }
     )[["district", "traffic_score_2027", "traffic_rank_2027", "traffic_grade_2027"]]
     result_2028 = pd.DataFrame(payload_2028["forecasts"]).rename(
         columns={
-            "predicted_risk_score": "traffic_score_2028",
-            "predicted_risk_rank": "traffic_rank_2028",
-            "predicted_risk_grade": "traffic_grade_2028",
+            "predicted_safety_score": "traffic_score_2028",
+            "predicted_safety_rank": "traffic_rank_2028",
+            "predicted_safety_grade": "traffic_grade_2028",
         }
     )[["district", "traffic_score_2028", "traffic_rank_2028", "traffic_grade_2028"]]
     result = result_2027.merge(result_2028, on="district", validate="one_to_one")

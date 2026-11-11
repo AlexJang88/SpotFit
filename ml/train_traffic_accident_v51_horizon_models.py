@@ -153,7 +153,11 @@ def main():
         future=data[data["연도"]==2025].copy(); risk=predict(bundle,future); grade=grades_from_risk(risk)
         forecast=future[["자치구","현재연도_종합위험점수","현재연도_위험등급"]].copy()
         forecast["예측연도"]=year; forecast["예측위험점수"]=risk; forecast["예측위험등급"]=grade
-        forecast["예측위험순위"]=pd.Series(risk).rank(ascending=False,method="first").astype(int).to_numpy(); forecasts.append(forecast)
+        forecast["예측위험순위"]=pd.Series(risk).rank(ascending=False,method="first").astype(int).to_numpy()
+        forecast["예측안전점수"]=120.0-risk
+        forecast["예측안전등급"]=6-grade
+        forecast["예측안전순위"]=26-forecast["예측위험순위"]
+        forecasts.append(forecast)
         all_summary.append(summary); all_detail.append(detail)
     summary=pd.concat(all_summary,ignore_index=True); detail=pd.concat(all_detail,ignore_index=True); forecast=pd.concat(forecasts,ignore_index=True)
     with pd.ExcelWriter(REPORT,engine="openpyxl") as writer:

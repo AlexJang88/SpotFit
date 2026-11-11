@@ -19,7 +19,10 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[3]
 SERVICE_DIR = ROOT / "models" / "recommender" / "v1" / "traffic_accident_v51"
 SOURCE_MODEL_DIR = Path(
-    os.getenv("TRAFFIC_V51_SOURCE_MODEL_DIR", ROOT / "models" / "교통사고" / "51차")
+    os.getenv(
+        "TRAFFIC_V51_SOURCE_MODEL_DIR",
+        ROOT / "models" / "교통사고" / "51차~60차" / "51차",
+    )
 )
 SOURCE_PROCESSED = Path(
     os.getenv(
@@ -134,6 +137,13 @@ def ensure_models(force: bool = False) -> dict:
                 "예측위험순위": "predicted_risk_rank",
             }
         )
+        # The trained models use an internal risk orientation (1 = most risky).
+        # Product-facing values are safety-oriented (1 = safest).
+        service["base_safety_score"] = 120.0 - service["base_risk_score"]
+        service["base_safety_grade"] = 6 - service["base_risk_grade"]
+        service["predicted_safety_score"] = 120.0 - service["predicted_risk_score"]
+        service["predicted_safety_grade"] = 6 - service["predicted_risk_grade"]
+        service["predicted_safety_rank"] = 26 - service["predicted_risk_rank"]
         forecast_path = SERVICE_DIR / FORECAST_FILE
         forecast_tmp = forecast_path.with_suffix(".csv.tmp")
         service.to_csv(forecast_tmp, index=False, encoding="utf-8-sig")
@@ -152,7 +162,14 @@ def ensure_models(force: bool = False) -> dict:
             "base_year": 2025,
             "prediction_years": [2027, 2028],
             "horizons": [2, 3],
-            "grade_definition": "1등급 고위험, 5등급 저위험",
+            "grade_definition": "1등급 가장 안전, 5등급 가장 위험",
+            "display_orientation": "safety",
+            "internal_orientation": "risk (1=most risky, 5=least risky)",
+            "conversion": {
+                "safety_grade": "6 - internal_risk_grade",
+                "safety_rank": "26 - internal_risk_rank",
+                "safety_score": "120 - internal_risk_score",
+            },
             "source_info": source_info,
         }
         metadata_path = SERVICE_DIR / METADATA_FILE
@@ -171,7 +188,7 @@ def forecast_payload(horizon: int) -> dict:
         ensure_models()
     frame = pd.read_csv(SERVICE_DIR / FORECAST_FILE, encoding="utf-8-sig")
     year = 2025 + horizon
-    selected = frame.loc[frame["prediction_year"].eq(year)].sort_values("predicted_risk_rank")
+    selected = frame.loc[frame["prediction_year"].eq(year)].sort_values("predicted_safety_rank")
     metadata = json.loads((SERVICE_DIR / METADATA_FILE).read_text(encoding="utf-8"))
     rows = [
         {
@@ -179,9 +196,10 @@ def forecast_payload(horizon: int) -> dict:
             "base_year": 2025,
             "prediction_year": int(row.prediction_year),
             "horizon_years": horizon,
-            "predicted_risk_score": round(float(row.predicted_risk_score), 6),
-            "predicted_risk_rank": int(row.predicted_risk_rank),
-            "predicted_risk_grade": int(row.predicted_risk_grade),
+            "predicted_safety_score": round(float(row.predicted_safety_score), 6),
+            "predicted_safety_rank": int(row.predicted_safety_rank),
+            "predicted_safety_grade": int(row.predicted_safety_grade),
+            "internal_risk_score": round(float(row.predicted_risk_score), 6),
         }
         for row in selected.itertuples(index=False)
     ]

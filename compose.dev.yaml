@@ -55,7 +55,7 @@ services:
       # recommender/v1 must be writable: backend startup publishes missing
       # service artifacts here (traffic v51 is temporary for the presentation).
       - ./models/recommender/v1:/models/recommender/v1
-      - ./models/교통사고/51차:/models/교통사고/51차:ro
+      - ./models/교통사고/51차~60차/51차:/models/교통사고/51차:ro
       - ./data/processed:/data/processed:ro
       - ./data/raw:/data/raw:ro
       - ./data/interim:/data/interim:ro
