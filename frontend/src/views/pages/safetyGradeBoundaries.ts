@@ -3,17 +3,17 @@ import type { FeatureCollection } from "geojson";
 import type { CrimeSafetyForecast, SafetyGrade } from "./crimeSafetyApi";
 
 const GRADE_COLORS: Record<SafetyGrade, string> = {
-  A: "#168b67",
-  B: "#65b97f",
-  C: "#e5bd45",
-  D: "#e8893f",
-  E: "#d95555",
+  A: "#526e68",
+  B: "#8eb3ad",
+  C: "#c7c4aa",
+  D: "#c89e80",
+  E: "#ad7777",
 };
 
 /** 지역점수 예상등급에 따라 서울 자치구 경계를 반투명하게 채운다. */
 export function addSafetyGradeBoundaries(
   map: L.Map,
-  forecasts: CrimeSafetyForecast[],
+  forecasts: Pick<CrimeSafetyForecast, "district" | "predicted_grade">[],
 ): () => void {
   const controller = new AbortController();
   const layer = L.layerGroup().addTo(map);
