@@ -19,7 +19,7 @@ NEW = ['중심 x좌표', '중심 y좌표']
 d = add_age(add_area(load()))
 
 DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data') + os.sep
-area = pd.read_csv(DATA + 'raw/서울시 상권분석서비스(영역-행정동).csv', encoding='cp949').drop_duplicates('행정동_코드').set_index('행정동_코드')
+area = pd.read_csv(DATA + 'raw/부동산/서울시 상권분석서비스(영역-행정동).csv', encoding='cp949').drop_duplicates('행정동_코드').set_index('행정동_코드')
 d[NEW[0]] = area['엑스좌표_값'].reindex(d.index)
 d[NEW[1]] = area['와이좌표_값'].reindex(d.index)
 assert d[NEW].notna().all().all(), '좌표가 없는 동네가 있음'

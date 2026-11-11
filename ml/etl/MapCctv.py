@@ -3,7 +3,7 @@
 #  행정동 붙이는 순서: ① 도로명주소(도로명+건물번호) → ② 지번주소(동+번지) → ③ 번지 보완(같은 본번, 법정동에 행정동 하나뿐, 앞뒤 번지) → ④ 위경도로 가장 가까운 행정동 중심점 (연결방식 컬럼에 남김)
 #  이전 방식(AptHypothesis.cctv_count)은 모든 CCTV를 위경도로 가장 가까운 중심점에만 배정했음
 # 생활방범 CCTV만 설치연도별로 따로 저장 → data/interim/기타/CCTV_생활방범_연도별/CCTV_생활방범_연도.csv, 행정동별 연도별 설치 대수 → data/processed/행정동별_생활방범CCTV_연도별.csv
-# 필요 파일: data/raw/기타/서울시_CCTV정보.csv, data/raw/기타/rnaddrkor_seoul.txt, data/raw/서울시 상권분석서비스(영역-행정동).csv
+# 필요 파일: data/raw/기타/서울시_CCTV정보.csv, data/raw/기타/rnaddrkor_seoul.txt, data/raw/부동산/서울시 상권분석서비스(영역-행정동).csv
 import os
 import numpy as np, pandas as pd
 from pyproj import Transformer
@@ -79,7 +79,7 @@ c['지번동'] = pd.Series(find_lot('소재지지번주소')).fillna(pd.Series(f
 c['보완동'] = fallback('소재지지번주소').fillna(fallback('소재지도로명주소'))
 
 # 3) 위경도: 가장 가까운 행정동 중심점 (주소로 못 찾은 것 보완 + 주소 방식과 비교)
-area = pd.read_csv(RAW + '서울시 상권분석서비스(영역-행정동).csv', encoding='cp949').drop_duplicates('행정동_코드').set_index('행정동_코드')
+area = pd.read_csv(RAW + '부동산/서울시 상권분석서비스(영역-행정동).csv', encoding='cp949').drop_duplicates('행정동_코드').set_index('행정동_코드')
 tf = Transformer.from_crs('EPSG:4326', 'EPSG:5181', always_xy=True)
 ok = c['WGS84위도'].between(37.4, 37.75) & c['WGS84경도'].between(126.7, 127.2)          # 서울 밖 좌표는 쓰지 않음
 x, y = tf.transform(c.loc[ok, 'WGS84경도'].values, c.loc[ok, 'WGS84위도'].values)

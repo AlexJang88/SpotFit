@@ -3,7 +3,7 @@
 #  행정동 붙이는 순서(MapCctv.py와 같음): ① 도로명주소(도로명+건물번호) → ② 지번주소(동+번지) → ③ 번지 보완(같은 본번, 법정동에 행정동 하나뿐, 앞뒤 번지) → ④ 위경도로 가장 가까운 행정동 중심점 (연결방식 컬럼에 남김)
 #  전처리: 서울이 아닌 공원 제외, 관리번호·(공원명+지번주소) 중복 제거, 공원면적 숫자로 바꿈(0 이하·빈 값은 빈 값으로 두고 채우지 않음), 서울 밖 좌표는 빈 값 처리
 #  큰 공원 = 어린이공원·소공원을 뺀 나머지 유형(근린·문화·역사·수변·체육 등)
-# 필요 파일: data/raw/기타/전국도시공원정보표준데이터.csv, data/raw/기타/rnaddrkor_seoul.txt, data/raw/서울시 상권분석서비스(영역-행정동).csv
+# 필요 파일: data/raw/기타/전국도시공원정보표준데이터.csv, data/raw/기타/rnaddrkor_seoul.txt, data/raw/부동산/서울시 상권분석서비스(영역-행정동).csv
 import os
 import numpy as np, pandas as pd
 from pyproj import Transformer
@@ -91,7 +91,7 @@ c['지번동'] = pd.Series(find_lot('소재지지번주소')).fillna(pd.Series(f
 c['보완동'] = fallback('소재지지번주소').fillna(fallback('소재지도로명주소'))
 
 # 3) 위경도: 가장 가까운 행정동 중심점 (주소로 못 찾은 것 보완 + 주소 방식과 비교)
-area = pd.read_csv(RAW + '서울시 상권분석서비스(영역-행정동).csv', encoding='cp949').drop_duplicates('행정동_코드').set_index('행정동_코드')
+area = pd.read_csv(RAW + '부동산/서울시 상권분석서비스(영역-행정동).csv', encoding='cp949').drop_duplicates('행정동_코드').set_index('행정동_코드')
 tf = Transformer.from_crs('EPSG:4326', 'EPSG:5181', always_xy=True)
 c['위도'] = pd.to_numeric(c['위도'], errors='coerce'); c['경도'] = pd.to_numeric(c['경도'], errors='coerce')
 ok = c['위도'].between(37.4, 37.75) & c['경도'].between(126.7, 127.2)          # 서울 밖 좌표는 쓰지 않음
