@@ -1,0 +1,145 @@
+/* SpotFit readability refresh: stronger hierarchy, calmer surfaces and accessible contrast. */
+:root {
+  --sf-ink: #172b25;
+  --sf-muted: #62756d;
+  --sf-primary: #145c47;
+  --sf-primary-strong: #0d4938;
+  --sf-primary-soft: #e8f3ed;
+  --sf-accent: #b4772b;
+  --sf-surface: #ffffff;
+  --sf-surface-alt: #f4f7f5;
+  --sf-line: #dce6e0;
+  --sf-shadow-sm: 0 4px 14px rgba(20, 52, 42, .09);
+  --sf-shadow-lg: 0 18px 48px rgba(19, 45, 36, .18);
+  color: var(--sf-ink);
+  background: var(--sf-surface-alt);
+  font-size: 15px;
+}
+
+body { color: var(--sf-ink); background: var(--sf-surface-alt); }
+button, input, summary { letter-spacing: -.01em; }
+button { min-height: 42px; transition: background-color .18s ease, color .18s ease, border-color .18s ease, transform .18s ease, box-shadow .18s ease; }
+button:hover { transform: translateY(-1px); }
+button:active { transform: translateY(0); }
+button:focus-visible, a:focus-visible, input:focus-visible, summary:focus-visible { outline: 3px solid #e0aa57; outline-offset: 3px; }
+
+.housing-app .topbar {
+  height: 72px;
+  padding: 0 28px;
+  gap: 20px;
+  position: relative;
+  z-index: 1000;
+  border-bottom: 1px solid var(--sf-line);
+  box-shadow: 0 2px 12px rgba(28, 55, 45, .06);
+}
+.housing-app .brand { font-size: 24px; letter-spacing: -.04em; color: #123d30; }
+.housing-app .brand-symbol { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: linear-gradient(145deg, #1d7459, #0d4938); box-shadow: 0 5px 12px rgba(13, 73, 56, .22); }
+.housing-app .brand-sub { padding-left: 16px; margin-left: 6px; border-left: 1px solid var(--sf-line); color: var(--sf-muted); font-size: 12px; letter-spacing: -.01em; }
+.housing-app .prototype { margin-left: auto; padding: 7px 11px; border: 1px solid #ead9b8; color: #725321; background: #fff9ec; font-weight: 700; }
+.housing-app .header-link { color: var(--sf-primary); font-weight: 700; padding: 9px 4px; }
+
+.housing-app .workspace { grid-template-columns: 360px minmax(0, 1fr); height: calc(100dvh - 72px); background: var(--sf-surface-alt); }
+.housing-app .sidebar { padding: 30px 26px 36px; border-right: 1px solid var(--sf-line); box-shadow: 6px 0 22px rgba(28, 55, 45, .055); scrollbar-color: #b9cbc1 transparent; }
+.housing-app .sidebar .eyebrow { color: var(--sf-accent); font-size: 10px; font-weight: 800; }
+.housing-app .sidebar h1 { margin: 10px 0 8px; color: #14392e; font-size: 30px; line-height: 1.32; letter-spacing: -.055em; }
+.housing-app .muted { color: var(--sf-muted); font-size: 12px; line-height: 1.65; }
+.housing-app .section-title { margin: 26px 0 10px; color: #263f37; font-size: 13px; }
+.housing-app .section-title span { color: #74877f; font-size: 10px; }
+
+.housing-app .facility-grid { gap: 8px; }
+.housing-app .facility-grid button { min-height: 76px; padding: 11px 5px; border: 1px solid var(--sf-line); color: #52665e; background: #fafcfb; border-radius: 11px; font-size: 11px; font-weight: 600; }
+.housing-app .facility-grid button:hover { border-color: #a9c3b5; background: #f2f8f4; box-shadow: var(--sf-shadow-sm); }
+.housing-app .facility-grid .enabled { color: var(--sf-primary-strong); border-color: #78a990; background: var(--sf-primary-soft); box-shadow: inset 0 0 0 1px rgba(20, 92, 71, .08); }
+.housing-app .facility-grid span { font-size: 20px; }
+.housing-app .facility-grid small { color: #6c8077; }
+
+.housing-app .search-label { margin-top: 28px; color: #304a41; font-size: 13px; }
+.housing-app .search-box { min-height: 46px; margin-top: 9px; padding: 8px 12px; border-color: #cddbd3; background: #fbfdfc; box-shadow: inset 0 1px 2px rgba(24, 52, 43, .03); }
+.housing-app .search-box:focus-within { border-color: #5b9279; background: #fff; box-shadow: 0 0 0 3px rgba(45, 119, 88, .12); }
+.housing-app .search-box input { color: var(--sf-ink); font-size: 13px; }
+.housing-app .search-results { margin-top: 6px; border-color: var(--sf-line); box-shadow: var(--sf-shadow-sm); }
+.housing-app .search-results button { min-height: 44px; color: #294239; }
+
+.housing-app .segmented, .housing-app .region-sort { padding: 5px; gap: 5px; background: #edf2ef; }
+.housing-app .segmented button, .housing-app .region-sort button { min-height: 38px; color: #5c6e67; }
+.housing-app .segmented .chosen, .housing-app .region-sort button.chosen { color: var(--sf-primary-strong); background: #fff; box-shadow: 0 3px 9px rgba(28, 62, 50, .10); }
+.housing-app .region-accordion { margin-top: 24px; border: 1px solid var(--sf-line); border-radius: 12px; background: #fbfdfc; overflow: hidden; }
+.housing-app .region-accordion > summary { min-height: 50px; padding: 12px 14px; color: #29443a; background: #f6f9f7; }
+.housing-app .region-sort { margin: 0 10px 8px; }
+.housing-app .region-accordion .region-list { padding: 0 8px 8px; }
+.housing-app .region-item { min-height: 68px; padding: 12px 10px; border-bottom-color: #e9efeb; }
+.housing-app .region-item:hover { background: #f0f7f3; }
+.housing-app .region-item.selected { background: #e4f1e9; box-shadow: inset 3px 0 var(--sf-primary); }
+.housing-app .region-item strong { color: #263f37; font-size: 13px; }
+.housing-app .region-item b { color: var(--sf-primary-strong); font-size: 13px; }
+.housing-app .region-item small { color: #6d8077; font-size: 10px; }
+.housing-app .sidebar-foot { color: #71827a; background: #f5f8f6; border-radius: 9px; padding: 12px; margin-top: 20px; }
+
+.housing-app .map-shell { background: #dfe9e3; }
+.housing-app .map-canvas { filter: saturate(.82) contrast(.98); }
+.housing-app .map-toolbar { top: 20px; left: 20px; right: 20px; gap: 10px; }
+.housing-app .map-primary-controls, .housing-app .mode-tabs, .housing-app .level-tabs { border: 1px solid rgba(212, 225, 217, .95); border-radius: 12px; box-shadow: var(--sf-shadow-sm); }
+.housing-app .map-toolbar button { min-height: 40px; padding: 9px 13px; color: #53665e; font-weight: 600; }
+.housing-app .map-toolbar button:hover { color: var(--sf-primary); background: #edf5f0; }
+.housing-app .map-toolbar .chosen { color: #fff; background: var(--sf-primary); box-shadow: 0 4px 10px rgba(13, 73, 56, .20); }
+.housing-app .map-toolbar .chosen:hover { color: #fff; background: var(--sf-primary-strong); }
+.housing-app .map-notice { top: 82px; padding: 10px 14px; color: #664e22; border: 1px solid rgba(218, 185, 121, .65); background: rgba(255, 250, 235, .94); box-shadow: var(--sf-shadow-sm); backdrop-filter: blur(10px); font-size: 11px; }
+
+.housing-app .summary-card { bottom: 24px; right: 66px; width: 385px; padding: 24px; border: 1px solid rgba(220, 231, 224, .9); border-radius: 18px; background: rgba(255, 255, 255, .97); box-shadow: var(--sf-shadow-lg); backdrop-filter: blur(14px); }
+.housing-app .summary-card h2 { color: #153d31; font-size: 27px; }
+.housing-app .summary-card .pill { color: var(--sf-primary-strong); background: var(--sf-primary-soft); font-weight: 700; }
+.housing-app .summary-close { color: #61746b; border-radius: 50%; }
+.housing-app .summary-close:hover { color: #263f37; background: #eef3f0; }
+.housing-app .housing-forecast-row { gap: 8px; padding: 14px 0; }
+.housing-app .housing-forecast-row > div { padding: 11px 9px; border: 1px solid #e0eae4; background: #f6faf7; }
+.housing-app .housing-forecast-row small { color: #61766c; font-size: 9px; }
+.housing-app .housing-forecast-row strong { color: var(--sf-primary-strong); font-size: 17px; }
+.housing-app .card-stats { gap: 8px; padding: 14px 0; }
+.housing-app .card-stats span { flex: 1; padding: 9px 8px; border-radius: 8px; color: #63756d; background: #f5f7f5; text-align: center; }
+.housing-app .card-stats b { display: block; margin: 5px 0 0; color: #1c5b46; font-size: 14px; }
+.housing-app .crime-exposure { margin: 2px 0 9px; border-color: #ead4ac; background: #fff8eb; }
+.housing-app .estimate { margin: 8px 0 12px; color: #3e574e; border: 1px solid #d9e6dd; background: #f1f7f3; }
+.housing-app .detail-button { min-height: 46px; padding: 13px 15px; background: var(--sf-primary); font-weight: 700; box-shadow: 0 5px 13px rgba(13, 73, 56, .18); }
+.housing-app .detail-button:hover { background: var(--sf-primary-strong); box-shadow: 0 7px 18px rgba(13, 73, 56, .25); }
+
+.housing-app .legend { width: 285px; padding: 16px 17px; color: #30483f; border: 1px solid rgba(216, 228, 220, .92); border-radius: 12px; background: rgba(255, 255, 255, .95); box-shadow: var(--sf-shadow-sm); backdrop-filter: blur(10px); }
+.housing-app .legend strong { font-size: 12px; }
+.housing-app .legend > small { color: #667a71; font-size: 10px; line-height: 1.45; }
+.housing-app .boundary-status summary { min-height: 36px; display: flex; align-items: center; color: var(--sf-primary-strong); border-color: #bcd3c6; background: #f0f7f3; font-weight: 700; }
+.housing-app .boundary-status > div { color: #29433a; border-color: var(--sf-line); box-shadow: var(--sf-shadow-lg); }
+
+.housing-app .detail-dialog { max-width: 700px; padding: 34px; color: var(--sf-ink); border: 1px solid #dce7e0; box-shadow: var(--sf-shadow-lg); }
+.housing-app .detail-dialog::backdrop { background: rgba(10, 28, 22, .68); backdrop-filter: blur(4px); }
+
+@media (max-width: 1180px) {
+  .housing-app .workspace { grid-template-columns: 310px minmax(0, 1fr); }
+  .housing-app .sidebar { padding-inline: 20px; }
+  .housing-app .summary-card { width: 340px; right: 54px; }
+}
+
+@media (max-width: 800px) {
+  .housing-app .topbar { height: 64px; padding: 0 14px; gap: 10px; }
+  .housing-app .brand { font-size: 21px; }
+  .housing-app .brand-symbol { width: 36px; height: 36px; }
+  .housing-app .workspace { height: auto; }
+  .housing-app .map-shell { height: 720px; }
+  .housing-app .sidebar { padding: 26px 18px 34px; box-shadow: none; }
+  .housing-app .map-toolbar { top: 12px; left: 10px; right: 10px; }
+  .housing-app .map-notice { top: 118px; left: 10px; max-width: calc(100% - 20px); }
+  .housing-app .summary-card { left: 10px; right: 46px; bottom: 18px; width: auto; max-width: 390px; padding: 19px; }
+  .housing-app .legend { left: 10px; bottom: 390px; width: 240px; }
+  .housing-app .boundary-status summary { max-width: 145px; overflow: hidden; text-overflow: ellipsis; }
+}
+
+@media (max-width: 480px) {
+  :root { font-size: 14px; }
+  .housing-app .topbar { padding-inline: 10px; }
+  .housing-app .header-link { display: none; }
+  .housing-app .map-shell { height: 680px; }
+  .housing-app .map-primary-controls { max-width: calc(100vw - 20px); overflow-x: auto; }
+  .housing-app .level-tabs { max-width: calc(100vw - 20px); overflow-x: auto; }
+  .housing-app .summary-card { right: 10px; }
+  .housing-app .card-stats { display: grid; grid-template-columns: 1fr 1fr; }
+  .housing-app .housing-forecast-row { grid-template-columns: 1fr 1fr; }
+  .housing-app .legend { display: none; }
+}
