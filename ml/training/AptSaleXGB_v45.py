@@ -1,7 +1,7 @@
 # 모델 버전 45: v44(13개 항목)에서 유동인구 수만 뺀 12개로 성능이 유지되는지 확인 (v44 = 13개 vs v45 = 12개, 둘 다 XGBoost)
 #   뺀 근거: v44 항목 중요도에서 유동인구는 0.000(섞어도 R² 변화 없음). v42(v41에서 유동인구 제거)는 소폭 하락이라 v44에서 다시 확인함
 #   업무지구 거리 = 동네 중심점(서울시 상권분석서비스 영역-행정동)에서 3대 업무지구까지 직선거리(km): GBD 강남역, CBD 광화문·시청 일대, YBD 여의도역
-#     기준점은 data/processed/부동산(전처리)/아파트_매매_업무지구.csv의 거리값에서 역산함 (GBD 127.0276,37.4979 / CBD 126.9770,37.5657 / YBD 126.9242,37.5216, 파일 거리와 0m 오차로 일치, 145,188건 검증)
+#     기준점은 data/raw/부동산/아파트_매매_업무지구.csv의 거리값에서 역산함 (GBD 127.0276,37.4979 / CBD 126.9770,37.5657 / YBD 126.9242,37.5216, 파일 거리와 0m 오차로 일치, 145,188건 검증)
 #     파일은 거래의 46%에 좌표가 없어 동네 값이 비는 곳이 많아, 파일의 동네 값을 그대로 쓰지 않고 같은 기준점으로 409개 동네 전부에 직접 계산함
 #   X (v41 10개): 층수, 거래일, 완공연도, 직장인구 수, 유동인구 수, 평균 전용면적, 단지 평균 세대수, 지역난방 단지 비율, 100세대당 경비 인원, 가장 가까운 한강공원까지 거리(km)  →  v44는 여기에 업무지구 거리 3개를 더한 13개
 #   K-apt 단지가 없는 동네(22곳)는 값을 채우지 않고 빈 값으로 두며, XGBoost가 빈 값을 스스로 처리함 (compare의 allow_missing=True)
@@ -28,12 +28,12 @@ DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'dat
 area = pd.read_csv(DATA + 'raw/부동산/서울시 상권분석서비스(영역-행정동).csv', encoding='cp949').drop_duplicates('행정동_코드').set_index('행정동_코드')
 ctr = area.reindex(d.index)[['엑스좌표_값', '와이좌표_값']]
 assert ctr.notna().all().all(), '중심점이 없는 동네가 있음'
-hp = pd.read_csv(DATA + 'raw/기타/한강공원 위치현황.csv', encoding='cp949').iloc[1:]                      # 첫 줄은 영문 컬럼명 중복이라 제외
+hp = pd.read_csv(DATA + 'raw/부동산/한강공원 위치현황.csv', encoding='cp949').iloc[1:]                      # 첫 줄은 영문 컬럼명 중복이라 제외
 lat, lon = hp['경도'].astype(float).values, hp['위도'].astype(float).values                              # 칸 이름이 바뀌어 있어 반대로 읽음
 assert 37.4 < lat.min() and lat.max() < 37.7 and 126.7 < lon.min() and lon.max() < 127.2, '한강공원 좌표가 서울 범위 밖'
 hx, hy = Transformer.from_crs('EPSG:4326', 'EPSG:5181', always_xy=True).transform(lon, lat)
 d[HG] = cKDTree(np.c_[hx, hy]).query(ctr.values)[0] / 1000
-cx = pd.read_csv(DATA + 'processed/행정동별_단지정보.csv', encoding='utf-8-sig').set_index('행정동_코드')
+cx = pd.read_csv(DATA + 'raw/부동산/행정동별_단지정보.csv', encoding='utf-8-sig').set_index('행정동_코드')
 d[V23] = cx[V23].reindex(d.index)
 d[V24] = cx[V24].reindex(d.index)
 d[V25] = cx[V25].reindex(d.index)

@@ -1,6 +1,6 @@
 # 모델 버전 15: v13(XGBoost, 13개 항목)에 '가장 가까운 한강공원까지 거리'를 더하면 좋아지는지 확인 (v13 = 13개 vs v15 = 14개, 둘 다 XGBoost, 아파트 전세 평당 보증금)
 #   이유: 아파트 매매에서 한강공원 거리를 더했을 때 좋아졌음 (XGBoost v25 → v33, 0.635 → 0.675). 전세에서도 같은지 확인
-#   한강공원 거리 = 동네 중심점(서울시 상권분석서비스 영역-행정동)에서 가장 가까운 한강공원 위치(data/raw/기타/한강공원 위치현황.csv)까지 직선거리(km). 아파트 매매 v33과 같은 정의
+#   한강공원 거리 = 동네 중심점(서울시 상권분석서비스 영역-행정동)에서 가장 가까운 한강공원 위치(data/raw/부동산/한강공원 위치현황.csv)까지 직선거리(km). 아파트 매매 v33과 같은 정의
 #   X (v13 13개): 층수, 거래일, 완공연도, 직장인구 수, 생활방범 CCTV 수, 1인가구 비율, 평균 임대면적, 연령대 비율 5개, 100세대당 경비 인원   y: 평당 보증금 (전세 거래의 동네 중앙값, 만원)
 #   XGBoost 설정은 v2~v13과 같음. 같은 동네, 같은 분할(5분할 × 20번 반복). 데이터 준비는 apt_jeonse_data.py
 #   판단: 차이가 반복마다 흔들리는 폭(v13 R² 표준편차) 안이면 "더해도 성능 차이 없음"
@@ -23,9 +23,9 @@ ap = argparse.ArgumentParser()
 ap.add_argument('--tracking-uri'); ap.add_argument('--experiment', default='house-price-jeonse-comparison'); ap.add_argument('--task-id', default='unassigned')
 a = ap.parse_args()
 d = add_age(load())
-cx = pd.read_csv(DATA + '행정동별_단지정보.csv', encoding='utf-8-sig').set_index('행정동_코드')
+cx = pd.read_csv(DATA + '../raw/부동산/행정동별_단지정보.csv', encoding='utf-8-sig').set_index('행정동_코드')
 area = pd.read_csv(DATA + '../raw/부동산/서울시 상권분석서비스(영역-행정동).csv', encoding='cp949').drop_duplicates('행정동_코드').set_index('행정동_코드').reindex(d.index)
-hp = pd.read_csv(DATA + '../raw/기타/한강공원 위치현황.csv', encoding='cp949').iloc[1:]                                  # 경도·위도 컬럼 이름이 바뀌어 있어 반대로 읽음 (매매 v33과 같음)
+hp = pd.read_csv(DATA + '../raw/부동산/한강공원 위치현황.csv', encoding='cp949').iloc[1:]                                  # 경도·위도 컬럼 이름이 바뀌어 있어 반대로 읽음 (매매 v33과 같음)
 hx, hy = Transformer.from_crs('EPSG:4326', 'EPSG:5181', always_xy=True).transform(hp['위도'].astype(float).values, hp['경도'].astype(float).values)
 d[NEW] = cKDTree(np.c_[hx, hy]).query(area[['엑스좌표_값', '와이좌표_값']].values)[0] / 1000
 d['100세대당 경비 인원'] = cx['100세대당 경비 인원'].reindex(d.index)

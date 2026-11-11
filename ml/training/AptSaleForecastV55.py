@@ -1,5 +1,5 @@
 # v55 아파트 매매 1년·2년·3년 뒤 평당 금액 예측 (2010~2026 거래, v46에서 직장인구·경비 인원 제외 → h개월 뒤 동네 평당 금액, XGBoost, 시간 순 평가) + 동네별 JSON
-#   데이터: data/processed/부동산(전처리)/아파트_매매_2010_2026.csv (2010~2014 + 2015~2020 + 2021~2026 합본)
+#   데이터: data/raw/부동산/아파트_매매_2010_2026.csv (2010~2014 + 2015~2020 + 2021~2026 합본)
 #   항목: v46의 13개에서 직장인구·100세대당 경비 인원 제외 = 11개 (둘 다 2021년 이후 값뿐이라 제외. 빼도 시간 순 시험 결과가 같았음)
 #        현재 가격은 유지 (현재 가격이 없으면 모델이 시기만 보고 가격을 맞혀 최근 시점에서 무너져서 추가함)
 #        v55: v54에서 단지 정보 2개(단지 평균 세대수, 지역난방 비율) 제외 = 11개 (2026년 값을 전 기간에 적용하던 항목. 빼도 시험 결과가 같았음: 1년 오차율 7.58→7.54%, 3년 R² 0.534→0.538)
@@ -29,7 +29,7 @@ a = pd.read_csv(PROC + '아파트_매매_2010_2026.csv', low_memory=False, useco
 a['동'] = a['행정동_코드(상권분석)'].astype(int)
 d = a.groupby('동')[['자치구', '행정동']].last().rename_axis('행정동_코드')       # 동네 목록과 이름도 합본에서 (직장인구 등이 없어도 동네를 버리지 않음)
 area = pd.read_csv(DATA + 'raw/부동산/서울시 상권분석서비스(영역-행정동).csv', encoding='cp949').drop_duplicates('행정동_코드').set_index('행정동_코드').reindex(d.index)
-hp = pd.read_csv(DATA + 'raw/기타/한강공원 위치현황.csv', encoding='cp949').iloc[1:]
+hp = pd.read_csv(DATA + 'raw/부동산/한강공원 위치현황.csv', encoding='cp949').iloc[1:]
 hx, hy = Transformer.from_crs('EPSG:4326', 'EPSG:5181', always_xy=True).transform(hp['위도'].astype(float).values, hp['경도'].astype(float).values)
 
 def haversine_km(lon0, lat0, lon, lat):
@@ -50,7 +50,7 @@ ends = list(range(m_lo + 11, m_hi + 1))                                     # �
 lab = lambda m: f'{m // 12}-{m % 12 + 1:02d}'
 USE_TIME = False                                                            # 거래일(년) 제외: 모델이 '몇 년도에 올랐나'를 외워 검증 점수만 좋아 보일 수 있어서 대신 '최근 상승률' 항목을 사용
 
-_rt = pd.read_csv(DATA + 'raw/기타/예금은행_대출금리_신규취급액_기준__20261106130754.csv', encoding='cp949')            # 한국은행 예금은행 대출금리(신규취급액 기준)
+_rt = pd.read_csv(DATA + 'raw/부동산/예금은행_대출금리_신규취급액_기준__20261106130754.csv', encoding='cp949')            # 한국은행 예금은행 대출금리(신규취급액 기준)
 _rt = pd.to_numeric(_rt[_rt['계정항목별'].str.strip() == '주택담보대출 (연리%)'].iloc[0, 1:], errors='coerce')
 RATE = {int(c[:4]) * 12 + int(c[5:7]) - 1: v for c, v in _rt.items()}                           # {월 번호: 금리(연%)}
 

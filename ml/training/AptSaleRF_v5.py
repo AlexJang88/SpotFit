@@ -25,7 +25,7 @@ ap.add_argument('--tracking-uri'); ap.add_argument('--experiment', default='hous
 a = ap.parse_args()
 
 d = load()
-fac = pd.read_csv(DATA + '../raw/서울시 상권분석서비스(집객시설-행정동).csv', encoding='cp949')
+fac = pd.read_csv(DATA + '../raw/부동산/서울시 상권분석서비스(집객시설-행정동).csv', encoding='cp949')
 assert not fac.duplicated(['기준_년분기_코드', '행정동_코드']).any()
 fac = fac[['행정동_코드', '은행_수', '지하철_역_수']].fillna(0).groupby('행정동_코드').mean().set_axis(ADD, axis=1)     # 행정동 코드는 상권분석 코드 (apt_sale_data 도 같은 코드로 맞춰 둠)
 n0 = len(d); d = d.join(fac)
@@ -58,7 +58,7 @@ print(f'평균 오차 차이: {mae(a5).mean() - mae(a1).mean():+.1f}만원/평, 
 print(f'기준(흔들리는 폭) = v1 R² 표준편차 {band:.4f} → 판정: {verdict}')
 
 # 원래 약점 확인: 비싼 동네(평당 금액 상위 25%), 상업 비중이 큰 동네(점포 수 ÷ 거주인구 상위 25%)에서 오차가 줄었나
-info = pd.read_csv(OUT + '평당금액_행정동표.csv').set_index('행정동_코드')
+info = pd.read_csv(OUT + '../../raw/부동산/평당금액_행정동표.csv').set_index('행정동_코드')
 groups = {'전체': np.ones(len(d), bool), '비싼 동네(상위 25%)': (y >= y.quantile(.75)).values,
           '상업 비중 큰 동네(상위 25%)': (lambda s: (s >= s.quantile(.75)).values)(info.loc[d.index, '점포 수'] / info.loc[d.index, '거주인구 수'])}
 weak = pd.DataFrame({g: {'동네 수': m.sum(), 'v1 평균 오차': np.abs(y.values - a1.mean(0))[m].mean(), 'v5 평균 오차': np.abs(y.values - a5.mean(0))[m].mean(),

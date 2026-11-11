@@ -1,5 +1,5 @@
 # v51 아파트 매매 1년·2년·3년 뒤 평당 금액 예측 (2010~2026 거래, v46에서 직장인구·경비 인원 제외 → h개월 뒤 동네 평당 금액, XGBoost, 시간 순 평가) + 동네별 JSON
-#   데이터: data/processed/부동산(전처리)/아파트_매매_2010_2026.csv (2010~2014 + 2015~2020 + 2021~2026 합본)
+#   데이터: data/raw/부동산/아파트_매매_2010_2026.csv (2010~2014 + 2015~2020 + 2021~2026 합본)
 #   항목: v46의 13개에서 직장인구·100세대당 경비 인원 제외 = 11개 (둘 다 2021년 이후 값뿐이라 제외. 빼도 시간 순 시험 결과가 같았음)
 #        현재 가격은 유지 (현재 가격이 없으면 모델이 시기만 보고 가격을 맞혀 최근 시점에서 무너져서 추가함)
 #        v51 수정: 거래일(년) 제외(시기를 외우는 문제), 최근 가격 상승률 2개 추가 (동네 최근 6개월 가격/직전 6개월 가격, 최근 12개월 가격/직전 12개월 가격) = 12개
@@ -25,9 +25,9 @@ BIZ = {'강남(GBD)': (127.0276, 37.4979), '광화문(CBD)': (126.9770, 37.5657)
 a = pd.read_csv(PROC + '아파트_매매_2010_2026.csv', low_memory=False, usecols=['행정동_코드(상권분석)', '자치구', '행정동', '계약일', Y, '층', '건축년도', '전용면적(㎡)'])                  # 합본 하나만 사용
 a['동'] = a['행정동_코드(상권분석)'].astype(int)
 d = a.groupby('동')[['자치구', '행정동']].last().rename_axis('행정동_코드')       # 동네 목록과 이름도 합본에서 (직장인구 등이 없어도 동네를 버리지 않음)
-cx = pd.read_csv(DATA + 'processed/행정동별_단지정보.csv', encoding='utf-8-sig').set_index('행정동_코드')
+cx = pd.read_csv(DATA + 'raw/부동산/행정동별_단지정보.csv', encoding='utf-8-sig').set_index('행정동_코드')
 area = pd.read_csv(DATA + 'raw/부동산/서울시 상권분석서비스(영역-행정동).csv', encoding='cp949').drop_duplicates('행정동_코드').set_index('행정동_코드').reindex(d.index)
-hp = pd.read_csv(DATA + 'raw/기타/한강공원 위치현황.csv', encoding='cp949').iloc[1:]
+hp = pd.read_csv(DATA + 'raw/부동산/한강공원 위치현황.csv', encoding='cp949').iloc[1:]
 hx, hy = Transformer.from_crs('EPSG:4326', 'EPSG:5181', always_xy=True).transform(hp['위도'].astype(float).values, hp['경도'].astype(float).values)
 
 def haversine_km(lon0, lat0, lon, lat):

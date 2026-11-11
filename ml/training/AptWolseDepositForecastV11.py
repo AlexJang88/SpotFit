@@ -55,7 +55,7 @@ class Lab:
         self.kind = kind
         self.Y = '평당 월세(만원)' if kind == 'wolse' else '평당 보증금(만원)'
         cols = ['행정동_코드(상권분석)', '자치구', '행정동', '계약일', '전월세구분', '보증금(만원)', '월세(만원)', '평당 보증금(만원)', '평당 월세(만원)', '층', '건축년도', '임대면적(㎡)']
-        x = pd.read_csv(DATA + '부동산(전처리)/아파트_전월세_2010_2026.csv', low_memory=False, usecols=cols)
+        x = pd.read_csv(DATA + '../raw/부동산/아파트_전월세_2010_2026.csv', low_memory=False, usecols=cols)
         x['dt'] = pd.to_datetime(x['계약일'], errors='coerce')
         x = x[x['dt'].notna() & (x['dt'] <= pd.Timestamp('2026-09-30'))].copy()
         x['동'] = x['행정동_코드(상권분석)'].astype(int)
@@ -70,21 +70,21 @@ class Lab:
         a['신축'] = (a['건축년도'] >= a['dt'].dt.year - 5).astype(float)
         self.a = Win(a)
         self.wj = Win(x[(x['전월세구분'] == '전세')][['동', 'm', '평당 보증금(만원)']].rename(columns={'평당 보증금(만원)': 'y'}))
-        s = pd.read_csv(DATA + '부동산(전처리)/아파트_매매_2010_2026.csv', low_memory=False, usecols=['행정동_코드(상권분석)', '계약일', '평당 금액(만원)'])
+        s = pd.read_csv(DATA + '../raw/부동산/아파트_매매_2010_2026.csv', low_memory=False, usecols=['행정동_코드(상권분석)', '계약일', '평당 금액(만원)'])
         s['m'] = pd.to_datetime(s['계약일'], errors='coerce').dt.year * 12 + pd.to_datetime(s['계약일'], errors='coerce').dt.month - 1
         s['동'] = s['행정동_코드(상권분석)']
         self.ws = Win(s.dropna(subset=['m', '동', '평당 금액(만원)']).astype({'동': int, 'm': int}))
         d = a.groupby('동')[['자치구', '행정동']].last().rename_axis('행정동_코드')
         self.d = d
         area = pd.read_csv(RAW + '부동산/서울시 상권분석서비스(영역-행정동).csv', encoding='cp949').drop_duplicates('행정동_코드').set_index('행정동_코드').reindex(d.index)
-        hp = pd.read_csv(RAW + '기타/한강공원 위치현황.csv', encoding='cp949').iloc[1:]
+        hp = pd.read_csv(RAW + '부동산/한강공원 위치현황.csv', encoding='cp949').iloc[1:]
         hx, hy = Transformer.from_crs('EPSG:4326', 'EPSG:5181', always_xy=True).transform(hp['위도'].astype(float).values, hp['경도'].astype(float).values)
         st = pd.DataFrame(index=d.index)
         st[HG] = cKDTree(np.c_[hx, hy]).query(area[['엑스좌표_값', '와이좌표_값']].values)[0] / 1000
         lon, lat = Transformer.from_crs('EPSG:5181', 'EPSG:4326', always_xy=True).transform(area['엑스좌표_값'].values, area['와이좌표_값'].values)
         for k, (lo, la) in BIZ.items(): st[f'{k}까지 거리(km)'] = haversine_km(lo, la, lon, lat)
         self.static = st
-        rt = pd.read_csv(RAW + '기타/예금은행_대출금리_신규취급액_기준__20261106130754.csv', encoding='cp949')
+        rt = pd.read_csv(RAW + '부동산/예금은행_대출금리_신규취급액_기준__20261106130754.csv', encoding='cp949')
         rt = pd.to_numeric(rt[rt['계정항목별'].str.strip() == '주택담보대출 (연리%)'].iloc[0, 1:], errors='coerce')
         self.RATE = {int(c[:4]) * 12 + int(c[5:7]) - 1: v for c, v in rt.items()}
         self.m_lo, self.m_hi = int(a['m'].min()), int(a['m'].max())
