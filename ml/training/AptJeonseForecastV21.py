@@ -3,7 +3,7 @@
 #   시작 항목: 전세 v15 예측 모델(AptJeonseForecastV15.py)의 14개에서 동네 정보를 2개만 남김. 층수·거래일(년)·완공연도·평균 임대면적 + 직장인구·40대 주민 비율 + 한강공원 거리 = 7개
 #     남긴 2개는 전세 v15 현재 수준 모델의 항목 중요도에서 동네 정보 중 높은 두 개(직장인구 0.085, 40대 비율 0.068). 나머지(CCTV·1인가구·나머지 연령대·경비 인원)는 2021년 이후 값이라 뺌
 #   이 버전의 항목 12개: 층수, 거래일(년), 완공연도, 평균 임대면적, 직장인구, 40대 주민 비율, 한강공원 거리, 6개월 상승률, 12개월 상승률, 업무지구(강남·광화문·여의도) 거리 3개, 주택담보대출 금리, 상대 가격(서울 대비)
-#   데이터: data/processed/부동산(전처리)/아파트_전월세_2010_2026.csv 의 전세 거래 (전세 계약은 2011-01부터, 2026-09까지만 사용). y = 평당 보증금
+#   데이터: data/raw/부동산/아파트_전월세_2010_2026.csv 의 전세 거래 (전세 계약은 2011-01부터, 2026-09까지만 사용). y = 평당 보증금
 #   기준 시점 e(매월 말): 정답 = e+h개월 시점의 직전 12개월 동네 평당 보증금 중앙값(거래 10건 이상) (h=12: 1년, h=36: 3년)
 #   학습 방식: 정답을 현재 가격 대비 비율(로그)로 바꿔 맞히고, 예측 후 현재 가격을 곱해 평당 보증금으로 되돌림 (매매 v55와 같음). 현재 가격은 항목에 넣지 않음
 #   평가: 시간 순. 시험 구간 첫 기준 시점 전에 정답이 이미 알려진 기준 시점만 학습에 사용. 기준선: 그대로, 서울 변화율 규칙. 3년 뒤는 학습 시점이 부족한 2016년 기준 시험은 건너뜀
@@ -23,7 +23,7 @@ HG = '가장 가까운 한강공원까지 거리(km)'
 M6, M12, RT, REL = '6개월 상승률(%)', '12개월 상승률(%)', '주택담보대출 금리(연%)', '상대 가격(서울 대비)'
 
 # ---------- 1. 데이터 준비 ----------
-a = pd.read_csv(DATA + '부동산(전처리)/아파트_전월세_2010_2026.csv', low_memory=False, usecols=['행정동_코드(상권분석)', '자치구', '행정동', '계약일', '전월세구분', Y, '층', '건축년도', '임대면적(㎡)'])
+a = pd.read_csv(DATA + '../raw/부동산/아파트_전월세_2010_2026.csv', low_memory=False, usecols=['행정동_코드(상권분석)', '자치구', '행정동', '계약일', '전월세구분', Y, '층', '건축년도', '임대면적(㎡)'])
 a = a[a['전월세구분'] == '전세']
 a['dt'] = pd.to_datetime(a['계약일'], errors='coerce')
 a = a[a['dt'].notna() & (a['dt'] <= pd.Timestamp('2026-09-30'))].copy()                  # 2026-09까지 (매매와 같은 기준 시점)
@@ -35,7 +35,7 @@ d = a.groupby('동')[['자치구', '행정동']].last().rename_axis('행정동_�
 with contextlib.redirect_stdout(io.StringIO()):                                           # 전세 v15의 동네 특성 (직장인구·연령대): 출력 문구는 숨김
     old = add_age(load())
 area = pd.read_csv(RAW + '부동산/서울시 상권분석서비스(영역-행정동).csv', encoding='cp949').drop_duplicates('행정동_코드').set_index('행정동_코드').reindex(d.index)
-hp = pd.read_csv(RAW + '기타/한강공원 위치현황.csv', encoding='cp949').iloc[1:]
+hp = pd.read_csv(RAW + '부동산/한강공원 위치현황.csv', encoding='cp949').iloc[1:]
 hx, hy = Transformer.from_crs('EPSG:4326', 'EPSG:5181', always_xy=True).transform(hp['위도'].astype(float).values, hp['경도'].astype(float).values)
 
 def haversine_km(lon0, lat0, lon, lat):
@@ -50,7 +50,7 @@ static[HG] = cKDTree(np.c_[hx, hy]).query(area[['엑스좌표_값', '와이좌�
 lon, lat = Transformer.from_crs('EPSG:5181', 'EPSG:4326', always_xy=True).transform(area['엑스좌표_값'].values, area['와이좌표_값'].values)
 biz = pd.DataFrame({f'{k}까지 거리(km)': haversine_km(lo, la, lon, lat) for k, (lo, la) in BIZ.items()}, index=d.index)
 
-rt = pd.read_csv(RAW + '기타/예금은행_대출금리_신규취급액_기준__20261106130754.csv', encoding='cp949')               # 한국은행 예금은행 대출금리(신규취급액 기준)
+rt = pd.read_csv(RAW + '부동산/예금은행_대출금리_신규취급액_기준__20261106130754.csv', encoding='cp949')               # 한국은행 예금은행 대출금리(신규취급액 기준)
 rt = pd.to_numeric(rt[rt['계정항목별'].str.strip() == '주택담보대출 (연리%)'].iloc[0, 1:], errors='coerce')
 RATE = {int(c[:4]) * 12 + int(c[5:7]) - 1: v for c, v in rt.items()}                       # {월 번호: 금리(연%)}
 

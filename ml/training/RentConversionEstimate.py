@@ -9,7 +9,7 @@ import numpy as np, pandas as pd
 from apt_jeonse_data import DATA, OUT
 
 MIN_GROUPS, MIN_PAIRS = 5, 30                     # 전환율을 쓰려면 비교 가능한 건물·면적대 그룹 수와 계약 수가 이 이상
-a = pd.read_csv(DATA + '부동산(전처리)/아파트_전월세_2010_2026.csv', low_memory=False, usecols=['행정동_코드(상권분석)', '자치구', '행정동', '법정동', '지번', '계약일', '전월세구분', '보증금(만원)', '월세(만원)', '임대면적(㎡)'])
+a = pd.read_csv(DATA + '../raw/부동산/아파트_전월세_2010_2026.csv', low_memory=False, usecols=['행정동_코드(상권분석)', '자치구', '행정동', '법정동', '지번', '계약일', '전월세구분', '보증금(만원)', '월세(만원)', '임대면적(㎡)'])
 a = a[(a['전월세구분'] == '월세') & (a['월세(만원)'] > 0) & (a['보증금(만원)'] > 0)].copy()
 a['dt'] = pd.to_datetime(a['계약일'], errors='coerce')
 a = a[a['dt'].notna() & (a['dt'] <= '2026-09-30')]

@@ -17,9 +17,9 @@ from scipy.spatial import cKDTree
 HG = '가장 가까운 한강공원까지 거리(km)'
 GUARD = '100세대당 경비 인원'
 d = add_age(load())
-cx = pd.read_csv(DATA + '행정동별_단지정보.csv', encoding='utf-8-sig').set_index('행정동_코드')
+cx = pd.read_csv(DATA + '../raw/부동산/행정동별_단지정보.csv', encoding='utf-8-sig').set_index('행정동_코드')
 area = pd.read_csv(DATA + '../raw/부동산/서울시 상권분석서비스(영역-행정동).csv', encoding='cp949').drop_duplicates('행정동_코드').set_index('행정동_코드').reindex(d.index)
-hp = pd.read_csv(DATA + '../raw/기타/한강공원 위치현황.csv', encoding='cp949').iloc[1:]
+hp = pd.read_csv(DATA + '../raw/부동산/한강공원 위치현황.csv', encoding='cp949').iloc[1:]
 hx, hy = Transformer.from_crs('EPSG:4326', 'EPSG:5181', always_xy=True).transform(hp['위도'].astype(float).values, hp['경도'].astype(float).values)
 
 static = pd.DataFrame(index=d.index)                                        # 시간이 지나도 변하지 않는 동네 특성
@@ -27,7 +27,7 @@ for c in ['직장인구 수', '생활방범 CCTV 수', '1인가구 비율(%)'] +
 static[GUARD] = cx[GUARD].reindex(d.index)
 static[HG] = cKDTree(np.c_[hx, hy]).query(area[['엑스좌표_값', '와이좌표_값']].values)[0] / 1000
 
-a = pd.read_csv(DATA + '부동산(전처리)/아파트_전월세.csv', low_memory=False, usecols=['행정동_코드(상권분석)', '계약일', '전월세구분', Y, '층', '건축년도', '임대면적(㎡)'])
+a = pd.read_csv(DATA + '../raw/부동산/아파트_전월세.csv', low_memory=False, usecols=['행정동_코드(상권분석)', '계약일', '전월세구분', Y, '층', '건축년도', '임대면적(㎡)'])
 a = a[a['전월세구분'] == '전세']
 a['동'] = a['행정동_코드(상권분석)'].astype(int)
 a = a[a['동'].isin(d.index)]

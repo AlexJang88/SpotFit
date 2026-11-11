@@ -1,7 +1,7 @@
 # 모델 버전 12: v7(XGBoost, 12개 항목)에 '지역난방 단지 비율(%)'을 더하면 좋아지는지 확인 (v7 = 12개 vs v12 = 13개, 둘 다 XGBoost, 아파트 전세 평당 보증금)
 #   이유: 아파트 매매에서 지역난방 단지 비율을 더했을 때 크게 좋아졌음 (XGBoost v24, 0.575 → 0.618). 전세에서도 같은지 확인
 #   지역난방 단지 비율(%) = K-apt(공동주택관리정보시스템) 단지 기본정보에서 동네 안 아파트·주상복합 단지 중 난방방식이 지역난방인 단지의 비율
-#     (data/processed/행정동별_단지정보.csv, ml/etl/AptComplexDong.py. 아파트 매매 v24와 같은 정의)
+#     (data/raw/부동산/행정동별_단지정보.csv, ml/etl/AptComplexDong.py. 아파트 매매 v24와 같은 정의)
 #   K-apt 단지 정보가 없는 동네(16곳)는 값을 채우지 않고 빈 값으로 두며, XGBoost가 빈 값을 스스로 처리함 → 409곳 전체로 평가, v7 결과와 직접 비교 (아파트 매매 v24와 같은 방식)
 #   X (v7 12개): 층수, 거래일, 완공연도, 직장인구 수, 생활방범 CCTV 수, 1인가구 비율, 평균 임대면적, 연령대 비율 5개(10·20·30·40·60대 이상) + 지역난방 단지 비율   y: 평당 보증금 (전세 거래의 동네 중앙값, 만원)
 #   연령대 비율 = 서울시 상권분석서비스(상주인구-행정동) 연령대별 상주인구 ÷ 6개 연령대 합계 × 100, 2022년 4분기~2023년 3분기를 뺀 분기 평균 (apt_sale_compare.add_age)
@@ -25,7 +25,7 @@ ap = argparse.ArgumentParser()
 ap.add_argument('--tracking-uri'); ap.add_argument('--experiment', default='house-price-jeonse-comparison'); ap.add_argument('--task-id', default='unassigned')
 a = ap.parse_args()
 d = add_age(load())
-cx = pd.read_csv(DATA + '행정동별_단지정보.csv', encoding='utf-8-sig').set_index('행정동_코드')
+cx = pd.read_csv(DATA + '../raw/부동산/행정동별_단지정보.csv', encoding='utf-8-sig').set_index('행정동_코드')
 d[NEW] = cx[NEW].reindex(d.index)
 X7 = [c for c in X_COLS + [AREA] if c != '유동인구 수'] + [c for c in AGE_COLS if c != '50대 주민 비율(%)']; X12 = X7 + [NEW]
 assert d[X7].notna().all().all(), 'v7 항목에 빈 값이 있는 동네가 있음'

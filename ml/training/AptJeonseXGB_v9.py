@@ -1,7 +1,7 @@
 # 모델 버전 9: v7(XGBoost, 12개 항목)에 '재건축 구역 수'를 더하면 좋아지는지 확인 (v7 = 12개 vs v9 = 13개, 둘 다 XGBoost, 아파트 전세 평당 보증금)
 #   이유: 재건축 구역이 많은 동네는 개발 기대 등으로 가격이 다를 수 있음. 아파트 매매 v19에서 같은 항목을 시험했고(+0.003, 효과 없음) 전세에서도 같은지 확인
 #   재건축 구역 수 = 서울시 도시계획사업(서울플랜+) 정비사업 현황 중 재건축(공동·단독) 구역을 행정동별로 센 값, 구역이 없는 동네는 0
-#     (data/processed/부동산(전처리)/도시계획사업_행정동별_아파트.csv, ml/etl/AptUrbanPlanDong.py. 아파트 매매 v19와 같은 정의)
+#     (data/raw/부동산/도시계획사업_행정동별_아파트.csv, ml/etl/AptUrbanPlanDong.py. 아파트 매매 v19와 같은 정의)
 #   X (v7 12개): 층수, 거래일, 완공연도, 직장인구 수, 생활방범 CCTV 수, 1인가구 비율, 평균 임대면적, 연령대 비율 5개(10·20·30·40·60대 이상) + 재건축 구역 수   y: 평당 보증금 (전세 거래의 동네 중앙값, 만원)
 #   연령대 비율 = 서울시 상권분석서비스(상주인구-행정동) 연령대별 상주인구 ÷ 6개 연령대 합계 × 100, 2022년 4분기~2023년 3분기를 뺀 분기 평균 (apt_sale_compare.add_age)
 #   평균 임대면적 = 전세 거래의 임대면적(㎡) 동네 평균 (전월세 파일에는 전용면적 컬럼이 없고 임대면적만 있음)
@@ -24,7 +24,7 @@ ap = argparse.ArgumentParser()
 ap.add_argument('--tracking-uri'); ap.add_argument('--experiment', default='house-price-jeonse-comparison'); ap.add_argument('--task-id', default='unassigned')
 a = ap.parse_args()
 d = add_age(load())
-urban = pd.read_csv(DATA + '부동산(전처리)/도시계획사업_행정동별_아파트.csv', encoding='utf-8-sig').set_index('행정동_코드')
+urban = pd.read_csv(DATA + '../raw/부동산/도시계획사업_행정동별_아파트.csv', encoding='utf-8-sig').set_index('행정동_코드')
 d[NEW] = urban[NEW].reindex(d.index).fillna(0)                                              # 구역이 없는 동네는 0 (아파트 매매 v19와 같음)
 print(f'{NEW}: 파일 {len(urban)}곳 중 모델 동네에 있는 곳 {int(d.index.isin(urban.index).sum())}곳, 구역이 1개 이상인 동네 {int((d[NEW] > 0).sum())}곳 / 전체 {len(d)}곳, 최대 {int(d[NEW].max())}개, 평당 보증금과 순위상관 {d[[NEW, Y]].corr(method="spearman").iloc[0, 1]:+.2f}')
 X7 = [c for c in X_COLS + [AREA] if c != '유동인구 수'] + [c for c in AGE_COLS if c != '50대 주민 비율(%)']; X9 = X7 + [NEW]

@@ -12,7 +12,7 @@ from apt_sale_compare import AGE_COLS, AREA, add_age, add_area, compare
 
 NEW = '재건축 구역 수'
 d = add_age(add_area(load()))
-urban = pd.read_csv(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data', 'processed', '부동산(전처리)', '도시계획사업_행정동별_아파트.csv'), encoding='utf-8-sig').set_index('행정동_코드')
+urban = pd.read_csv(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data', 'raw', '부동산', '도시계획사업_행정동별_아파트.csv'), encoding='utf-8-sig').set_index('행정동_코드')
 d[NEW] = urban[NEW].reindex(d.index).fillna(0)
 X14 = X_COLS + [AREA] + AGE_COLS                                                                    # v13의 14개
 X17 = [c for c in X14 if c not in ('CCTV 수', '50대 주민 비율(%)')]                                # v17의 12개
