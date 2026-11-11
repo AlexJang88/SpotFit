@@ -53,10 +53,15 @@ services:
       MLFLOW_TRACKING_URI: ${MLFLOW_TRACKING_URI:-http://mlflow:5000}
       CRIME_SAFETY_MODEL_URI: ${CRIME_SAFETY_MODEL_URI:-models:/crime_safety_direct_score_1y/1}
       CRIME_SAFETY_MODEL_VERSION: ${CRIME_SAFETY_MODEL_VERSION:-1}
+      MODEL_TRAINING_API_KEY: ${MODEL_TRAINING_API_KEY:-}
       WATCHFILES_FORCE_POLLING: ${WATCH_USE_POLLING:-true}
     volumes:
       - ./backend:/app
-      - ./artifacts:/artifacts:ro
+      - ./artifacts:/artifacts
+      - ./models:/models
+      - ./ml:/ml:ro
+      - ./scripts:/scripts:ro
+      - ./data/raw:/data/raw:ro
       - ./data/interim:/data/interim:ro
       - ./model_registry:/model_registry:ro
       - model_cache:/model-cache

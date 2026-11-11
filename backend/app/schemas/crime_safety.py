@@ -19,6 +19,9 @@ class CrimeSafetyDistrictForecast(BaseModel):
     previous_grade: SafetyGrade
     grade_change_expected: bool = Field(description="전년도 대비 상대등급 전환 예상 여부")
     grade_change_direction: Literal["상승", "유지", "하락"]
+    predicted_exposure_y: float | None = None
+    predicted_exposure_rate_per_10k: float | None = None
+    risk_rank: int | None = Field(default=None, ge=1, le=25)
 
 
 class CrimeSafetyForecastResponse(BaseModel):
@@ -26,10 +29,13 @@ class CrimeSafetyForecastResponse(BaseModel):
     model_version: str
     algorithm: str
     target: str
+    target_formula: str | None = None
+    horizon_years: int = 1
     data_year: int
     prediction_year: int
     district_count: int
     grade_definition: dict[SafetyGrade, str]
     warning: str
+    metrics: dict = Field(default_factory=dict)
     forecasts: list[CrimeSafetyDistrictForecast]
 

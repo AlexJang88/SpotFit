@@ -9,6 +9,8 @@ import mlflow
 import mlflow.sklearn
 import pandas as pd
 
+from app.services.recommender_v1 import get_district_forecasts
+
 
 ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_MODEL = (
@@ -103,59 +105,36 @@ def _load_feature_frame(features: list[str]) -> tuple[pd.DataFrame, pd.DataFrame
 
 
 def predict_all_districts() -> dict:
-    bundle = load_model_bundle()
-    features = list(bundle["features"])
-    current, _, latest_year = _load_feature_frame(features)
-    current["예측점수"] = bundle["model"].predict(current[features])
-    current["예측순위"] = current["예측점수"].rank(ascending=False, method="first").astype(int)
-    current["예측등급번호"] = ((current["예측순위"] - 1) // 5 + 1).astype(int)
-    current["예측등급"] = current["예측등급번호"].map(GRADE_MAP)
-
-    if "서울25개구_순위" in current:
-        current["전년순위"] = current["서울25개구_순위"].astype(int)
-    else:
-        current["전년순위"] = current["범죄안전_대체점수"].rank(
-            ascending=False, method="first"
-        ).astype(int)
-    current["전년등급번호"] = ((current["전년순위"] - 1) // 5 + 1).astype(int)
-    current["전년등급"] = current["전년등급번호"].map(GRADE_MAP)
-
-    def direction(row: pd.Series) -> str:
-        if row["예측등급번호"] < row["전년등급번호"]:
-            return "상승"
-        if row["예측등급번호"] > row["전년등급번호"]:
-            return "하락"
-        return "유지"
-
-    current["등급변화방향"] = current.apply(direction, axis=1)
-    current = current.sort_values("예측순위")
+    payload = get_district_forecasts()
+    prediction_year = int(payload["models"]["crime_safety"]["prediction_year"])
+    current = sorted(payload["forecasts"], key=lambda row: row["crime_rank"])
     forecasts = [
         {
-            "district": row["자치구"],
-            "data_year": latest_year,
-            "prediction_year": latest_year + 1,
-            "predicted_score": round(float(row["예측점수"]), 4),
-            "predicted_rank": int(row["예측순위"]),
-            "predicted_grade": row["예측등급"],
-            "previous_rank": int(row["전년순위"]),
-            "previous_grade": row["전년등급"],
-            "grade_change_expected": row["등급변화방향"] != "유지",
-            "grade_change_direction": row["등급변화방향"],
+            "district": row["district"],
+            "data_year": prediction_year - 1,
+            "prediction_year": prediction_year,
+            "predicted_score": round(float(row["crime_score"]), 4),
+            "predicted_rank": int(row["crime_rank"]),
+            "predicted_grade": row["crime_grade"],
+            "previous_rank": int(row["crime_rank"]),
+            "previous_grade": row["crime_grade"],
+            "grade_change_expected": False,
+            "grade_change_direction": "유지",
         }
-        for _, row in current.iterrows()
+        for row in current
     ]
     return {
-        "model_name": "crime_safety_direct_score_1y",
-        "model_version": os.getenv("CRIME_SAFETY_MODEL_VERSION", "1"),
-        "algorithm": str(bundle["algorithm"]),
+        "model_name": "standard_1y_models",
+        "model_version": "v1",
+        "algorithm": "persistence standard strategy",
         "target": "다음 연도 범죄안전 대체점수",
-        "data_year": latest_year,
-        "prediction_year": latest_year + 1,
+        "data_year": prediction_year - 1,
+        "prediction_year": prediction_year,
         "district_count": len(forecasts),
         "grade_definition": GRADE_DEFINITION,
         "warning": (
-            "공식 지역안전등급이 아닌 서울 25개 구 상대 대체등급입니다. "
-            "등급 전환 경보 모델의 검증 정밀도는 42.3%이므로 확정값으로 해석하지 마세요."
+            "recommender/v1 범죄 모델 산출물입니다. 공식 지역안전등급이 아닌 "
+            "서울 25개 구 상대 대체등급이며 예측연도가 2024년이므로 참고값입니다."
         ),
         "forecasts": forecasts,
     }
