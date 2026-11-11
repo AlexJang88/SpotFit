@@ -1,11 +1,11 @@
-# v49 아파트 매매 1년·3년 뒤 평당 금액 예측 (2010~2026 합본 거래, 동네 항목 + 동네의 현재 가격 → h개월 뒤 동네 평당 금액, XGBoost, 시간 순 평가) + 동네별 JSON
+# v49 아파트 매매 1년·2년·3년 뒤 평당 금액 예측 (2010~2026 합본 거래, 동네 항목 + 동네의 현재 가격 → h개월 뒤 동네 평당 금액, XGBoost, 시간 순 평가) + 동네별 JSON
 #   데이터: data/processed/부동산(전처리)/아파트_매매_2010_2026.csv (2010~2014 + 2015~2020 + 2021~2026 합본)
 #   항목(9개): 현재 가격, 한강공원 거리, 업무지구(강남·광화문·여의도) 거리 3개, 단지 평균 세대수, 지역난방 단지 비율 (동네별 값 하나) + 평균 전용면적, 완공연도 (기준 시점 직전 12개월 거래의 동네 평균)
 #        층수·거래일(년)·직장인구·경비 인원은 넣지 않음
 #   동네 목록: 합본 CSV에서 직접 만듦 (직장인구 등이 없는 동네도 버리지 않음)
-#   기준 시점 e(매월 말): 정답 = e+h개월 시점의 직전 12개월 동네 평당 금액 중앙값(거래 10건 이상) (h=12: 1년, h=36: 3년)
-#   학습 방식: 정답을 '현재 가격 대비 비율'(로그)로 바꿔 맞히고, 예측 후 현재 가격을 곱해 평당 금액으로 되돌림 (출력은 1년·3년 뒤 평당 금액)
-#   평가: 시간 순. 시험 구간 첫 기준 시점 전에 정답이 이미 알려진 기준 시점만 학습에 사용. 기간이 길어져 3년 뒤도 시험 가능
+#   기준 시점 e(매월 말): 정답 = e+h개월 시점의 직전 12개월 동네 평당 금액 중앙값(거래 10건 이상) (h=12: 1년, h=24: 2년, h=36: 3년)
+#   학습 방식: 정답을 '현재 가격 대비 비율'(로그)로 바꿔 맞히고, 예측 후 현재 가격을 곱해 평당 금액으로 되돌림 (출력은 1년·2년·3년 뒤 평당 금액)
+#   평가: 시간 순. 시험 구간 첫 기준 시점 전에 정답이 이미 알려진 기준 시점만 학습에 사용. 기간이 길어져 2년·3년 뒤도 시험 가능
 #   한계: 단지 정보(세대수·지역난방)는 2021~2026(2026 시점) 값을 전 기간에 적용. 취소 거래는 2021년 이전 구간에서 제외하지 못함
 # 실행: python AptSaleForecastV46.py  →  python AptSaleForecastV49.py   (내 PC에서만, 서버 기록 없음)
 import json, os
@@ -77,7 +77,7 @@ def score(true, hat):
     r2 = 1 - ((true - hat) ** 2).sum() / ((true - true.mean()) ** 2).sum()
     return err.median(), (err <= 10).mean() * 100, (hat - true).abs().mean(), r2
 
-# ---------- 2. 시간 순 예측 시험 (1년·3년) ----------
+# ---------- 2. 시간 순 예측 시험 (1년·2년·3년) ----------
 RATIO = lambda df: np.log(df['정답'] / df['현재 가격'])                          # 학습 정답: 현재 가격 대비 비율(로그)
 
 def run_tests(h, starts):
@@ -101,7 +101,7 @@ def run_tests(h, starts):
     return pd.DataFrame(rows), last
 
 order = ['그대로', '서울 변화율 규칙', 'v49 예측 모델']
-for h, nm, starts in [(12, '1년', range(2015, 2026)), (36, '3년', range(2016, 2024))]:
+for h, nm, starts in [(12, '1년', range(2015, 2026)), (24, '2년', range(2015, 2025)), (36, '3년', range(2016, 2024))]:
     res, (ym, hold_model, hold_te) = run_tests(h, starts)
     print(f'\n===== {nm} 뒤 예측 시험 (시간 순, 시험별 표는 CSV로 저장) =====')
     res.to_csv(OUT + '아파트매매_v49_' + nm + '뒤_시험별결과.csv', index=False, encoding='utf-8-sig')          # 시험별 표는 파일로만 저장
@@ -114,8 +114,8 @@ for h, nm, starts in [(12, '1년', range(2015, 2026)), (36, '3년', range(2016, 
 # ---------- 3. 최종 예측과 JSON ----------
 now = feats(m_hi)
 out = pd.DataFrame({'자치구': d['자치구'], '행정동': d['행정동'], '현재 평당 금액(최근12개월 실거래, 만원)': now['현재 가격'].round(0)})
-print('\n===== v49 1년·3년 뒤 예측 (2026-09 기준) =====')
-for h, nm in [(12, '1년'), (36, '3년')]:
+print('\n===== v49 1년·2년·3년 뒤 예측 (2026-09 기준) =====')
+for h, nm in [(12, '1년'), (24, '2년'), (36, '3년')]:
     D = build(h)
     model = xgb().fit(D[FEAT], RATIO(D))
     ok = now[FEAT].notna().sum(axis=1) >= len(FEAT) - 2
@@ -128,9 +128,9 @@ for h, nm in [(12, '1년'), (36, '3년')]:
     print(f'학습 데이터 결정계수 {fit_r2:.3f} (참고용. 위 시간 순 시험 R²와 크게 차이 나면 과적합)')
     joblib.dump(model, OUT + f'아파트매매_v49_{nm}뒤모델.joblib')
 out['비고'] = np.where(now['현재 가격'].notna(), '', '최근12개월 거래 10건 미만')
-out.reset_index().to_csv(OUT + '아파트매매_v49_동네별예측_1년3년뒤.csv', index=False, encoding='utf-8-sig')
-short = out.reset_index()[['행정동_코드', '자치구', '행정동', '현재 평당 금액(최근12개월 실거래, 만원)', '1년 뒤 예측(만원/평)', '3년 뒤 예측(만원/평)']].dropna(subset=['1년 뒤 예측(만원/평)'])
-with open(OUT + '아파트매매_v49_동네별예측_1년3년뒤.json', 'w', encoding='utf-8') as f:
+out.reset_index().to_csv(OUT + '아파트매매_v49_동네별예측_1년2년3년뒤.csv', index=False, encoding='utf-8-sig')
+short = out.reset_index()[['행정동_코드', '자치구', '행정동', '현재 평당 금액(최근12개월 실거래, 만원)', '1년 뒤 예측(만원/평)', '2년 뒤 예측(만원/평)', '3년 뒤 예측(만원/평)']].dropna(subset=['1년 뒤 예측(만원/평)'])
+with open(OUT + '아파트매매_v49_동네별예측_1년2년3년뒤.json', 'w', encoding='utf-8') as f:
     json.dump(json.loads(short.to_json(orient='records', force_ascii=False)), f, ensure_ascii=False, indent=2)       # NaN은 null, 상세는 CSV
-print(f'\n저장: 아파트매매_v49_동네별예측_1년3년뒤.json ({len(short)}곳)')
+print(f'\n저장: 아파트매매_v49_동네별예측_1년2년3년뒤.json ({len(short)}곳)')
 print(short[short['행정동'].isin(['반포2동', '성수2가1동', '상계1동', '개포2동'])].drop(columns=['행정동_코드', '자치구']).to_string(index=False))
