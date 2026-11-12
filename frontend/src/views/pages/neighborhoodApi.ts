@@ -17,7 +17,8 @@ export type Catalog = {
   districts: DistrictScore[]; neighborhoods: Neighborhood[];
   property_models: Record<Transaction, { data_year: number; is_future_forecast: boolean; method: string }>;
   weights: { crime: number; traffic: number }; warnings: string[];
-  score_method: string; tie_rule: string;
+  score_method: string; tie_rule: string; crime_score_method: string;
+  crime_score_formula: { feature: string; direction: "higher_risk" | "lower_risk"; weight_pct: number }[];
 };
 export type Recommendation = Neighborhood & {
   recommendation_rank: number; estimated_amount_manwon: number;

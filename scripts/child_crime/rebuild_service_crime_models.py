@@ -8,8 +8,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def run(relative: str) -> None:
-    subprocess.run([sys.executable, str(ROOT / relative)], cwd=ROOT, check=True)
+def run(relative: str, *args: str) -> None:
+    subprocess.run([sys.executable, str(ROOT / relative), *args], cwd=ROOT, check=True)
 
 
 def main() -> None:
@@ -19,6 +19,20 @@ def main() -> None:
         run("ml/training/compare_child_crime_borough_v2.py")
     if not (priority / "priority_features.csv").is_file():
         run("scripts/child_crime/build_priority_population_features.py")
+    service = ROOT / "models/recommender/v1/child_crime_exposure"
+    deployed_core = [
+        service / f"{h}y" / name
+        for h in (2, 3)
+        for name in (f"child_crime_exposure_{h}y.joblib", "service_forecast.csv", "model_metadata.json")
+    ]
+    deployed_scores = [
+        service / f"{h}y" / name
+        for h in (2, 3)
+        for name in ("feature_score_formula.csv", "feature_score_breakdown.csv")
+    ]
+    if all(path.is_file() for path in deployed_core) and not all(path.is_file() for path in deployed_scores):
+        run("scripts/child_crime/export_service_crime_forecasts.py", "--rescore-only")
+        return
     one_year = ROOT / "models/recommender/v1/child_crime_exposure/1y/child_crime_exposure_1y.joblib"
     two_year = ROOT / "models/experiments/child_crime_exposure_2y_2027_v1/operational_exposure_2y_2027_strict.joblib"
     if not one_year.is_file() or not (one_year.parent / "raw_forecast.csv").is_file():

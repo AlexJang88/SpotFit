@@ -41,7 +41,10 @@ GROUPS = {
         "required": tuple(
             f"child_crime_exposure/{h}y/{name}"
             for h in (2, 3)
-            for name in (f"child_crime_exposure_{h}y.joblib", "service_forecast.csv", "model_metadata.json")
+            for name in (
+                f"child_crime_exposure_{h}y.joblib", "service_forecast.csv", "model_metadata.json",
+                "feature_score_formula.csv", "feature_score_breakdown.csv",
+            )
         ),
     },
 }

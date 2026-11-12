@@ -16,6 +16,7 @@ type Region = { id: string; name: string; parent: string; level: Level; lat: num
 const SEOUL: Region = { id: "seoul", name: "서울특별시", parent: "", level: "시", lat: 37.5665, lng: 126.978 };
 const ZOOM: Record<Level, number> = { 시: 10, 구: 11, 행정동: 13 };
 const money = (n: number | null) => n === null ? "가격 정보 없음" : `${Math.round(n).toLocaleString("ko-KR")}만원`;
+const points = (n: number) => n.toLocaleString("ko-KR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 const districtOf = (r: Region) => r.level === "구" ? r.name : r.parent;
 
 export function FinalServicePage() {
@@ -252,8 +253,8 @@ export function FinalServicePage() {
 
   function scoreSummary(score: DistrictScore) {
     return <div className="score-breakdown">
-      <div><span>아동범죄노출</span><strong>{score.crime_score}<small>점</small></strong><small>{score.crime_prediction_year}년 예측 · 50%</small></div>
-      <div><span>교통안전</span><strong>{score.traffic_score}<small>점</small></strong><small>{score.traffic_prediction_year}년 참고 · 50%</small></div>
+      <div><span>아동범죄노출</span><strong>{points(score.crime_score)}<small>점</small></strong><small>Feature 가중합 · {score.crime_prediction_year}년 · 50%</small></div>
+      <div><span>교통안전</span><strong>{points(score.traffic_score)}<small>점</small></strong><small>5분위 점수 · {score.traffic_prediction_year}년 · 50%</small></div>
     </div>;
   }
 
@@ -293,7 +294,7 @@ export function FinalServicePage() {
             {activePanel === "info" && <div className="info-panel">
                 {boundaryStatus && <details className="boundary-status"><summary>행정동 {boundaryStatus.applied_year_month.replace("-", ".")} 기준</summary><div><b>{boundaryStatus.neighborhood_count}개 행정동</b>{boundaryStatus.upcoming_changes.length ? boundaryStatus.upcoming_changes.map(c => <a key={c.id} href={c.source_url} target="_blank" rel="noreferrer">{c.district} · {c.title}<small>{c.effective_from ?? "시행일 확인 중"}</small></a>) : <p>확인된 변경 예정이 없습니다.</p>}</div></details>}
                 <details className="browse-regions"><summary>지도에 표시한 지역 <span>{visible.length}개</span></summary><div>{rankedRegions.map(r => <button key={r.id} onClick={() => choose(r)}><span>{r.name}<small>{r.parent}</small></span><span>{districts.get(districtOf(r))?.score ?? "—"}<small>소속 구 점수</small></span></button>)}</div></details>
-                <details className="data-notes"><summary>점수·가격 기준 보기</summary><p>아동범죄노출과 교통안전의 5분위 점수를 50%씩 자동 반영합니다. 25개 구를 점수순으로 정렬해 5개씩 A~E 등급을 부여합니다. 동점은 범죄안전 점수, 자치구명 순입니다.</p><p>예산 범위에 맞는 구마다 가장 저렴한 동을 하나씩 고르고, 구 점수가 높은 순으로 최대 5곳을 추천합니다. 가격 자료가 없는 동은 제외합니다.</p><p>면적을 입력하면 행정동 대표 평당가로 총액을 환산합니다. 미입력 시 지역 대표 총액을 사용합니다.</p>{catalog?.warnings.map(w => <p key={w}>{w}</p>)}<p>아동범죄노출은 실제 아동 피해율이 아닌 지역 범죄노출 대리지표입니다.</p></details>
+                <details className="data-notes"><summary>점수·가격 기준 보기</summary><p>아동범죄노출은 모델 Feature별 관련도를 합계 100%로 정규화하고, 각 Feature의 자치구 순위를 100·80·60·40·20점으로 바꾼 뒤 가중합합니다. 교통안전 5분위 점수와 각각 50% 반영합니다.</p><p>최종 동네점수로 25개 구를 정렬해 5개씩 A~E 등급을 부여합니다. 동점은 범죄안전 점수, 자치구명 순입니다.</p><p>예산 범위에 맞는 구마다 가장 저렴한 동을 하나씩 고르고, 구 점수가 높은 순으로 최대 5곳을 추천합니다. 가격 자료가 없는 동은 제외합니다.</p><p>면적을 입력하면 행정동 대표 평당가로 총액을 환산합니다. 미입력 시 지역 대표 총액을 사용합니다.</p>{catalog?.warnings.map(w => <p key={w}>{w}</p>)}<p>아동범죄노출은 실제 아동 피해율이 아닌 지역 범죄노출 대리지표입니다.</p></details>
 
             </div>}
           </section>}
@@ -311,12 +312,12 @@ export function FinalServicePage() {
           <div className="price-highlight"><span>{transaction === "sale" ? "매매" : "전세"} 대표가격 추정</span><strong>{money(selectedPrice)}</strong><small>{areaValue ? `전용 ${areaValue}㎡ 환산 총액` : selected.level === "구" ? "하위 행정동 대표 총액의 단순평균" : "최신 거래 특성 기준 대표 총액"}</small></div>
           <p className="field-hint">가격 기준 {catalog?.property_models[transaction].data_year ?? "—"}년 · 미래가격 예측 아님</p>
           {selected.level === "행정동" && !selectedProperty && <p className="field-hint">해당 행정동의 가격 자료가 없어 소속 구 점수만 제공합니다.</p>}
-          {selectedScore && <><div className="district-score-title"><span>{selectedScore.district} 동네점수<small>소속 자치구 기준</small></span><strong>{selectedScore.score}<small>점</small></strong><span className={`grade-badge grade-${selectedScore.grade.toLowerCase()}`}>{selectedScore.grade}</span></div>{scoreSummary(selectedScore)}<p className="field-hint">서울 25개 구 중 {selectedScore.rank}위 · 같은 구의 행정동은 동일 점수</p></>}
+          {selectedScore && <><div className="district-score-title"><span>{selectedScore.district} 동네점수<small>소속 자치구 기준</small></span><strong>{points(selectedScore.score)}<small>점</small></strong><span className={`grade-badge grade-${selectedScore.grade.toLowerCase()}`}>{selectedScore.grade}</span></div>{scoreSummary(selectedScore)}<p className="field-hint">서울 25개 구 중 {selectedScore.rank}위 · 같은 구의 행정동은 동일 점수</p></>}
           <button className="secondary-button" onClick={() => detail.current?.showModal()}>가격·점수 자세히 보기 ↗</button>
         </article>}
         <div className="map-legend" aria-label="동네점수 등급: A가 가장 높고 E가 가장 낮음">{["A", "B", "C", "D", "E"].map(g => <span key={g} className={`grade-${g.toLowerCase()}`} title={`동네점수 ${g}등급`}>{g}</span>)}</div>
       </section>
     </div>
-    <dialog className="service-dialog" ref={detail}><form method="dialog"><button aria-label="상세 닫기">×</button></form><span className="eyebrow">PRICE & NEIGHBORHOOD SCORE</span><h2>{selected?.name}</h2><p>{selected?.parent} · {transaction === "sale" ? "매매" : "전세"}</p><div className="price-highlight"><span>선택 조건의 대표가격 추정</span><strong>{money(selectedPrice)}</strong></div>{selectedScore && <><h3>{selectedScore.district} 기준 동네점수 {selectedScore.score}점</h3>{scoreSummary(selectedScore)}</>}{catalog?.warnings.map(w => <p className="muted" key={w}>{w}</p>)}<p className="muted">단지별 매물가격이나 실제 아동 피해확률을 의미하지 않습니다. 면적 입력 시 행정동 대표 평당가로 환산한 참고 추정값입니다.</p></dialog>
+    <dialog className="service-dialog" ref={detail}><form method="dialog"><button aria-label="상세 닫기">×</button></form><span className="eyebrow">PRICE & NEIGHBORHOOD SCORE</span><h2>{selected?.name}</h2><p>{selected?.parent} · {transaction === "sale" ? "매매" : "전세"}</p><div className="price-highlight"><span>선택 조건의 대표가격 추정</span><strong>{money(selectedPrice)}</strong></div>{selectedScore && <><h3>{selectedScore.district} 기준 동네점수 {points(selectedScore.score)}점</h3>{scoreSummary(selectedScore)}</>}{catalog?.warnings.map(w => <p className="muted" key={w}>{w}</p>)}<p className="muted">단지별 매물가격이나 실제 아동 피해확률을 의미하지 않습니다. 면적 입력 시 행정동 대표 평당가로 환산한 참고 추정값입니다.</p></dialog>
   </main>;
 }

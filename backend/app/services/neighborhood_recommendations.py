@@ -26,7 +26,10 @@ def forecast_payload(horizon: int) -> dict:
     if horizon not in (2, 3):
         raise ValueError("2년 또는 3년 모델을 선택해 주세요.")
     model, csv, metadata = required_paths(horizon)
-    if not all(path.is_file() for path in (model, csv, metadata)):
+    directory = model.parent
+    formula_path = directory / "feature_score_formula.csv"
+    breakdown_path = directory / "feature_score_breakdown.csv"
+    if not all(path.is_file() for path in (model, csv, metadata, formula_path, breakdown_path)):
         raise RecommenderV1Error(f"{horizon}년 범죄모델 산출물이 없습니다.")
     data = pd.read_csv(csv, encoding="utf-8-sig")
     if len(data) != 25 or data.district.nunique() != 25:
@@ -35,10 +38,28 @@ def forecast_payload(horizon: int) -> dict:
         raise RecommenderV1Error("범죄 예측의 기준연도와 예측연도가 맞지 않습니다.")
     if not all(math.isfinite(float(y)) for y in data.predicted_y):
         raise RecommenderV1Error("범죄 예측값이 유효하지 않습니다.")
-    points = 100 - ((data.predicted_y.rank(ascending=True, method="min").astype(int) - 1) // 5) * 20
-    if not data.safety_score.eq(points).all():
-        raise RecommenderV1Error("범죄 점수와 예측 순위의 환산 규칙이 일치하지 않습니다.")
+    formula = pd.read_csv(formula_path, encoding="utf-8-sig")
+    breakdown = pd.read_csv(breakdown_path, encoding="utf-8-sig")
+    required_formula = {"feature", "direction", "weight_pct"}
+    required_breakdown = {"district", "feature", "quintile_points", "weight_pct", "weighted_contribution"}
+    if not required_formula.issubset(formula.columns) or not required_breakdown.issubset(breakdown.columns):
+        raise RecommenderV1Error("범죄 Feature 점수 산출물 형식이 올바르지 않습니다.")
+    if not math.isclose(float(formula.weight_pct.sum()), 100.0, abs_tol=1e-6):
+        raise RecommenderV1Error("범죄 Feature 가중치 합계가 100%가 아닙니다.")
+    if set(breakdown.district) != set(data.district) or breakdown.feature.nunique() != len(formula):
+        raise RecommenderV1Error("범죄 Feature별 자치구 점수 내역이 완전하지 않습니다.")
+    recomputed = breakdown.groupby("district").weighted_contribution.sum()
+    actual = data.set_index("district").safety_score
+    if not all(math.isclose(float(actual[d]), float(v), abs_tol=1e-6) for d, v in recomputed.items()):
+        raise RecommenderV1Error("범죄 Feature 가중합과 서비스 점수가 일치하지 않습니다.")
+    if not data.safety_score.between(20, 100).all() or data.safety_score.nunique() <= 5:
+        raise RecommenderV1Error("범죄 Feature 가중합 점수가 연속 점수 구조가 아닙니다.")
+    score_formula = [{
+        "feature": r.feature, "direction": r.direction, "weight_pct": float(r.weight_pct),
+    } for r in formula.sort_values("weight_pct", ascending=False).itertuples(index=False)]
     return {"data_year": int(data.base_year.iloc[0]), "prediction_year": int(data.prediction_year.iloc[0]),
+            "score_method": "Feature별 5분위 안전점수 × 관련도 가중치 합",
+            "score_formula": score_formula,
             "forecasts": [{"district": r.district, "predicted_score": float(r.safety_score),
                            "predicted_exposure_y": float(r.predicted_y)} for r in data.itertuples()]}
 
@@ -174,7 +195,9 @@ def district_scores(horizon: int) -> dict:
         "crime_prediction_year": crime["prediction_year"],
         "traffic_prediction_year": int(traffic_meta["prediction_year"]),
         "weights": WEIGHTS,
-        "score_method": "각 영역 5분위 점수(높을수록 낮은 위험)를 50%씩 합산",
+        "score_method": "범죄 Feature 가중합 안전점수와 교통안전 5분위 점수를 50%씩 합산",
+        "crime_score_method": crime["score_method"],
+        "crime_score_formula": crime["score_formula"],
         "tie_rule": "종합점수 → 범죄안전 점수 → 자치구명 순으로 동점 정렬",
     }
 

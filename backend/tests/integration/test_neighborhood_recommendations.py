@@ -13,6 +13,11 @@ def client(monkeypatch):
     names = [f"구{i:02}" for i in range(25)]
     def crime(horizon):
         return {"data_year": 2025, "prediction_year": 2025 + horizon,
+                "score_method": "Feature별 5분위 안전점수 × 관련도 가중치 합",
+                "score_formula": [
+                    {"feature": "feature_a", "direction": "higher_risk", "weight_pct": 60.0},
+                    {"feature": "feature_b", "direction": "lower_risk", "weight_pct": 40.0},
+                ],
                 "forecasts": [{"district": name, "predicted_score": 100 - (i // 5) * 20,
                                "predicted_exposure_y": i / 10} for i, name in enumerate(names)]}
     monkeypatch.setattr(service, "forecast_payload", crime)
@@ -147,6 +152,8 @@ def test_catalog_has_fixed_two_domain_score_and_truthful_years(client):
     for horizon in (2, 3):
         data = client.get('/api/neighborhoods/catalog', params={'horizon': horizon}).json()
         assert data['weights'] == {'crime': .5, 'traffic': .5}
+        assert sum(row['weight_pct'] for row in data['crime_score_formula']) == 100
+        assert 'Feature' in data['crime_score_method']
         assert data['crime_prediction_year'] == 2025 + horizon
         assert data['traffic_prediction_year'] == 2025
         assert len(data['districts']) == 25
