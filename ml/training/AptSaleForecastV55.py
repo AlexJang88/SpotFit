@@ -1,0 +1,154 @@
+# v55 아파트 매매 1년·2년·3년 뒤 평당 금액 예측 (2010~2026 거래, v46에서 직장인구·경비 인원 제외 → h개월 뒤 동네 평당 금액, XGBoost, 시간 순 평가) + 동네별 JSON
+#   데이터: data/raw/부동산/아파트_매매_2010_2026.csv (2010~2014 + 2015~2020 + 2021~2026 합본)
+#   항목: v46의 13개에서 직장인구·100세대당 경비 인원 제외 = 11개 (둘 다 2021년 이후 값뿐이라 제외. 빼도 시간 순 시험 결과가 같았음)
+#        현재 가격은 유지 (현재 가격이 없으면 모델이 시기만 보고 가격을 맞혀 최근 시점에서 무너져서 추가함)
+#        v55: v54에서 단지 정보 2개(단지 평균 세대수, 지역난방 비율) 제외 = 11개 (2026년 값을 전 기간에 적용하던 항목. 빼도 시험 결과가 같았음: 1년 오차율 7.58→7.54%, 3년 R² 0.534→0.538)
+#        v55: v52의 현재 가격 항목을 상대 가격(동네 가격 ÷ 같은 시기 서울 가격)으로 교체 = 13개 (정답은 이전처럼 현재 가격 대비 비율을 맞히고 현재 가격을 곱해 되돌림)
+#        v55: v51에 주택담보대출 금리(연%) 1개만 추가 = 13개 (기준 시점 그 달의 금리, 한국은행 예금은행 신규취급액 기준)
+#        v51 수정: 거래일(년) 제외(시기를 외우는 문제), 최근 가격 상승률 2개 추가 (동네 최근 6개월 가격/직전 6개월 가격, 최근 12개월 가격/직전 12개월 가격) = 12개
+#        층수·완공연도·평균 전용면적 (기준 시점 직전 12개월 거래의 동네 평균)
+#                          + 한강공원 거리·업무지구(강남·광화문·여의도) 거리 (동네별 값 하나)
+#   기준 시점 e(매월 말): 정답 = e+h개월 시점의 직전 12개월 동네 평당 금액 중앙값(거래 10건 이상) (h=12: 1년, h=24: 2년, h=36: 3년)
+#   학습 방식: 정답을 '현재 가격 대비 비율'(로그)로 바꿔 맞히고, 예측 후 현재 가격을 곱해 평당 금액으로 되돌림 (출력은 1년·2년·3년 뒤 평당 금액)
+#   평가: 시간 순. 시험 구간 첫 기준 시점 전에 정답이 이미 알려진 기준 시점만 학습에 사용. 기간이 길어져 2년·3년 뒤도 시험 가능
+#   한계: 취소 거래는 2021년 이전 구간에서 제외하지 못함
+# 실행: python AptSaleForecastV46.py  →  python AptSaleForecastV55.py   (내 PC에서만, 서버 기록 없음)
+import json, os
+import joblib, numpy as np, pandas as pd
+from pyproj import Transformer
+from scipy.spatial import cKDTree
+from sklearn.inspection import permutation_importance
+from apt_sale_data import OUT, PROC, Y
+from apt_sale_compare import xgb
+
+DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data') + os.sep
+BIZ = {'강남(GBD)': (127.0276, 37.4979), '광화문(CBD)': (126.9770, 37.5657), '여의도(YBD)': (126.9242, 37.5216)}      # 업무지구 기준점(경도, 위도), v44·v45와 같음
+
+# ---------- 1. 데이터 준비 ----------
+a = pd.read_csv(PROC + '아파트_매매_2010_2026.csv', low_memory=False, usecols=['행정동_코드(상권분석)', '자치구', '행정동', '계약일', Y, '층', '건축년도', '전용면적(㎡)'])                  # 합본 하나만 사용
+a['동'] = a['행정동_코드(상권분석)'].astype(int)
+d = a.groupby('동')[['자치구', '행정동']].last().rename_axis('행정동_코드')       # 동네 목록과 이름도 합본에서 (직장인구 등이 없어도 동네를 버리지 않음)
+area = pd.read_csv(DATA + 'raw/부동산/서울시 상권분석서비스(영역-행정동).csv', encoding='cp949').drop_duplicates('행정동_코드').set_index('행정동_코드').reindex(d.index)
+hp = pd.read_csv(DATA + 'raw/부동산/한강공원 위치현황.csv', encoding='cp949').iloc[1:]
+hx, hy = Transformer.from_crs('EPSG:4326', 'EPSG:5181', always_xy=True).transform(hp['위도'].astype(float).values, hp['경도'].astype(float).values)
+
+def haversine_km(lon0, lat0, lon, lat):
+    p1, p2 = np.radians(lat0), np.radians(lat)
+    h = np.sin((p2 - p1) / 2) ** 2 + np.cos(p1) * np.cos(p2) * np.sin(np.radians(lon - lon0) / 2) ** 2
+    return 2 * 6371.0088 * np.arcsin(np.sqrt(h))
+
+static = pd.DataFrame(index=d.index)                                        # 시간이 지나도 변하지 않는 동네 특성
+static['가장 가까운 한강공원까지 거리(km)'] = cKDTree(np.c_[hx, hy]).query(area[['엑스좌표_값', '와이좌표_값']].values)[0] / 1000
+lon, lat = Transformer.from_crs('EPSG:5181', 'EPSG:4326', always_xy=True).transform(area['엑스좌표_값'].values, area['와이좌표_값'].values)
+for k, (lo, la) in BIZ.items(): static[f'{k}까지 거리(km)'] = haversine_km(lo, la, lon, lat)
+
+dt = pd.to_datetime(a['계약일'])
+a['m'] = dt.dt.year * 12 + dt.dt.month - 1
+a['거래일(년)'] = dt.dt.year + (dt.dt.dayofyear - 1) / 365
+m_lo, m_hi = int(a['m'].min()), int(a['m'].max())
+ends = list(range(m_lo + 11, m_hi + 1))                                     # 기준 시점: 직전 12개월이 모두 데이터 안에 있는 달
+lab = lambda m: f'{m // 12}-{m % 12 + 1:02d}'
+USE_TIME = False                                                            # 거래일(년) 제외: 모델이 '몇 년도에 올랐나'를 외워 검증 점수만 좋아 보일 수 있어서 대신 '최근 상승률' 항목을 사용
+
+_rt = pd.read_csv(DATA + 'raw/부동산/예금은행_대출금리_신규취급액_기준__20261106130754.csv', encoding='cp949')            # 한국은행 예금은행 대출금리(신규취급액 기준)
+_rt = pd.to_numeric(_rt[_rt['계정항목별'].str.strip() == '주택담보대출 (연리%)'].iloc[0, 1:], errors='coerce')
+RATE = {int(c[:4]) * 12 + int(c[5:7]) - 1: v for c, v in _rt.items()}                           # {월 번호: 금리(연%)}
+
+P6 = {}                                                                     # 시점별 동네 최근 6개월 가격 (거래 10건 이상)
+for e in range(m_lo + 5, m_hi + 1):
+    w6 = a[(a['m'] >= e - 5) & (a['m'] <= e)]
+    g6 = w6.groupby('동')[Y].agg(['median', 'size']).reindex(d.index)
+    P6[e] = g6['median'].where(g6['size'] >= 10)
+
+P, S, F = {}, {}, {}                                                        # 시점별 동네 가격 / 서울 가격 / 동네 항목
+for e in ends:
+    w = a[(a['m'] >= e - 11) & (a['m'] <= e)]
+    g = w.groupby('동')[Y].agg(['median', 'size']).reindex(d.index)
+    P[e], S[e] = g['median'].where(g['size'] >= 10), w[Y].median()
+    f = w.groupby('동').agg(층수=('층', 'mean'), 거래일=('거래일(년)', 'mean'), 완공연도=('건축년도', 'mean'), 면적=('전용면적(㎡)', 'mean')).reindex(d.index)
+    f.columns = ['층수', '거래일(년)', '완공연도', '평균 전용면적(㎡)']
+    f['6개월 상승률(%)'] = (P6[e] / P6[e - 6] - 1) * 100 if (e - 6) in P6 else np.nan             # 최근 6개월 가격 / 그 직전 6개월 가격
+    f['12개월 상승률(%)'] = (P[e] / P[e - 12] - 1) * 100 if (e - 12) in P else np.nan             # 최근 12개월 가격 / 그 직전 12개월 가격
+    f['주택담보대출 금리(연%)'] = RATE.get(e, np.nan)                                            # 그 달 주택담보대출 신규취급액 금리 (모든 동네에 같은 값, 그 시점에 알려진 값)
+    F[e] = f
+
+FEAT = (['층수'] + (['거래일(년)'] if USE_TIME else []) + ['완공연도', '평균 전용면적(㎡)', '6개월 상승률(%)', '12개월 상승률(%)'] + list(static.columns) + ['주택담보대출 금리(연%)', '상대 가격(서울 대비)'])         # v45 항목(거래일 제외) + 최근 상승률 2개 + 현재 가격
+print(f'거래 {len(a):,}건 | 기간 {lab(m_lo)} ~ {lab(m_hi)} | 기준 시점 {len(ends)}개 | 동네 {len(d)}곳 | 항목 {len(FEAT)}개 ({'거래일 포함' if USE_TIME else '거래일(년) 제외'}, 현재 가격 포함)')
+
+def feats(e):
+    df = F[e].join(static)
+    df['현재 가격'], df['e'] = P[e], e                                          # 현재 가격은 정답 비율·되돌리기에만 쓰고 항목에서는 뺌
+    df['상대 가격(서울 대비)'] = P[e] / S[e]                                     # 같은 시기 서울 전체 가격 대비 이 동네 가격 (1.3 = 서울의 1.3배)
+    return df
+
+def build(h):
+    rows = []
+    for e in ends:
+        if (e + h) in P:
+            df = feats(e)
+            df['정답'] = P[e + h]
+            rows.append(df)
+    return pd.concat(rows).dropna(subset=['현재 가격', '정답'])
+
+def score(true, hat):
+    err = (hat - true).abs() / true * 100
+    r2 = 1 - ((true - hat) ** 2).sum() / ((true - true.mean()) ** 2).sum()
+    return err.median(), (err <= 10).mean() * 100, (hat - true).abs().mean(), r2
+
+# ---------- 2. 시간 순 예측 시험 (1년·2년·3년) ----------
+RATIO = lambda df: np.log(df['정답'] / df['현재 가격'])                          # 학습 정답: 현재 가격 대비 비율(로그)
+
+def run_tests(h, starts):
+    D = build(h); rows = []; last = None
+    for ym in starts:
+        lo = ym * 12                                                        # 시험 기준 시점: ym년 1월 ~ 12월
+        hi = lo + 11
+        tr = D[D['e'] + h <= lo]                                            # 학습: 정답이 시험 시작 전에 이미 알려진 기준 시점만
+        te = D[(D['e'] >= lo) & (D['e'] <= hi)]
+        if len(te) == 0 or tr['e'].nunique() < 24: continue
+        model = xgb().fit(tr[FEAT], RATIO(tr))
+        last = (ym, model, te)
+        seoul_growth = te['e'].map(lambda e: S[e] / S[e - 12] - 1 if (e - 12) in S else 0.0)
+        preds = {'그대로': te['현재 가격'],
+                 '서울 변화율 규칙': te['현재 가격'] * (1 + seoul_growth) ** (h // 12),
+                 'v55 예측 모델': te['현재 가격'] * np.exp(model.predict(te[FEAT]))}
+        for method, hat in preds.items():
+            mid, within10, mae, r2 = score(te['정답'], hat)
+            rows.append({'시험': f'{ym}년 기준', '방법': method, '학습 시점 수': tr['e'].nunique(), '오차율 중앙(%)': round(mid, 1), '10% 이내(%)': round(within10),
+                         '평균 오차(만원/평)': round(mae), '결정계수 R²': round(r2, 3)})
+    return pd.DataFrame(rows), last
+
+order = ['그대로', '서울 변화율 규칙', 'v55 예측 모델']
+for h, nm, starts in [(12, '1년', range(2015, 2026)), (24, '2년', range(2015, 2025)), (36, '3년', range(2016, 2024))]:
+    res, (ym, hold_model, hold_te) = run_tests(h, starts)
+    print(f'\n===== {nm} 뒤 예측 시험 (시간 순, 시험별 표는 CSV로 저장) =====')
+    res.to_csv(OUT + '아파트매매_v55_' + nm + '뒤_시험별결과.csv', index=False, encoding='utf-8-sig')          # 시험별 표는 파일로만 저장
+    avg = res.groupby('방법')[['오차율 중앙(%)', '10% 이내(%)', '평균 오차(만원/평)', '결정계수 R²']].mean().round(3).reindex(order)
+    print(f'\n[{nm} 뒤: 시험 {res["시험"].nunique()}번 평균]'); print(avg.to_string())
+    pi = permutation_importance(hold_model, hold_te[FEAT], RATIO(hold_te), n_repeats=5, random_state=0)       # 모델이 처음 보는 가장 최근 시험 구간에서 측정
+    imp = pd.Series(pi.importances_mean, index=FEAT).sort_values(ascending=False)
+    print(f'\n[{nm} 뒤 모델 항목 중요도: {ym}년 시험 구간(학습에 안 쓴 데이터)에서 섞으면 R²가 떨어지는 정도, 상위 8개]'); print(imp.head(8).round(3).to_string())
+
+# ---------- 3. 최종 예측과 JSON ----------
+now = feats(m_hi)
+out = pd.DataFrame({'자치구': d['자치구'], '행정동': d['행정동'], '현재 평당 금액(최근12개월 실거래, 만원)': now['현재 가격'].round(0)})
+print('\n===== v55 1년·2년·3년 뒤 예측 (2026-09 기준) =====')
+for h, nm in [(12, '1년'), (24, '2년'), (36, '3년')]:
+    D = build(h)
+    model = xgb().fit(D[FEAT], RATIO(D))
+    ok = now[FEAT].notna().sum(axis=1) >= len(FEAT) - 2
+    pred = (now['현재 가격'] * np.exp(model.predict(now[FEAT]))).where(ok)
+    out[f'{nm} 뒤 예측(만원/평)'] = pred.round(0)
+    out[f'{nm} 뒤 예상 변화율(%)'] = ((pred / now['현재 가격'] - 1) * 100).round(1)
+    ch = out[f'{nm} 뒤 예상 변화율(%)'].dropna()
+    fit_r2 = score(D['정답'], D['현재 가격'] * np.exp(model.predict(D[FEAT])))[3]                  # 학습 데이터에서의 결정계수 (참고용, 과적합 확인)
+    print(f'\n[{nm} 뒤 모델] 학습 시점 {D["e"].nunique()}개 | 변화율 중앙 {ch.median():+.1f}% (범위 {ch.min():+.0f}%~{ch.max():+.0f}%, ±30% 넘는 동네 {int((ch.abs() > 30).sum())}곳)')
+    print(f'학습 데이터 결정계수 {fit_r2:.3f} (참고용. 위 시간 순 시험 R²와 크게 차이 나면 과적합)')
+    joblib.dump(model, OUT + f'아파트매매_v55_{nm}뒤모델.joblib')
+out['비고'] = np.where(now['현재 가격'].notna(), '', '최근12개월 거래 10건 미만')
+out.reset_index().to_csv(OUT + '아파트매매_v55_동네별예측_1년2년3년뒤.csv', index=False, encoding='utf-8-sig')
+short = out.reset_index()[['행정동_코드', '자치구', '행정동', '현재 평당 금액(최근12개월 실거래, 만원)', '1년 뒤 예측(만원/평)', '2년 뒤 예측(만원/평)', '3년 뒤 예측(만원/평)']].dropna(subset=['1년 뒤 예측(만원/평)'])
+with open(OUT + '아파트매매_v55_동네별예측_1년2년3년뒤.json', 'w', encoding='utf-8') as f:
+    json.dump(json.loads(short.to_json(orient='records', force_ascii=False)), f, ensure_ascii=False, indent=2)       # NaN은 null, 상세는 CSV
+print(f'\n저장: 아파트매매_v55_동네별예측_1년2년3년뒤.json ({len(short)}곳)')
+print(short[short['행정동'].isin(['반포2동', '성수2가1동', '상계1동', '개포2동'])].drop(columns=['행정동_코드', '자치구']).to_string(index=False))

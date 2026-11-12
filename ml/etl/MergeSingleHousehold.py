@@ -2,7 +2,9 @@
 import glob, os, re
 import pandas as pd
 
-DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data', 'raw', '1인가구')
+DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data', 'raw', '1인가구')         # 월별 엑셀 원본
+OUT = os.path.join(DIR, '..', '..', 'interim', '1인가구')                                                    # 합친 결과 (중간 결과라 data/interim)
+os.makedirs(OUT, exist_ok=True)
 
 for year_dir in sorted(glob.glob(os.path.join(DIR, '[0-9]' * 4))):
     year = os.path.basename(year_dir)
@@ -14,12 +16,12 @@ for year_dir in sorted(glob.glob(os.path.join(DIR, '[0-9]' * 4))):
         months.append(df)
 
     merged = pd.concat(months).sort_values(['기준_년월', '행정동코드', '성별', '연령대'])
-    out = os.path.join(DIR, f'1인가구_{year}년.csv')
+    out = os.path.join(OUT, f'1인가구_{year}년.csv')
     merged.to_csv(out, index=False, encoding='cp949')
     print(f'{year}년: {len(months)}개월, {len(merged)}행 → {os.path.basename(out)}')
 
 # 연도별 CSV 4개 → 1인가구_전체.csv 하나로 (파일 내용을 그대로 이어 붙임: 헤더는 한 번만, 값은 변경 없음)
-years = sorted(glob.glob(os.path.join(DIR, '1인가구_[0-9][0-9][0-9][0-9]년.csv')))
+years = sorted(glob.glob(os.path.join(OUT, '1인가구_[0-9][0-9][0-9][0-9]년.csv')))
 all_lines = []
 for i, f in enumerate(years):
     with open(f, 'rb') as fp:
@@ -29,7 +31,7 @@ for i, f in enumerate(years):
     assert lines[0] == header, f'{os.path.basename(f)} 헤더가 다름'    # 컬럼이 다르면 중단
     all_lines += lines[1:]
 
-out = os.path.join(DIR, '1인가구_전체.csv')
+out = os.path.join(OUT, '1인가구_전체.csv')
 with open(out, 'wb') as fp:
     fp.write(header + b''.join(all_lines))
 print(f'전체: {len(years)}개 파일, {len(all_lines)}행 → {os.path.basename(out)}')

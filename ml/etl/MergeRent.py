@@ -4,7 +4,7 @@ import glob, os
 import numpy as np, pandas as pd
 
 RAW = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data', 'raw', '부동산')
-OUT = os.path.join(RAW, '..', '..', 'processed', '부동산', '서울시_전월세가_전체.csv')
+OUT = os.path.join(RAW, '..', '..', 'interim', '부동산', '서울시_전월세가_전체.csv')          # 중간 결과라 data/interim
 
 def read(f):            # 파일마다 글자 인코딩이 달라서(UTF-8 / CP949) 둘 다 시도. 모든 값을 글자로 읽어 '0001' 같은 앞자리 0을 지키지 않게 숫자로 바뀌는 것 방지
     for enc in ['utf-8-sig', 'cp949']:

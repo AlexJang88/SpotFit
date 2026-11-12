@@ -1,0 +1,12 @@
+.safety-panel{margin-top:24px;border-top:1px solid #dbe8df;padding-top:16px}
+.safety-panel h2{font-size:19px}.safety-panel h3{margin:18px 0 8px;font-size:14px}
+.safety-warning{background:#fff3d7;padding:10px;border-radius:8px;font-size:12px;color:#805f2c;line-height:1.5}
+.safety-error{background:#ffe7e7;color:#8b3030;padding:10px;border-radius:8px;font-size:12px}
+.safety-meta{display:grid;gap:5px;padding:10px;border:1px solid #dbe8df;border-radius:9px;font-size:12px}
+.safety-meta span{display:flex;justify-content:space-between}.grade-guide{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:10px;font-size:11px}
+.grade-guide span{display:flex;align-items:center;gap:6px}.grade{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;color:white;font-style:normal}
+.grade-a{background:#176b4d}.grade-b{background:#4b8e62}.grade-c{background:#b29137}.grade-d{background:#c66f39}.grade-e{background:#a54141}
+.safety-ranking{max-height:440px;overflow:auto}.safety-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px;background:#edf5ef;margin-top:6px;padding:9px;border-radius:8px;font-size:12px}
+.safety-row span{display:grid;gap:3px}.safety-row small{color:#6c8174}.direction{font-size:10px;font-style:normal;padding:3px 5px;border-radius:5px}.direction-상승{color:#176b4d;background:#d8eee4}.direction-유지{color:#596b60;background:#e1e8e3}.direction-하락{color:#923e3e;background:#f5dddd}
+.grade-guide{gap:8px}.grade-a{background:#168b67}.grade-b{background:#65b97f}.grade-c{background:#e5bd45;color:#493b0b}.grade-d{background:#e8893f}.grade-e{background:#d95555}
+

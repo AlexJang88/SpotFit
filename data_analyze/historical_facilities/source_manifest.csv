@@ -1,0 +1,10 @@
+category,local_source,official_source,period,target_method,status,limitation
+cctv,서울시_CCTV정보.csv,https://data.seoul.go.kr/bsp/wgs/dataView/data300View/29555.do,2021-2025,설치연월 기반 연말 누적 복원 및 자치구 연도별 공식 집계 검증,reconstructed,현재 목록에서 제거된 CCTV는 파악 불가
+tourist_attractions,서울시_관광 명소.csv,https://know.tour.go.kr/stat/visitStatDis/report.do,2021-2025,주요관광지점 입장객 통계집을 관광 수요 대체지표로 수집,official_alternative_collected,명소 목록 증감이 아니라 집계 대상 관광지점의 방문객 수이며 서울 전체 관광객 총량도 아님
+model_restaurants,서울시_모범음식점정보.csv,https://data.seoul.go.kr/,2021-2025,지정·재지정·지정취소·폐업일 기반 연말 상태 복원,reconstructed_approximate,미래일자 등 비정상 날짜와 완전하지 않은 재지정 이력 존재
+hospitals,서울시_병원.csv,https://data.seoul.go.kr/,2021-2025,인허가·취소·폐업·휴업일 기반 연말 상태 복원,reconstructed,병원 인허가 자료로 의원 전체를 포함하지 않음
+passage_inconvenience,서울시_통행불편지역.csv,https://data.seoul.go.kr/dataList/OA-21207/S/1/datasetView.do,2021-2025,조사일자 기준 연도별 조사 기록 분리,partial,공식 페이지에서 2022와 2026 파일만 확인되며 조사 기록은 연말 재고가 아님
+parks,전국도시공원정보표준데이터.csv,https://www.data.go.kr/,2021-2025,현재 목록의 지정고시일 기반 연말 누적 복원,reconstructed_current_survivors,폐지 공원과 과거 경계·면적 변경을 알 수 없음
+child_centers,전국지역아동센터표준데이터.csv,https://www.icareinfo.go.kr/notice/notice/noticeList.do,2021-2025,아동권리보장원 연도 말 전국 주소록 5개년 수집 및 공통 열 정규화,official_collected,연도별 공개 열 구성이 다르고 위경도가 없어 주소 기반 공간 매핑 필요
+school_zones,전국초등학교통학구역표준데이터.csv,https://schoolzone.emac.kr/publicData/dataInfo.do,2021-2025,생성일 기반 목록 복원 후 반기별 SHP 원본 추가 확보,reconstructed_current_survivors,폐지·경계 변경 이력과 과거 SHP가 없음
+schools,전국초중등학교위치표준데이터.csv,https://schoolinfo.go.kr/ng/go/pnnggo_a01_l0.do,2021-2025,설립일 기반 목록 복원 후 학교알리미·EDSS로 검증,reconstructed_current_survivors,현재 운영 학교만 있어 과거 폐교가 누락됨
