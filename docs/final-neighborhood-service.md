@@ -31,6 +31,22 @@
 
 ## 서버에 필요한 파일
 
+### 누락 모델 자동 복구
+
+백엔드 시작 시 `MODEL_AUTO_BOOTSTRAP=1`(기본값)이면 부동산, 교통안전, 아동 지역범죄
+노출 모델군의 서비스 산출물을 검사한다. 모두 있으면 학습을 건너뛰고, 하나라도 없으면 해당
+그룹만 백그라운드에서 재생성한다. 서버 프로세스는 즉시 기동되며 프론트엔드는 모델 준비 중
+503을 받으면 10초 간격으로 자동 재조회한다.
+
+- 상태: `GET /api/models/status`
+- 실패 후 관리자 재시도: `POST /api/models/bootstrap`, 헤더 `X-Model-Admin-Key`
+- 그룹별 로그: `artifacts/model_bootstrap/property.log`, `traffic.log`, `child_crime.log`
+- 자동복구 비활성화: `MODEL_AUTO_BOOTSTRAP=0`
+
+준비 완료 판정은 모델 파일 하나가 아니라 API가 사용하는 예측 CSV·메타데이터·부동산 가격
+스냅샷까지 포함한다. 학습 원자료가 없거나 스크립트가 실패하면 상태가 `failed`가 되고 누락
+파일 목록을 상태 API에서 반환한다. 다른 모델 그룹의 복구는 계속 진행한다.
+
 Git으로 소스만 전달하면 모델/가격 자료는 누락될 수 있다. 다음 로컬 파일은 별도 동기화한다.
 
 1. `models/recommender/v1/child_crime_exposure/2y/`와 `3y/`: 각 `child_crime_exposure_2y.joblib` 또는 `child_crime_exposure_3y.joblib`, `service_forecast.csv`, `model_metadata.json`.

@@ -75,12 +75,18 @@ export function FinalServicePage() {
 
   useEffect(() => {
     const controller = new AbortController();
+    let retryTimer: number | undefined;
     setLoading(true); setError(""); setCatalog(null);
     fetchCatalog(horizon, controller.signal).then(data => {
       if (!controller.signal.aborted) setCatalog(data);
-    }).catch(e => { if (!controller.signal.aborted) setError(e instanceof Error ? e.message : "조회 실패"); })
+    }).catch(e => {
+      if (!controller.signal.aborted) {
+        setError(`${e instanceof Error ? e.message : "조회 실패"} · 모델 복구 상태를 확인하며 10초 후 다시 시도합니다.`);
+        retryTimer = window.setTimeout(() => setReload(value => value + 1), 10_000);
+      }
+    })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
-    return () => controller.abort();
+    return () => { controller.abort(); if (retryTimer !== undefined) window.clearTimeout(retryTimer); };
   }, [horizon, reload]);
 
   useEffect(() => {

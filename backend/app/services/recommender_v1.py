@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from functools import lru_cache
+import json
 from pathlib import Path
 from threading import Lock
 
@@ -35,8 +36,24 @@ def _property_predictions(kind: str) -> tuple[pd.DataFrame, pd.DataFrame, dict]:
     is_sale = kind == "apart_sale"
     bundle_path = MODEL_ROOT / kind / "model_bundle.joblib"
     raw_path = RAW_ROOT / ("아파트_매매.csv" if is_sale else "아파트_전월세.csv")
-    if not bundle_path.is_file() or not raw_path.is_file():
-        raise RecommenderV1Error(f"{kind} 모델 또는 입력 데이터가 없습니다.")
+    if not bundle_path.is_file():
+        raise RecommenderV1Error(f"{kind} 모델이 없습니다.")
+    if not raw_path.is_file():
+        snapshot = MODEL_ROOT / "property_service_forecasts.json"
+        if not snapshot.is_file():
+            raise RecommenderV1Error(f"{kind} 입력 데이터 또는 가격 스냅샷이 없습니다.")
+        payload = json.loads(snapshot.read_text(encoding="utf-8"))
+        rows = pd.DataFrame(payload.get("neighborhoods", []))
+        per_pyeong, amount = f"{kind}_per_pyeong", f"{kind}_amount"
+        required = {"district", "neighborhood", per_pyeong, amount}
+        if rows.empty or not required.issubset(rows.columns):
+            raise RecommenderV1Error("부동산 가격 스냅샷 형식이 올바르지 않습니다.")
+        neighborhoods = rows[["district", "neighborhood", per_pyeong, amount]].copy()
+        districts = neighborhoods.groupby("district", as_index=False)[[per_pyeong, amount]].mean()
+        districts = districts.rename(columns={per_pyeong: kind})
+        model_key = "sale" if is_sale else "rent"
+        metadata = payload.get("property_models", {}).get(model_key, {})
+        return districts, neighborhoods, {**metadata, "source": "property_service_forecasts.json"}
 
     bundle = joblib.load(bundle_path)
     pipeline = bundle["pipeline"]
@@ -199,3 +216,7 @@ def get_district_forecasts() -> dict:
     # several worker threads at the same time.
     with _LOAD_LOCK:
         return _get_district_forecasts_cached()
+
+
+def clear_recommender_cache() -> None:
+    _get_district_forecasts_cached.cache_clear()

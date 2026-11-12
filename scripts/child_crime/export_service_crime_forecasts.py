@@ -13,6 +13,8 @@ ROOT = Path(__file__).resolve().parents[2]
 SERVICE = ROOT / "models" / "recommender" / "v1" / "child_crime_exposure"
 TWO_YEAR_EXPERIMENT = ROOT / "models" / "experiments" / "child_crime_exposure_2y_2027_v1"
 TWO_YEAR_ARTIFACT = ROOT / "artifacts" / "child_crime_exposure_2y_2027_v1"
+THREE_YEAR_EXPERIMENT = ROOT / "models" / "experiments" / "child_crime_exposure_integrated_v2"
+THREE_YEAR_ARTIFACT = ROOT / "artifacts" / "child_crime_exposure_integrated_v2"
 
 
 def add_service_columns(frame: pd.DataFrame, prediction: str) -> pd.DataFrame:
@@ -52,13 +54,31 @@ def export_two_year() -> None:
     add_service_columns(frame, "predicted_y").to_csv(target / "service_forecast.csv", index=False, encoding="utf-8-sig")
 
 
+def export_three_year() -> None:
+    target = SERVICE / "3y"
+    target.mkdir(parents=True, exist_ok=True)
+    source_model = THREE_YEAR_EXPERIMENT / "operational_exposure_integrated_blend_3y.joblib"
+    source_forecast = THREE_YEAR_ARTIFACT / "forecast_2028_blended.csv"
+    source_metadata = THREE_YEAR_ARTIFACT / "result.json"
+    if not all(path.is_file() for path in (source_model, source_forecast, source_metadata)):
+        raise FileNotFoundError("3년 범죄노출 앙상블 산출물이 없습니다.")
+    shutil.copy2(source_model, target / "child_crime_exposure_3y.joblib")
+    shutil.copy2(source_metadata, target / "model_metadata.json")
+    raw = pd.read_csv(source_forecast, encoding="utf-8-sig")
+    frame = raw.rename(columns={"gu": "district", "blended_y_2028": "predicted_y"})
+    frame["base_year"], frame["prediction_year"] = 2025, 2028
+    frame = frame[["district", "base_year", "prediction_year", "predicted_y"]]
+    add_service_columns(frame, "predicted_y").to_csv(target / "service_forecast.csv", index=False, encoding="utf-8-sig")
+
+
 def main() -> None:
     export_one_year()
     export_two_year()
+    export_three_year()
     manifest = {
         "service": "child_regional_crime_exposure",
         "target_formula": "log(1 + 5대범죄 발생건수 / 0~17세 아동인구 * 10,000)",
-        "horizons": [1, 2],
+        "horizons": [1, 2, 3],
         "score_rule": "서울 25개 자치구 위험도 오름차순 5개 구씩 A=100, B=80, C=60, D=40, E=20",
     }
     (SERVICE / "service_manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")

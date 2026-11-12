@@ -96,6 +96,10 @@ def property_catalog() -> dict:
         return _property_catalog_cached()
 
 
+def clear_neighborhood_cache() -> None:
+    _property_catalog_cached.cache_clear()
+
+
 def district_scores(horizon: int) -> dict:
     crime = forecast_payload(horizon)
     traffic, traffic_meta = _traffic_predictions()

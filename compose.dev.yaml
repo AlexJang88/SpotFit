@@ -49,12 +49,17 @@ services:
       MLFLOW_TRACKING_URI: ${MLFLOW_TRACKING_URI:-http://192.168.0.3:5000}
       WATCHFILES_FORCE_POLLING: ${WATCH_USE_POLLING:-true}
       MODEL_CACHE_DIR: /model-cache
+      MODEL_TRAINING_API_KEY: ${MODEL_TRAINING_API_KEY:-}
+      MODEL_AUTO_BOOTSTRAP: ${MODEL_AUTO_BOOTSTRAP:-1}
     volumes:
       - ./backend:/app
-      - ./artifacts:/artifacts:ro
-      - ./models/recommender/v1:/models/recommender/v1:ro
+      - ./artifacts:/artifacts
+      - ./models:/models
+      - ./ml:/ml:ro
+      - ./scripts:/scripts:ro
       - ./data/raw:/data/raw:ro
       - ./data/interim:/data/interim:ro
+      - ./data/processed:/data/processed
       - ./model_registry:/model_registry:ro
       - dev_model_cache:/model-cache
     healthcheck:
