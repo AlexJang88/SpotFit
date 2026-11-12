@@ -1,3 +1,5 @@
+import { apiRequest } from "../../services/apiClient";
+
 export type SafetyGrade = "A" | "B" | "C" | "D" | "E";
 export type GradeDirection = "상승" | "유지" | "하락";
 export type SafetyCategory = "traffic" | "crime" | "infrastructure";
@@ -48,14 +50,16 @@ export type SafetyCategoryResponse = {
 };
 
 export async function fetchCrimeSafety(horizon = 1, signal?: AbortSignal): Promise<CrimeSafetyResponse> {
-  const response = await fetch(`/api/safety/crime/district-forecasts?horizon=${horizon}`, { signal });
-  if (!response.ok) throw new Error(`지역점수 조회 실패 (${response.status})`);
-  return response.json() as Promise<CrimeSafetyResponse>;
+  return apiRequest<CrimeSafetyResponse>(`/api/safety/crime/district-forecasts?horizon=${horizon}`, {
+    signal,
+    fallbackMessage: "지역점수를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+  });
 }
 
 export async function fetchSafetyCategoryScores(horizon = 1, signal?: AbortSignal): Promise<SafetyCategoryResponse> {
-  const response = await fetch(`/api/safety/crime/category-scores?horizon=${horizon}`, { signal });
-  if (!response.ok) throw new Error(`안전영역 점수 조회 실패 (${response.status})`);
-  return response.json() as Promise<SafetyCategoryResponse>;
+  return apiRequest<SafetyCategoryResponse>(`/api/safety/crime/category-scores?horizon=${horizon}`, {
+    signal,
+    fallbackMessage: "지역점수 세부 항목을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+  });
 }
 

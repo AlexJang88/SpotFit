@@ -12,6 +12,7 @@ import type { FeatureCollection } from "geojson";
 import "leaflet/dist/leaflet.css";
 import "./housing-map.css";
 import { fetchAdminBoundaryStatus, type AdminBoundaryStatus } from "./adminBoundaryApi";
+import { userErrorMessage } from "../../services/apiClient";
 
 /**
  * React는 화면 상태를, Leaflet은 지도 DOM과 레이어를 관리한다.
@@ -73,6 +74,7 @@ export function HomePage() {
   const [recommender, setRecommender] = useState<RecommenderResponse | null>(null);
   const [administrativeRegions, setAdministrativeRegions] = useState<Region[]>([]);
   const [boundaryStatus, setBoundaryStatus] = useState<AdminBoundaryStatus | null>(null);
+  const [boundaryError, setBoundaryError] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<SafetyCategory[]>(["traffic", "crime", "infrastructure"]);
   const [safetyLoading, setSafetyLoading] = useState(true);
   const [safetyError, setSafetyError] = useState("");
@@ -165,7 +167,14 @@ export function HomePage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchAdminBoundaryStatus(controller.signal).then(setBoundaryStatus).catch(() => setBoundaryStatus(null));
+    fetchAdminBoundaryStatus(controller.signal).then(data => {
+      setBoundaryStatus(data);
+      setBoundaryError("");
+    }).catch(error => {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      setBoundaryStatus(null);
+      setBoundaryError(userErrorMessage(error, "행정동 기준정보를 불러오지 못했습니다."));
+    });
     return () => controller.abort();
   }, []);
 
@@ -183,11 +192,13 @@ export function HomePage() {
         setSafety(forecast.value);
         setCategoryScores(categories.value);
         setRecommender(modelForecasts.status === "fulfilled" ? modelForecasts.value : null);
-        setSafetyError("");
+        setSafetyError(modelForecasts.status === "rejected"
+          ? userErrorMessage(modelForecasts.reason, "가격 예측 정보를 불러오지 못했습니다.")
+          : "");
       })
       .catch(error => {
         if (error instanceof DOMException && error.name === "AbortError") return;
-        setSafetyError(error instanceof Error ? error.message : "지역점수를 불러오지 못했습니다.");
+        setSafetyError(userErrorMessage(error, "지역점수를 불러오지 못했습니다."));
       })
       .finally(() => { if (!controller.signal.aborted) setSafetyLoading(false); });
     return () => controller.abort();
@@ -222,7 +233,7 @@ export function HomePage() {
         }).filter(region => region.name && region.parent);
         setAdministrativeRegions([...guRegions, ...dongRegions]);
       })
-      .catch(error => { if (!(error instanceof DOMException && error.name === "AbortError")) setSafetyError(String(error)); });
+      .catch(error => { if (!(error instanceof DOMException && error.name === "AbortError")) setSafetyError(userErrorMessage(error, "행정구역 목록을 불러오지 못했습니다.")); });
     return () => controller.abort();
   }, []);
 
@@ -301,7 +312,7 @@ export function HomePage() {
           const active = selectedCategories.includes(category.key);
           return <button className={active ? "enabled" : ""} key={category.key} aria-pressed={active} onClick={() => setSelectedCategories(current => active ? (current.length === 1 ? current : current.filter(key => key !== category.key)) : [...current, category.key])}><span>{category.symbol}</span>{category.label}<small>{active ? `${categoryWeight.toFixed(selectedCategories.length === 3 ? 1 : 0)}%` : "미포함"}</small></button>;
         })}</div>
-        <SafetyPanel data={displayedSafety} loading={safetyLoading} error={safetyError}/>
+        <SafetyPanel data={displayedSafety} loading={safetyLoading} error={[safetyError, boundaryError].filter(Boolean).join(" ")}/>
         {/* hidden은 패널을 숨기되 입력 상태는 유지한다. 검색·영역 선택·예측 기간을 여기서 조작한다. */}
         <label className="search-label" htmlFor="region-search">지역 검색 <small>25개 자치구 · 427개 행정동</small></label>
         <div className="search-box"><span>⌕</span><input id="region-search" value={query} onFocus={() => setSearchOpen(true)} onChange={e => { setQuery(e.target.value); setSearchOpen(true); }} placeholder="자치구 또는 행정동 검색" /><button aria-label="검색어 지우기" onClick={() => { setQuery(""); setSearchOpen(true); }}>×</button></div>

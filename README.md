@@ -245,6 +245,7 @@ Windows PC의 VirtualBox Ubuntu VM에서 내부망 테스트 서버로 실행하
 
 ## 참고 문서
 
+- [API 예외 처리와 관리자 로그](docs/api-error-logging.md)
 - [Vite 시작하기](https://vite.dev/guide/): Node.js 버전 요구사항과 개발 서버
 - [FastAPI 컨테이너 배포](https://fastapi.tiangolo.com/deployment/docker/): Python 이미지 기반 빌드
 - [Compose 시작 순서](https://docs.docker.com/compose/how-tos/startup-order/): 의존 서비스와 상태 검사

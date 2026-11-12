@@ -55,6 +55,10 @@ services:
       CRIME_SAFETY_MODEL_VERSION: ${CRIME_SAFETY_MODEL_VERSION:-1}
       MODEL_TRAINING_API_KEY: ${MODEL_TRAINING_API_KEY:-}
       MODEL_AUTO_BOOTSTRAP: ${MODEL_AUTO_BOOTSTRAP:-1}
+      APP_LOG_DIR: /var/log/spotfit
+      APP_LOG_LEVEL: ${APP_LOG_LEVEL:-INFO}
+      APP_LOG_RETENTION_DAYS: ${APP_LOG_RETENTION_DAYS:-30}
+      APP_TIMEZONE: ${APP_TIMEZONE:-Asia/Seoul}
       WATCHFILES_FORCE_POLLING: ${WATCH_USE_POLLING:-true}
     volumes:
       - ./backend:/app
@@ -66,6 +70,7 @@ services:
       - ./data/interim:/data/interim:ro
       - ./data/processed:/data/processed
       - ./model_registry:/model_registry:ro
+      - ./logs/backend:/var/log/spotfit
       - model_cache:/model-cache
     depends_on:
       postgres:

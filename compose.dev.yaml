@@ -51,6 +51,11 @@ services:
       MODEL_CACHE_DIR: /model-cache
       MODEL_TRAINING_API_KEY: ${MODEL_TRAINING_API_KEY:-}
       MODEL_AUTO_BOOTSTRAP: ${MODEL_AUTO_BOOTSTRAP:-1}
+      APP_LOG_DIR: /var/log/spotfit
+      APP_LOG_FILE: spotfit-api-dev.log
+      APP_LOG_LEVEL: ${APP_LOG_LEVEL:-INFO}
+      APP_LOG_RETENTION_DAYS: ${APP_LOG_RETENTION_DAYS:-30}
+      APP_TIMEZONE: ${APP_TIMEZONE:-Asia/Seoul}
     volumes:
       - ./backend:/app
       - ./artifacts:/artifacts
@@ -61,6 +66,7 @@ services:
       - ./data/interim:/data/interim:ro
       - ./data/processed:/data/processed
       - ./model_registry:/model_registry:ro
+      - ./logs/backend:/var/log/spotfit
       - dev_model_cache:/model-cache
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/spot_fit')"]

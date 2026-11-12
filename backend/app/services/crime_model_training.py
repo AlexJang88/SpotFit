@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 import subprocess
 import sys
@@ -8,6 +9,8 @@ from pathlib import Path
 from threading import Lock, Thread
 
 from app.services.child_crime_exposure import clear_forecast_cache, model_status
+
+logger = logging.getLogger(__name__)
 
 ROOT = Path(__file__).resolve().parents[3]
 SCRIPT = ROOT / "scripts" / "child_crime" / "rebuild_service_crime_models.py"
@@ -28,8 +31,12 @@ def _run() -> None:
         _STATE.update(state="succeeded" if result.returncode == 0 else "failed", exit_code=result.returncode, finished_at=datetime.now(timezone.utc).isoformat(), message="재학습 완료" if result.returncode == 0 else "재학습 실패: 로그를 확인하세요.")
         if result.returncode == 0:
             clear_forecast_cache()
+            logger.info("crime model training completed")
+        else:
+            logger.error("crime model training failed: exit_code=%s log=%s", result.returncode, LOG)
     except Exception as exc:
         _STATE.update(state="failed", exit_code=-1, finished_at=datetime.now(timezone.utc).isoformat(), message=str(exc))
+        logger.exception("crime model training crashed")
     finally:
         _LOCK.release()
 

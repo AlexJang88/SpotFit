@@ -149,8 +149,10 @@ def ensure_models(root: Path = ROOT) -> dict:
                     result[spec.name] = "failed: 학습은 끝났지만 결과 파일이 없습니다"
         except Exception as error:  # one failing model must not stop the others or the server
             result[spec.name] = f"failed: {error}"
+            logger.exception("property model bootstrap failed for %s", spec.name)
         _STATE["models"][spec.name] = result[spec.name]
-        logger.info("property model %s: %s", spec.name, result[spec.name])
+        level = logging.ERROR if result[spec.name].startswith("failed") else logging.INFO
+        logger.log(level, "property model %s: %s", spec.name, result[spec.name])
     return result
 
 

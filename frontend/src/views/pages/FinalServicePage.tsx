@@ -10,6 +10,7 @@ import { amountFor, fetchCatalog, fetchRecommendations, normalizeDong,
   fetchAreaPresets, type AreaPresets, type Catalog, type DistrictScore, type Neighborhood, type Recommendations, type Transaction } from "./neighborhoodApi";
 import "leaflet/dist/leaflet.css";
 import "./final-service.css";
+import { userErrorMessage } from "../../services/apiClient";
 
 type Level = "시" | "구" | "행정동";
 type Region = { id: string; name: string; parent: string; level: Level; lat: number; lng: number };
@@ -83,7 +84,9 @@ export function FinalServicePage() {
     setAreaPresets(null); setAreaError("");
     fetchAreaPresets(transaction, controller.signal).then(data => {
       if (!controller.signal.aborted) setAreaPresets(data);
-    }).catch(() => { if (!controller.signal.aborted) setAreaError("면적 선택지를 불러오지 못했습니다. 직접 입력할 수 있습니다."); });
+    }).catch(error => {
+      if (!controller.signal.aborted) setAreaError(`${userErrorMessage(error, "면적 선택지를 불러오지 못했습니다.")} 직접 입력할 수 있습니다.`);
+    });
     return () => controller.abort();
   }, [transaction]);
 
@@ -109,7 +112,7 @@ export function FinalServicePage() {
       if (!controller.signal.aborted) setCatalog(data);
     }).catch(e => {
       if (!controller.signal.aborted) {
-        setError(`${e instanceof Error ? e.message : "조회 실패"} · 모델 복구 상태를 확인하며 10초 후 다시 시도합니다.`);
+        setError(`${userErrorMessage(e, "동네 정보를 불러오지 못했습니다.")} · 모델 복구 상태를 확인하며 10초 후 다시 시도합니다.`);
         retryTimer = window.setTimeout(() => setReload(value => value + 1), 10_000);
       }
     })
@@ -132,7 +135,7 @@ export function FinalServicePage() {
     const timer = window.setTimeout(() => {
       fetchRecommendations(value, transaction, horizon, areaValue, controller.signal, minimum)
         .then(data => { if (!controller.signal.aborted) setRecommendations(data); })
-        .catch(e => { if (!controller.signal.aborted) setRecommendError(e instanceof Error ? e.message : "추천 실패"); })
+        .catch(e => { if (!controller.signal.aborted) setRecommendError(userErrorMessage(e, "추천 결과를 불러오지 못했습니다.")); })
         .finally(() => { if (!controller.signal.aborted) setRecommending(false); });
     }, 450);
     return () => { window.clearTimeout(timer); controller.abort(); };
@@ -140,7 +143,9 @@ export function FinalServicePage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchAdminBoundaryStatus(controller.signal).then(setBoundaryStatus).catch(() => {});
+    fetchAdminBoundaryStatus(controller.signal).then(setBoundaryStatus).catch(error => {
+      if (!controller.signal.aborted) setBoundaryError(userErrorMessage(error, "행정동 기준정보를 불러오지 못했습니다."));
+    });
     Promise.all(["seoul-gu.geojson", "seoul-dong.geojson"].map(async file => {
       const r = await fetch(`${import.meta.env.BASE_URL}${file}`, { signal: controller.signal });
       if (!r.ok) throw new Error("행정구역 목록을 불러오지 못했습니다.");
@@ -160,7 +165,7 @@ export function FinalServicePage() {
         }
       }
       setRegions(items);
-    }).catch(e => { if (!controller.signal.aborted) setBoundaryError(String(e)); });
+    }).catch(e => { if (!controller.signal.aborted) setBoundaryError(userErrorMessage(e, "행정구역 목록을 불러오지 못했습니다.")); });
     return () => controller.abort();
   }, []);
 

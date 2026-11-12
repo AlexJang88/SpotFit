@@ -1,3 +1,5 @@
+import { apiRequest } from "../../services/apiClient";
+
 export type UpcomingBoundaryChange = {
   id: string;
   district: string;
@@ -21,7 +23,8 @@ export type AdminBoundaryStatus = {
 };
 
 export async function fetchAdminBoundaryStatus(signal?: AbortSignal): Promise<AdminBoundaryStatus> {
-  const response = await fetch("/api/admin-boundaries/status", { signal });
-  if (!response.ok) throw new Error(`행정동 기준정보 조회 실패 (${response.status})`);
-  return response.json() as Promise<AdminBoundaryStatus>;
+  return apiRequest<AdminBoundaryStatus>("/api/admin-boundaries/status", {
+    signal,
+    fallbackMessage: "행정동 기준정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+  });
 }

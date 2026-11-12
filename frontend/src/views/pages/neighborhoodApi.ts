@@ -1,3 +1,5 @@
+import { apiRequest } from "../../services/apiClient";
+
 export type Transaction = "sale" | "rent";
 export type Grade = "A" | "B" | "C" | "D" | "E";
 export type DistrictScore = {
@@ -40,12 +42,7 @@ export function fetchAreaPresets(transaction: Transaction, signal?: AbortSignal)
 }
 
 async function read<T>(url: string, signal?: AbortSignal): Promise<T> {
-  const response = await fetch(url, { signal });
-  if (!response.ok) {
-    const body = await response.json().catch(() => ({}));
-    throw new Error(typeof body.detail === "string" ? body.detail : `데이터 조회 실패 (${response.status})`);
-  }
-  return response.json() as Promise<T>;
+  return apiRequest<T>(url, { signal, fallbackMessage: "데이터를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요." });
 }
 
 export function fetchCatalog(horizon: number, signal?: AbortSignal) {

@@ -95,8 +95,10 @@ def ensure_all_models(root: Path = ROOT) -> dict[str, str]:
                 result[group] = f"failed: exit={code}, missing={after}"
         except Exception as error:
             result[group] = f"failed: {error}"
+            logger.exception("model bootstrap failed for %s", group)
         _STATE["groups"][group] = result[group]
-        logger.info("model bootstrap %s: %s", group, result[group])
+        level = logging.ERROR if result[group].startswith("failed") else logging.INFO
+        logger.log(level, "model bootstrap %s: %s", group, result[group])
     return result
 
 
