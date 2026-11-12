@@ -47,6 +47,73 @@ def test_small_budget_does_not_return_unaffordable_rows(client):
     assert result['candidate_count'] == 0
 
 
+def test_one_cheapest_dong_per_district_in_score_rank_order(client):
+    rows = service.property_catalog()['neighborhoods']
+    # Several cheap dongs in the best district must not crowd out other districts.
+    rows.extend([
+        {**rows[0], 'id': '구00|저렴동', 'neighborhood': '저렴동', 'apart_sale_amount': 30000},
+        {**rows[0], 'id': '구00|비싼동', 'neighborhood': '비싼동', 'apart_sale_amount': 44000},
+        {**rows[1], 'id': '구01|최저가동', 'neighborhood': '최저가동', 'apart_sale_amount': 20000},
+    ])
+    result = client.get('/api/neighborhoods/recommendations', params={'budget_manwon': 45000}).json()
+    selected = result['recommendations']
+    assert [r['district'] for r in selected] == [f'구{i:02}' for i in range(5)]
+    assert selected[0]['neighborhood'] == '저렴동'
+    assert selected[1]['neighborhood'] == '최저가동'
+    assert result['candidate_count'] == 9
+    assert result['eligible_district_count'] == 6
+
+
+def test_unique_districts_can_return_less_than_five(client):
+    rows = service.property_catalog()['neighborhoods']
+    rows.extend([{**rows[0], 'id': f'구00|추가{i}동', 'neighborhood': f'추가{i}동',
+                  'apart_sale_amount': 40000} for i in range(8)])
+    result = client.get('/api/neighborhoods/recommendations', params={'budget_manwon': 41000}).json()
+    assert len(result['recommendations']) == 2
+    assert result['eligible_district_count'] == 2
+
+
+def test_budget_range_filters_before_choosing_district_cheapest(client):
+    rows = service.property_catalog()['neighborhoods']
+    rows.append({**rows[0], 'id': '구00|범위안동', 'neighborhood': '범위안동', 'apart_sale_amount': 43500})
+    result = client.get('/api/neighborhoods/recommendations', params={
+        'min_budget_manwon': 43000, 'budget_manwon': 45000}).json()
+    assert [r['district'] for r in result['recommendations']] == ['구00', '구03', '구04', '구05']
+    assert result['recommendations'][0]['neighborhood'] == '범위안동'
+    assert all(43000 <= r['estimated_amount_manwon'] <= 45000 for r in result['recommendations'])
+    exact = client.get('/api/neighborhoods/recommendations', params={
+        'min_budget_manwon': 45000, 'budget_manwon': 45000}).json()
+    assert len(exact['recommendations']) == 1
+
+
+@pytest.mark.parametrize('lower', [-1, 50001, 'nan', 'inf'])
+def test_invalid_budget_range(client, lower):
+    assert client.get('/api/neighborhoods/recommendations', params={
+        'min_budget_manwon': lower, 'budget_manwon': 50000}).status_code == 422
+
+
+def test_area_presets_use_last_completed_year_and_jeonse_only(client, monkeypatch, tmp_path):
+    monkeypatch.setattr(service, 'RAW_ROOT', tmp_path)
+    service.popular_areas.cache_clear()
+    year = service.date.today().year - 1
+    pd.DataFrame({
+        '계약연도': [year] * 7 + [year + 1],
+        '전월세구분': ['전세'] * 5 + ['월세'] * 3,
+        '임대면적(㎡)': [84.9, 84.8, 59.9, 49.5, 49.8, 20, 20, 20],
+    }).to_csv(tmp_path / '아파트_전월세.csv', index=False, encoding='utf-8-sig')
+    try:
+        data = client.get('/api/neighborhoods/area-presets?transaction=rent').json()
+        assert data['data_year'] == year
+        assert [r['label'] for r in data['options']] == ['49㎡대', '84㎡대', '59㎡대']
+        assert [r['transaction_count'] for r in data['options']] == [2, 2, 1]
+        assert data['options'][0]['area_m2'] == 49.65
+        fallback = client.get('/api/neighborhoods/area-presets?transaction=sale').json()
+        assert fallback['basis'] == 'default'
+        assert all(r['transaction_count'] is None for r in fallback['options'])
+    finally:
+        service.popular_areas.cache_clear()
+
+
 def test_rent_and_area_conversion(client):
     # 400/121 square meters is one pyeong, so 10 pyeong is 10,000만원 rent.
     result = client.get('/api/neighborhoods/recommendations', params={

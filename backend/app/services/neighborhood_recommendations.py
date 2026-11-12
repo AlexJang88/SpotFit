@@ -8,6 +8,7 @@ from __future__ import annotations
 import math
 import json
 import re
+from datetime import date
 from functools import lru_cache
 from threading import Lock
 
@@ -98,6 +99,40 @@ def property_catalog() -> dict:
 
 def clear_neighborhood_cache() -> None:
     _property_catalog_cached.cache_clear()
+    popular_areas.cache_clear()
+
+
+@lru_cache(maxsize=2)
+def popular_areas(transaction: str) -> dict:
+    """Top three 1m² bands in the latest completed year of local transactions."""
+    name = "아파트_매매.csv" if transaction == "sale" else "아파트_전월세.csv"
+    path = next((p for p in (RAW_ROOT / name, RAW_ROOT / "부동산" / name) if p.is_file()), None)
+    if path is None:
+        # These are explicitly generic shortcuts, never claimed as measured rankings.
+        return {"transaction": transaction, "basis": "default", "data_year": None,
+                "description": "거래 원자료가 없어 기본 면적을 제공합니다.",
+                "options": [{"label": f"{a}㎡", "area_m2": a, "transaction_count": None} for a in (59, 84, 114)]}
+    column = "전용면적(㎡)" if transaction == "sale" else "임대면적(㎡)"
+    columns = ["계약연도", column] + (["전월세구분"] if transaction == "rent" else [])
+    frame = pd.read_csv(path, usecols=columns, encoding="utf-8-sig")
+    if transaction == "rent":
+        frame = frame.loc[frame["전월세구분"].astype(str).str.strip().eq("전세")].copy()
+    frame["year"] = pd.to_numeric(frame["계약연도"], errors="coerce")
+    frame["area"] = pd.to_numeric(frame[column], errors="coerce")
+    frame = frame.loc[frame["year"].lt(date.today().year) & frame["area"].between(1, 1000)].copy()
+    if frame.empty:
+        return {"transaction": transaction, "basis": "unavailable", "data_year": None,
+                "description": "완료 연도의 거래 면적 자료가 없습니다.", "options": []}
+    year = int(frame["year"].max())
+    frame = frame.loc[frame["year"].eq(year)].copy()
+    frame["band"] = frame["area"].astype(int)
+    grouped = frame.groupby("band")["area"].agg(["size", "median"]).reset_index()
+    grouped = grouped.sort_values(["size", "band"], ascending=[False, True]).head(3)
+    return {"transaction": transaction, "basis": "transactions", "data_year": year,
+            "source_file": str(path.relative_to(RAW_ROOT)),
+            "description": f"{year}년 거래 건수 상위 3개 · 1㎡ 구간별 집계, 선택 시 거래면적 중앙값 적용",
+            "options": [{"label": f"{int(r.band)}㎡대", "area_m2": round(float(r.median), 2),
+                         "transaction_count": int(r.size)} for r in grouped.itertuples()]}
 
 
 def district_scores(horizon: int) -> dict:
@@ -171,7 +206,7 @@ def priced_neighborhood(item: dict, transaction: str, area_m2: float | None) -> 
 
 
 def recommend(budget_manwon: float, transaction: str = "sale", horizon: int = 2,
-              area_m2: float | None = None, limit: int = 5) -> dict:
+              area_m2: float | None = None, limit: int = 5, min_budget_manwon: float = 0) -> dict:
     catalog = service_catalog(horizon)
     by_district = {row["district"]: row for row in catalog["districts"]}
     candidates = []
@@ -183,21 +218,25 @@ def recommend(budget_manwon: float, transaction: str = "sale", horizon: int = 2,
         if amount is None or amount <= 0 or score is None:
             excluded += 1
             continue
-        if amount <= budget_manwon:
+        if min_budget_manwon <= amount <= budget_manwon:
             candidates.append({**price, "district_score": score,
                                "budget_remaining_manwon": round(budget_manwon - amount, 4)})
-    candidates.sort(key=lambda row: (-row["district_score"]["score"],
-                                    -row["district_score"]["crime_score"],
-                                    row["estimated_amount_manwon"], row["district"], row["neighborhood"]))
+    # One affordable, cheapest neighborhood per district, then district ranking.
+    # Use the same tie-breaks as district_scores so map grades and results agree.
+    cheapest_by_district = {}
+    for row in sorted(candidates, key=lambda row: (row["estimated_amount_manwon"], row["neighborhood"], row["id"])):
+        cheapest_by_district.setdefault(row["district"], row)
+    selected = sorted(cheapest_by_district.values(), key=lambda row: row["district_score"]["rank"])[:limit]
     return {
-        "budget_manwon": budget_manwon, "transaction": transaction, "horizon": horizon,
+        "budget_manwon": budget_manwon, "min_budget_manwon": min_budget_manwon, "transaction": transaction, "horizon": horizon,
         "area_m2": area_m2, "limit": limit, "candidate_count": len(candidates),
         "excluded_missing_count": excluded,
-        "recommendations": [{**row, "recommendation_rank": i + 1} for i, row in enumerate(candidates[:limit])],
+        "eligible_district_count": len(cheapest_by_district),
+        "recommendations": [{**row, "recommendation_rank": i + 1} for i, row in enumerate(selected)],
         "warnings": catalog["warnings"], "weights": WEIGHTS,
         "crime_prediction_year": catalog["crime_prediction_year"],
         "traffic_prediction_year": catalog["traffic_prediction_year"],
-        "sort_rule": "동네점수 → 범죄안전 점수 → 낮은 가격 → 지역명",
+        "sort_rule": "예산 내 구별 최저가 행정동 1곳 → 동네점수 → 범죄안전 점수 → 자치구명",
     }
 
 

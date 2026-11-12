@@ -37,9 +37,17 @@ def recommendations(
     horizon: int = Query(default=2, ge=2, le=3),
     area_m2: float | None = Query(default=None, gt=0, le=1000, allow_inf_nan=False),
     limit: int = Query(default=5, ge=1, le=5),
+    min_budget_manwon: float = Query(default=0, ge=0, le=1_000_000_000, allow_inf_nan=False),
 ):
+    if min_budget_manwon > budget_manwon:
+        raise HTTPException(422, "예산 하한은 상한보다 클 수 없습니다.")
     return call_service(service.recommend, budget_manwon=budget_manwon, transaction=transaction,
-                        horizon=horizon, area_m2=area_m2, limit=limit)
+                        horizon=horizon, area_m2=area_m2, limit=limit, min_budget_manwon=min_budget_manwon)
+
+
+@router.get("/area-presets")
+def area_presets(transaction: Literal["sale", "rent"] = "sale"):
+    return call_service(service.popular_areas, transaction=transaction)
 
 
 @router.get("/detail")

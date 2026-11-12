@@ -2,13 +2,7 @@ import L from "leaflet";
 import type { FeatureCollection } from "geojson";
 import type { CrimeSafetyForecast, SafetyGrade } from "./crimeSafetyApi";
 
-const GRADE_COLORS: Record<SafetyGrade, string> = {
-  A: "#526e68",
-  B: "#8eb3ad",
-  C: "#c7c4aa",
-  D: "#c89e80",
-  E: "#ad7777",
-};
+const GRADE_OPACITY: Record<SafetyGrade, number> = { A: 0.75, B: 0.58, C: 0.42, D: 0.26, E: 0.12 };
 
 /** 지역점수 예상등급에 따라 서울 자치구 경계를 반투명하게 채운다. */
 export function addSafetyGradeBoundaries(
@@ -31,10 +25,10 @@ export function addSafetyGradeBoundaries(
         style: feature => {
           const district = String(feature?.properties?.name ?? "");
           const forecast = byDistrict.get(district);
-          const color = forecast ? GRADE_COLORS[forecast.predicted_grade] : "#8c9891";
+          const color = "#526e68";
           return {
             renderer: L.canvas(), color, weight: 1.5, opacity: 0.9,
-            fill: true, fillColor: color, fillOpacity: forecast ? 0.48 : 0.14,
+            fill: true, fillColor: color, fillOpacity: forecast ? GRADE_OPACITY[forecast.predicted_grade] : 0.04,
             interactive: false,
           };
         },

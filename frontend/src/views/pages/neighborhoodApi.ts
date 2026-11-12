@@ -28,6 +28,15 @@ export type Recommendations = {
   excluded_missing_count: number; budget_manwon: number; transaction: Transaction;
   area_m2: number | null; warnings: string[]; sort_rule: string;
 };
+export type AreaPresets = {
+  transaction: Transaction; basis: "transactions" | "default" | "unavailable";
+  data_year: number | null; description: string;
+  options: { label: string; area_m2: number; transaction_count: number | null }[];
+};
+
+export function fetchAreaPresets(transaction: Transaction, signal?: AbortSignal) {
+  return read<AreaPresets>(`/api/neighborhoods/area-presets?transaction=${transaction}`, signal);
+}
 
 async function read<T>(url: string, signal?: AbortSignal): Promise<T> {
   const response = await fetch(url, { signal });
@@ -43,9 +52,10 @@ export function fetchCatalog(horizon: number, signal?: AbortSignal) {
 }
 
 export function fetchRecommendations(budget: number, transaction: Transaction, horizon: number,
-  area: number | null, signal?: AbortSignal) {
+  area: number | null, signal?: AbortSignal, minBudget = 0) {
   const query = new URLSearchParams({ budget_manwon: String(budget), transaction, horizon: String(horizon) });
   if (area !== null) query.set("area_m2", String(area));
+  query.set("min_budget_manwon", String(minBudget));
   return read<Recommendations>(`/api/neighborhoods/recommendations?${query}`, signal);
 }
 
