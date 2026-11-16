@@ -3,10 +3,23 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
+import sys
+import warnings
 
 import joblib
 import numpy as np
 import pandas as pd
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+warnings.filterwarnings(
+    "ignore",
+    message="Skipping features without any observed values.*",
+    category=UserWarning,
+    module=r"sklearn\.impute\._base",
+)
 
 from ml.train_traffic_accident_v72_indicator_forecast import build_prediction_cache
 from ml.train_traffic_accident_v73_indicator_ensemble import evaluate_specs
@@ -18,15 +31,15 @@ from ml.train_traffic_accident_v83_poisson_exposure_grade import (
     VICTIMS,
     fit_exposure_model,
 )
+from ml.traffic_accident_pipeline_paths import MODEL_V93_REBUILT, PROCESSED_V93
 
 
-ROOT = Path(__file__).resolve().parents[1]
-PROCESSED = next((ROOT / "data" / "processed").glob("*.xlsx"))
+PROCESSED = PROCESSED_V93
 TRAFFIC_MODELS = next(
     p for p in (ROOT / "models").iterdir() if p.is_dir() and p.name != "recommender"
 )
 SOURCE = next((p for p in TRAFFIC_MODELS.glob("93*") if "Processed" not in p.name), None)
-OUT = TRAFFIC_MODELS / "93차.Processed단독재현검증"
+OUT = MODEL_V93_REBUILT
 
 
 def parse_spec(value: str):
