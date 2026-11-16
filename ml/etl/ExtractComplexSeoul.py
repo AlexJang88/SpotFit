@@ -4,7 +4,7 @@ import os
 import pandas as pd
 
 BASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data') + os.sep
-SRC, OUT = BASE + 'raw/기타/20261030_단지_기본정보.xlsx', BASE + 'interim/기타/'
+SRC, OUT = BASE + 'raw/부동산/20261030_단지_기본정보.xlsx', BASE + 'interim/기타/'
 os.makedirs(OUT, exist_ok=True)
 
 x = pd.read_excel(SRC, header=1)

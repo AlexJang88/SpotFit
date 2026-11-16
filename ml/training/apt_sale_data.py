@@ -14,7 +14,7 @@ X_COLS = ['층수', '거래일(년)', '완공연도', '직장인구 수', 'CCTV 
 Y = '평당 금액(만원)'
 
 PROC = DATA + '../raw/부동산' + os.sep                                                              # 전처리가 끝난 실거래 파일 (취소 거래·지번 불일치 제외, 행정동_코드(상권분석) 포함)
-PROC_VILLA = DATA + '../interim/부동산' + os.sep                                                  # 빌라 매매 파일은 raw가 아니라 interim/부동산
+PROC_VILLA = PROC                                                                                    # 빌라 매매 파일도 raw/부동산
 KINDS = {'apt': ('아파트', '아파트_매매.csv'), 'villa': ('빌라', '빌라_매매.csv')}                  # 종류: (한글 이름, 매매 파일: data/raw/부동산/)
 
 def load(drop_missing=True, kind='apt'):     # drop_missing=False 이면 직장인구·1인가구가 빈 동네도 남김 (빈 값을 처리하는 모델용), kind='villa' 이면 빌라 매매
