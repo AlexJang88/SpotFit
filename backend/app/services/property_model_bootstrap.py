@@ -60,12 +60,12 @@ SPECS = (
     ),
     ModelSpec(
         name="apart_wolse_final",
-        script="RentContractFinal.py",
+        script="RentConversionFinal.py",
         outputs=(
-            ("월세계약모델_최종.joblib", "model_bundle.joblib"),
-            ("월세계약모델_최종요약.json", "summary.json"),
+            ("월세계약_전환율모델_최종.joblib", "model_bundle.joblib"),
+            ("월세계약_전환율모델_최종요약.json", "summary.json"),
         ),
-        description="아파트 월세 계약 단위 모델: 보증금을 입력하면 월세를 예측 (같은 동 계약 10건 미만이면 예측 불가)",
+        description="아파트 월세 계약 단위 전환율 모델: 보증금이나 월세 중 하나를 입력하면 나머지를 예측 (같은 건물·면적대 직전 12개월 전세 2건 미만이면 예측 불가)",
     ),
 )
 
