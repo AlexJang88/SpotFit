@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import itertools
 import json
+import os
 from pathlib import Path
 
 import joblib
@@ -27,7 +28,7 @@ ROOT = Path(__file__).resolve().parents[2]
 BASE = ROOT / "data/processed/child_crime_exposure/borough_panel"
 OUT = ROOT / "artifacts" / "borough_crime_count_3y_v1"
 MODEL_OUT = ROOT / "models" / "experiments" / "borough_crime_count_3y_v1"
-RAW_DIR = ROOT / "data" / "raw" / "child_crime_exposure"
+RAW_DIR = Path(os.environ.get('CRIME_RAW_ROOT', ROOT / 'data/raw/child_crime_exposure'))
 CV_YEARS = (2022, 2023, 2024)
 HOLDOUT_YEAR = 2025
 HORIZON = 3

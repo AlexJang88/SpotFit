@@ -176,8 +176,8 @@ def service_catalog(horizon: int = 2, transaction: str = "sale", deposit_manwon:
         )
     target_year = scores["crime_prediction_year"]
     properties = property_catalog(horizon, target_year=target_year)
-    for transaction in ("sale", "rent"):
-        model = properties.get("property_models", {}).get(transaction, {})
+    for property_type in ("sale", "rent"):
+        model = properties.get("property_models", {}).get(property_type, {})
         if model.get("prediction_year") != target_year:
             raise RecommenderV1Error(
                 "부동산 모델의 예측연도가 범죄·교통 모델과 달라 통합 추천을 제공할 수 없습니다."

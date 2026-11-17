@@ -1,10 +1,11 @@
 from pathlib import Path
 import re
+import os
 from html import unescape
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[2]
-RAW = ROOT / 'data/raw/child_crime_exposure'
+RAW = Path(os.environ.get('CRIME_RAW_ROOT', ROOT / 'data/raw/child_crime_exposure'))
 def spreadsheet(path):
     text = path.read_text(encoding='cp949')
     rows=[]

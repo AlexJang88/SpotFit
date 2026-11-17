@@ -1,9 +1,41 @@
 from fastapi import APIRouter, Header, HTTPException, status
+from pydantic import BaseModel, Field
 
 from app.services.crime_model_training import verify_admin_key
 from app.services.service_model_bootstrap import bootstrap_status, start_model_bootstrap
 
 router = APIRouter(prefix="/models", tags=["model_bootstrap"])
+
+
+class CrimeRefreshRequest(BaseModel):
+    collection_run: str = Field(pattern=r'^[A-Za-z0-9]+$', max_length=64)
+
+
+def _crime_admin(value):
+    try:
+        verify_admin_key(value)
+    except PermissionError as error:
+        raise HTTPException(403, str(error)) from error
+    except RuntimeError as error:
+        raise HTTPException(503, str(error)) from error
+
+
+@router.get('/crime/refresh')
+def crime_refresh_status(admin_key: str | None = Header(default=None, alias='X-Model-Admin-Key')) -> dict:
+    _crime_admin(admin_key)
+    from app.services.crime_refresh_job import refresh_status
+    return refresh_status()
+
+
+@router.post('/crime/refresh', status_code=status.HTTP_202_ACCEPTED)
+def crime_refresh(request: CrimeRefreshRequest | None = None,
+                  admin_key: str | None = Header(default=None, alias='X-Model-Admin-Key')) -> dict:
+    _crime_admin(admin_key)
+    from app.services.crime_refresh_job import start_refresh
+    try:
+        return start_refresh(request.collection_run) if request else start_refresh()
+    except RuntimeError as error:
+        raise HTTPException(409, str(error)) from error
 
 
 @router.get("/status")

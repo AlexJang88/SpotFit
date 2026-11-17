@@ -47,6 +47,17 @@ _STATE = {"state": "idle", "started_at": None, "finished_at": None, "groups": {}
 
 def missing(group: str, root: Path = ROOT) -> list[str]:
     model_root = root / "models" / "recommender" / "v1"
+    if group == 'child_crime' and (model_root / 'child_crime_exposure/current_release.json').exists():
+        from app.services.child_crime_exposure import required_paths, ChildCrimeExposureError
+        try:
+            paths = []
+            for h in (2, 3):
+                core = required_paths(h, model_root / 'child_crime_exposure')
+                paths.extend([*core, core[0].parent / 'feature_score_formula.csv',
+                              core[0].parent / 'feature_score_breakdown.csv'])
+            return [str(p.relative_to(model_root)) for p in paths if not p.is_file() or p.stat().st_size == 0]
+        except ChildCrimeExposureError:
+            return ['child_crime_exposure/current_release.json (invalid pointer; review required)']
     return [name for name in GROUPS[group]["required"]
             if not (model_root / name).is_file() or (model_root / name).stat().st_size == 0]
 

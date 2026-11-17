@@ -15,8 +15,19 @@ class ChildCrimeExposureError(RuntimeError):
     pass
 
 
-def required_paths(horizon: int) -> tuple[Path, Path, Path]:
-    directory = MODEL_ROOT / f"{horizon}y"
+def required_paths(horizon: int, model_root: Path | None = None) -> tuple[Path, Path, Path]:
+    root = MODEL_ROOT if model_root is None else model_root
+    pointer = root / 'current_release.json'
+    if pointer.is_file():
+        try:
+            release = json.loads(pointer.read_text(encoding='utf-8'))['release']
+        except (OSError, ValueError, KeyError, TypeError) as error:
+            raise ChildCrimeExposureError('Invalid crime release pointer') from error
+        # The pointer contains a release ID, never an arbitrary filesystem path.
+        if not isinstance(release, str) or not release.isalnum():
+            raise ChildCrimeExposureError('Invalid crime release identifier')
+        root = root / 'releases' / release
+    directory = root / f"{horizon}y"
     return directory / f"child_crime_exposure_{horizon}y.joblib", directory / "service_forecast.csv", directory / "model_metadata.json"
 
 
@@ -28,11 +39,17 @@ def model_status() -> dict:
     return {"service": "child_regional_crime_exposure", "ready": all(item["ready"] for item in horizons), "horizons": horizons}
 
 
-@lru_cache(maxsize=2)
 def forecast_payload(horizon: int) -> dict:
+    paths = required_paths(horizon)
+    version = tuple((str(p), p.stat().st_mtime_ns if p.is_file() else 0) for p in paths)
+    return _forecast_payload(horizon, version)
+
+
+@lru_cache(maxsize=4)
+def _forecast_payload(horizon: int, version: tuple) -> dict:
     if horizon not in (2, 3):
         raise ChildCrimeExposureError("예측기간은 2년 또는 3년만 지원합니다.")
-    model, forecast, metadata_path = required_paths(horizon)
+    model, forecast, metadata_path = (Path(item[0]) for item in version)
     missing = [path for path in (model, forecast, metadata_path) if not path.is_file()]
     if missing:
         raise ChildCrimeExposureError(f"범죄노출 모델 산출물이 없습니다: {', '.join(map(str, missing))}")
@@ -48,4 +65,4 @@ def forecast_payload(horizon: int) -> dict:
 
 
 def clear_forecast_cache() -> None:
-    forecast_payload.cache_clear()
+    _forecast_payload.cache_clear()

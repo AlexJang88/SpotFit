@@ -2,11 +2,15 @@
 from pathlib import Path
 import json
 import re
+import os
 import numpy as np
 import pandas as pd
-from inspect_borough_inputs import ROOT, RAW, csvread, spreadsheet
+try:
+    from .inspect_borough_inputs import ROOT, RAW, csvread, spreadsheet
+except ImportError:
+    from inspect_borough_inputs import ROOT, RAW, csvread, spreadsheet
 
-OUT=ROOT/'data/processed/child_crime_exposure/borough_panel'
+OUT=Path(os.environ.get('CRIME_PROCESSED_ROOT', ROOT/'data/processed/child_crime_exposure'))/'borough_panel'
 GU=['종로구','중구','용산구','성동구','광진구','동대문구','중랑구','성북구','강북구','도봉구','노원구','은평구','서대문구','마포구','양천구','강서구','구로구','금천구','영등포구','동작구','관악구','서초구','강남구','송파구','강동구']
 def num(x):
     return pd.to_numeric(str(x).replace(',',''),errors='coerce')
@@ -68,7 +72,7 @@ def main():
         valid &= closing.isna() | (closing>=opening)
         audit.append({'source':name,'rows':len(d),'unknown_end_status':int(uncertain.sum()),'excluded_total':int((~valid).sum()),'historical_address_limitation':'current recorded address; relocations/historical suspensions unavailable'})
         observations=[]
-        for year in range(2010,2026):
+        for year in range(int(panel.year.min()),int(panel.year.max())+1):
             end=pd.Timestamp(year,12,31)
             counts=d[valid&(opening<=end)&(closing.isna()|(closing>end))].groupby('gu').size().reindex(GU,fill_value=0)
             observations.extend({'year':year,'gu':g,name:count} for g,count in counts.items())
@@ -77,9 +81,19 @@ def main():
         panel[col+'_per10k']=panel[col]/panel.population*10000
     densmap={'사업체수':'businesses','사업체밀도':'business_density','종사자밀도(A)':'worker_density','평균종사자':'workers_per_business'}
     b=wide_xml(RAW/'사업체 및 종사자 밀도.xls',lambda r:densmap.get(r[1]),3)
+    if (RAW/'business_density_refresh.csv').is_file():
+        import sys
+        sys.path.insert(0,str(ROOT))
+        from scripts.child_crime.refresh_inputs import business_frame, merge_complete
+        b=merge_complete(b,business_frame(RAW/'business_density_refresh.csv'))
     panel=panel.merge(b,on=['year','gu'],how='left',validate='one_to_one')
     hhmap={'총가구_가구[가구]':'households','일반가구_가구[가구]':'ordinary_households','일반가구_가구원_계[명]':'ordinary_members','집단가구_집단시설가구_가구원_계[명]':'institution_members','외국인가구_가구[가구]':'foreign_households'}
     hh=wide_xml(RAW/'101_DT_1JC1501_20261106110150.xls',lambda r:hhmap.get(r[1]),3)
+    if (RAW/'household_structure_refresh.csv').is_file():
+        import sys
+        sys.path.insert(0,str(ROOT))
+        from scripts.child_crime.refresh_inputs import household_frame, merge_complete
+        hh=merge_complete(hh,household_frame(RAW/'household_structure_refresh.csv'))
     hh['household_size']=hh.ordinary_members/hh.ordinary_households
     hh['ordinary_share']=hh.ordinary_households/hh.households
     hh['foreign_household_share']=hh.foreign_households/hh.households
@@ -113,6 +127,11 @@ def main():
     grouped=bd.groupby(['year','gu','field']).value
     assert (grouped.size()==12).all()
     bd=grouped.sum(min_count=12).unstack().reset_index()
+    if (RAW/'births_deaths_refresh.csv').is_file():
+        import sys
+        sys.path.insert(0,str(ROOT))
+        from scripts.child_crime.refresh_inputs import births_frame, merge_complete
+        bd=merge_complete(bd,births_frame(RAW/'births_deaths_refresh.csv'))
     panel=panel.merge(bd,on=['year','gu'],how='left',validate='one_to_one')
     for col in ['births','deaths',*mt.columns[2:]]:
         panel[col+'_rate']=panel[col]/panel.population*1000
