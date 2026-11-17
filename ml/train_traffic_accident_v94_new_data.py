@@ -19,7 +19,13 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "models" / "교통사고" / "93차.어린이교통사고수_2차모델"
 OUT = ROOT / "models" / "교통사고" / "94차.교통량추가모델"
 TRAFFIC = ROOT / "data" / "94차_추가사용데이터" / "interim" / "자치구별_교통량_2017_2025.csv"
-REPORT = ROOT / "data" / "processed" / "교통사고_94차_교통량추가모델.xlsx"
+REPORT = (
+    ROOT
+    / "data"
+    / "processed"
+    / "교통사고_94차_최종모델"
+    / "교통사고_94차_데이터.xlsx"
+)
 NEW_FEATURES = [
     "교통량_평균일교통량", "교통량_평일평균일교통량", "교통량_주말평균일교통량",
     "교통량_등교시간비중", "교통량_하교시간비중",

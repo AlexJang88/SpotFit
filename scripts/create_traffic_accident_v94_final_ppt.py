@@ -186,7 +186,7 @@ def main():
     refs=[
         "안전기준표 1차: models/교통사고/1차/model_info.json · 모델평가_및_2026예측.xlsx",
         "91차 기준선: models/교통사고/91차.어린이교통사고수_Persistence모델/",
-        "94차 데이터: data/raw/94차 모델 데이터/ · data/processed/교통사고_94차_데이터.xlsx",
+        "94차 데이터: data/raw/94차 모델 데이터/ · data/processed/교통사고_94차_최종모델/교통사고_94차_데이터.xlsx",
         "94차 모델: models/교통사고/94차.11.13.개선/model_info.json",
         "재현 검증: models/recommender/v1/traffic_accident_v93_v94_pipeline_report.json",
         "전체 파이프라인: scripts/rebuild_traffic_v93_v94_to_v1.py",

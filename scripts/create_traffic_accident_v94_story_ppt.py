@@ -281,7 +281,7 @@ def main():
         "models/교통사고/91차.어린이교통사고수_Persistence모델/comparison_with_v92.json",
         "models/교통사고/94차.11.13.개선/model_info.json",
         "models/교통사고/95차.도로위험도추가모델/model_info.json · 읽어주세요.md",
-        "data/processed/교통사고_94차_데이터.xlsx",
+        "data/processed/교통사고_94차_최종모델/교통사고_94차_데이터.xlsx",
         "models/recommender/v1/traffic_accident_v93_v94_pipeline_report.json",
         "scripts/rebuild_traffic_v93_v94_to_v1.py",
     ]

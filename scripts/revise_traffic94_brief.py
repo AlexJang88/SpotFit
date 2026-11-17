@@ -74,7 +74,10 @@ card(s,10.2,6.35,8.6,2.85,'④ 과거 흐름 추가 → 미래예측 입력 만�
 label(s,1.3,9.55,17.4,.65,'결과: 25개 자치구 × 9년 = 225행 · 전체 패널 134컬럼',27,True)
 label(s,1.3,10.25,17.4,.5,'숫자 예시는 이해용 가상값 · TOPIS는 24개 구 관측 · 134컬럼 전체가 최종 점수 변수는 아닙니다.',16)
 
-config=pd.read_excel(ROOT/'data/processed/교통사고_94차_데이터.xlsx',sheet_name='94차모델설정')
+config=pd.read_excel(
+    ROOT/'data/processed/교통사고_94차_최종모델/교통사고_94차_데이터.xlsx',
+    sheet_name='94차모델설정',
+)
 s=prs.slides[4]; clear_body(s)
 for h,x in [(2,1.2),(3,10.15)]:
     df=config[config['예측기간']==f'{h}년 후'].sort_values('순서')

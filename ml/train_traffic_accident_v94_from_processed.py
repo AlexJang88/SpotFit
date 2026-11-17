@@ -1,7 +1,7 @@
 """Rebuild both v94 models from one processed workbook only.
 
 Required data input:
-    data/processed/교통사고_94차_교통량추가모델.xlsx
+    data/processed/교통사고_94차_최종모델/교통사고_94차_데이터.xlsx
 
 No raw/interim data or earlier joblib model is read.
 """
