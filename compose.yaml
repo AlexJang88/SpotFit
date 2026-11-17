@@ -66,7 +66,7 @@ services:
       - ./models:/models
       - ./ml:/ml:ro
       - ./scripts:/scripts:ro
-      - ./data/raw:/data/raw:ro
+      - ./data/raw:/data/raw
       - ./data/interim:/data/interim:ro
       - ./data/processed:/data/processed
       - ./model_registry:/model_registry:ro
@@ -154,6 +154,8 @@ services:
       AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_USERS: ${AIRFLOW_ADMIN_USER:-spotfit}:admin
       MLFLOW_TRACKING_URI: http://mlflow:5000
       DATA_GO_KR_API_KEY: ${DATA_GO_KR_API_KEY:-}
+      ECOS_API_KEY: ${ECOS_API_KEY:-}
+      MODEL_TRAINING_API_KEY: ${MODEL_TRAINING_API_KEY:-}
       PYTHONPATH: /opt/spot_fit
     volumes:
       - ./infra/airflow/dags:/opt/airflow/dags:ro

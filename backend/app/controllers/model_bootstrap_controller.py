@@ -23,3 +23,25 @@ def retry_bootstrap(admin_key: str | None = Header(default=None, alias="X-Model-
         raise HTTPException(403, str(error)) from error
     except RuntimeError as error:
         raise HTTPException(503, str(error)) from error
+
+
+@router.get("/property/refresh")
+def property_refresh_status() -> dict:
+    from app.services.property_refresh_job import refresh_status
+    return refresh_status()
+
+
+@router.post("/property/refresh", status_code=status.HTTP_202_ACCEPTED)
+def property_refresh(admin_key: str | None = Header(default=None, alias="X-Model-Admin-Key")) -> dict:
+    """Retrain the apartment sale / jeonse / wolse models from the newest raw data (called by the Airflow DAG)."""
+    from app.services.property_refresh_job import start_refresh
+    try:
+        verify_admin_key(admin_key)
+    except PermissionError as error:
+        raise HTTPException(403, str(error)) from error
+    except RuntimeError as error:                       # admin key not configured on the server
+        raise HTTPException(503, str(error)) from error
+    try:
+        return start_refresh()
+    except RuntimeError as error:                       # already running, or the script is missing
+        raise HTTPException(409, str(error)) from error

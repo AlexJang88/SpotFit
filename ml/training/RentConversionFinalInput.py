@@ -19,7 +19,7 @@ import joblib, numpy as np, pandas as pd
 from sklearn.ensemble import HistGradientBoostingRegressor
 BASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data') + os.sep
 DATA_FILE, OUT = BASE + 'processed/부동산/월세_전환율.csv', BASE + 'processed/output/'
-END = '2026-09-30'          # 학습·기준 전세가에 쓰는 마지막 계약일. 파일에는 2026-10-20까지 있음. 원본 모델과 같은 결과를 내려고 9월 말로 둠 (10월까지 쓰려면 이 날짜를 바꾸고 다시 학습)
+END = os.environ.get('PROPERTY_DATA_END', '2026-09-30')   # 학습·기준 전세가에 쓰는 마지막 계약일. 파일에는 2026-10-20까지 있음. 원본 모델과 같은 결과를 내려고 9월 말로 둠. 월별 갱신 파이프라인은 환경변수 PROPERTY_DATA_END(YYYY-MM-DD)로 새 기준일을 넘김
 
 T0 = time.time()
 def P(*x): print(*x, flush=True)
@@ -268,7 +268,7 @@ def dong_service(bundle, dong, band_, year, deposit=None, rent=None, min_buildin
 
 bundle = {'model': model, 'features': XA, 'config': CFG, 'target': '전환율 − 동 앵커 (전환율 = 12×월세÷(기준 전세가−보증금))',
           'rate_clip': [LO, HI], 'deposit_to_jeonse_max': DJ_MAX, 'trained_until': f'{tr["dt"].max():%Y-%m-%d}', 'train_n': len(tr),
-          'stats_q_index': int(q_hi), 'stats_basis': '2026-09 말까지 (동네 통계·앵커·전세가 12개월, 건물 이력 24개월)', 'tables': tables,
+          'stats_q_index': int(q_hi), 'stats_basis': f'{END[:7]} 말까지 (동네 통계·앵커·전세가 12개월, 건물 이력 24개월)', 'tables': tables,
           'test_before_refit': TEST, 'dong_test': DT, 'min_buildings': MIN_BLD,
           'usage': '보증금 입력 → 월세 = 전환율×(J−보증금)÷12 (보증금 ≤ J×0.8) | 월세 입력 → 보증금 = J − 12×월세÷전환율 | J = 같은 건물·면적대 직전 12개월 전세 ㎡당 중앙값(2건 이상)×면적'}
 

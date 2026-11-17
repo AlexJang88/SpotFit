@@ -1,4 +1,4 @@
-# 매매 v64 (입력 파일 버전): AptSaleForecastV64와 같은 모델·항목·평가인데, 데이터는 data/processed/부동산/매매_V64.csv 한 파일만 읽음
+# 매매 v64 (입력 파일 버전): AptSaleForecastV64와 같은 모델·항목·평가인데, 데이터는 data/processed/매매_V64.csv 한 파일만 읽음
 #   입력 파일은 ml/etl/BuildSaleInput.py가 만듦 (매매 거래 + 전세 거래 + 동 좌표·한강공원·업무지구 거리 + 주택담보대출 금리)
 #   원본 v64와 달라진 점: ① 읽는 파일 1개 ② 항목 15개에 안 쓰는 계산(월세·주택인허가·K-apt 단지·거래량 등)과 파일 읽기 제거
 #                          ③ 날짜를 코드에서 따로 자르지 않음 (끝 달은 매매 거래의 마지막 달 = 2026-09, 전세는 e 이전 거래만 쓰므로 그 뒤 거래는 자동으로 빠짐)
@@ -11,7 +11,7 @@ from sklearn.inspection import permutation_importance
 from xgboost import XGBRegressor
 
 BASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data') + os.sep
-SRC, OUT = BASE + 'processed/부동산/매매_V64.csv', BASE + 'processed/output/'
+SRC, OUT = BASE + 'processed/매매_V64.csv', BASE + 'processed/output/'
 
 Y, M6, M12, REL = '평당 가격(만원)', '6개월 상승률(%)', '12개월 상승률(%)', '상대 가격(서울 대비)'
 FLOOR, AGE, AREA = '층수', '완공연도', '평균 임대면적(㎡)'

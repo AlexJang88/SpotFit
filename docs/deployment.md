@@ -44,6 +44,27 @@ docker compose --env-file .env.server -f compose.yaml -f compose.server.yaml exe
 유지해야 합니다. 이 DAG의 성공은 데이터 수집 성공일 뿐 신규 통합 모델 배포 성공을
 뜻하지 않습니다.
 
+## 부동산 모델 월별 자동 갱신 (매매 V64 · 전세 V33 · 월세 전환율)
+
+Airflow의 `property_refresh_pipeline` DAG가 매월 5일 04:00(한국시간)에 아래 순서로 실행됩니다.
+
+1. **수집** (Airflow): 국토교통부 아파트 매매·전월세 실거래가 API와 한국은행 ECOS 주택담보대출 금리를 `data/raw/부동산/refresh/`로 내려받습니다. 신고 기한(30일)을 고려해 오늘 기준 두 달 전까지를 확정 월로 보고, 확정 월 중 최근 3개월은 매번 다시 받아 늦은 신고·취소를 반영합니다.
+2. **전처리·재학습·교체** (백엔드 `POST /api/models/property/refresh`): 받은 달을 기존 원본 CSV(`아파트_매매_2010_2026.csv` 등)에 병합 → 입력 파일 3개(`data/processed/부동산/`) 재생성 → 모델 3개 재학습 → 검증 → `models/recommender/v1/apart_*_final` 교체 → 서비스 캐시 갱신.
+3. **준비 확인(재학습 전)**: 매매·전월세·금리 세 자료가 모두 확정된 마지막 달(오늘 기준 두 달 전)까지 있고, 그 달이 서비스 중인 모델의 기준 월보다 새로울 때만 병합·재학습이 실행됩니다. 하나라도 모자라거나 새로운 달이 없으면 아무 파일도 바꾸지 않고 정상 종료하며, 사유는 `artifacts/property_refresh/last_run.json`의 `process.reasons`에 남습니다 (`process.skipped: true`).
+4. **검증에서 걸러지는 경우**: 예측이 있는 동네가 10% 넘게 줄거나, 현재 가격 중앙값이 이전의 0.7~1.5배를 벗어나거나, 예측값이 0 이하·결측이면 새 모델을 버리고 기존 모델을 유지한 채 DAG가 실패합니다. 월세는 학습 마지막 날이 과거로 가거나 학습 건수가 10% 넘게 줄면 같습니다.
+
+필요한 인증키 (서버 `.env.server`, 개발 PC는 `.env.dev`):
+
+| 환경변수 | 발급처 | 용도 |
+|---|---|---|
+| `DATA_GO_KR_API_KEY` | 공공데이터포털 [아파트 매매 실거래가 자료](https://www.data.go.kr/data/15126469/openapi.do), [아파트 전월세 실거래가 자료](https://www.data.go.kr/data/15126474/openapi.do) 활용신청 (같은 계정이면 키 하나) | 실거래가 수집 |
+| `ECOS_API_KEY` | 한국은행 [ECOS Open API](https://ecos.bok.or.kr/api/) 인증키 신청 | 주택담보대출 금리 수집 |
+| `MODEL_TRAINING_API_KEY` | 직접 정한 긴 임의 문자열 (이미 있음) | DAG가 백엔드 갱신 API를 호출할 때 |
+
+수동 실행: `python -m scripts.property_data.run_property_refresh --stage collect|process|all` (저장소 루트). 결과는 `artifacts/property_refresh/last_run.json`, 실행·학습 로그는 `artifacts/property_refresh/refresh.log`와 `artifacts/property_model_bootstrap.log`에 남습니다. 병합으로 원본 CSV가 바뀌기 전의 파일은 `data/raw/부동산/_backup/`에 하나씩 보관합니다.
+
+도로명주소 DB(`rnaddrkor_seoul.txt`), K-apt 단지 정보, 상권분석 행정동 영역, 한강공원 위치는 거의 바뀌지 않는 자료라 자동 수집하지 않습니다. 행정동이 개편되면 이 파일들을 직접 교체해야 하며, 새 행정동 코드를 찾지 못한 거래는 `last_run.json`의 `no_dong` 건수로 보고됩니다.
+
 현재 `compose.yaml`과 `compose.server.yaml`은 Ubuntu 시연 서버용 구성입니다. 프런트엔드 Vite 개발 서버와 HTTP 프록시를 사용하므로 공개 운영 환경의 보안 설정을 완료한 구성은 아닙니다.
 
 ## 실행 전

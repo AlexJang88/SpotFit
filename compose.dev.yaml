@@ -63,7 +63,7 @@ services:
       - ./models:/models
       - ./ml:/ml:ro
       - ./scripts:/scripts:ro
-      - ./data/raw:/data/raw:ro
+      - ./data/raw:/data/raw
       - ./data/interim:/data/interim:ro
       - ./data/processed:/data/processed
       - ./model_registry:/model_registry:ro

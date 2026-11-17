@@ -19,7 +19,16 @@ ROOT = Path(__file__).resolve().parents[3]
 MODEL_ROOT = ROOT / 'models/recommender/v1'
 M2_PER_PYEONG = 400 / 121
 DEFAULT_AREA = 84.0
-PROPERTY_BASE_YEAR = 2026
+PROPERTY_BASE_MONTH = '2026-09'      # used until the monthly refresh writes pipeline_meta.json next to the models
+
+
+def property_base_month(folder: str) -> str:
+    """YYYY-MM the delivered forecasts start from (written by the monthly refresh pipeline)."""
+    try:
+        meta = json.loads((MODEL_ROOT / folder / 'pipeline_meta.json').read_text(encoding='utf-8'))
+        return str(meta.get('base_year_month') or PROPERTY_BASE_MONTH)
+    except (OSError, ValueError):
+        return PROPERTY_BASE_MONTH
 
 
 def number(value):
@@ -30,8 +39,12 @@ def number(value):
 def property_forecasts(horizon: int, target_year: int | None = None) -> dict:
     # Property snapshots originate in 2026-09; choose the horizon that matches
     # the validated crime/traffic target year, not a fixed 2025 release year.
+    base_month = property_base_month('apart_sale_final')
+    if base_month != property_base_month('apart_jeonse_final'):
+        raise RecommenderV1Error('매매·전세 모델의 기준 월이 서로 다릅니다.')
+    base_year = int(base_month[:4])
     target_year = 2025 + horizon if target_year is None else target_year
-    property_horizon = target_year - PROPERTY_BASE_YEAR
+    property_horizon = target_year - base_year
     if property_horizon not in (1, 2, 3):
         raise ValueError('부동산 모델이 지원하지 않는 예측연도입니다.')
     frames, models = [], {}
@@ -51,8 +64,8 @@ def property_forecasts(horizon: int, target_year: int | None = None) -> dict:
         if ((prices.notna()) & (~np.isfinite(prices) | (prices <= 0))).any():
             raise RecommenderV1Error('가격 예측에 유효하지 않은 금액이 있습니다.')
         frames.append(frame)
-        models[transaction] = {'data_year': 2026, 'base_year_month': '2026-09',
-            'prediction_year': target_year, 'prediction_year_month': f'{target_year}-09',
+        models[transaction] = {'data_year': base_year, 'base_year_month': base_month,
+            'prediction_year': target_year, 'prediction_year_month': f'{target_year}-{base_month[5:]}',
             'horizon_years': property_horizon, 'is_future_forecast': True,
             'method': '현재 평당가격 × exp(예측 로그변화율)', 'source': folder}
     merged = frames[0].merge(frames[1], on=['dong_code', 'district', 'neighborhood'],
@@ -75,7 +88,7 @@ def property_forecasts(horizon: int, target_year: int | None = None) -> dict:
             row[f'{prefix}_amount'] = price * DEFAULT_AREA / M2_PER_PYEONG if price else None
         rows.append(row)
     return {'neighborhoods': rows, 'property_models': models, 'excluded_ambiguous_dong_codes': excluded,
-            'price_source': {'type': 'delivered_model_forecasts', 'base_year_month': '2026-09'}}
+            'price_source': {'type': 'delivered_model_forecasts', 'base_year_month': base_month}}
 
 
 @lru_cache(maxsize=1)
