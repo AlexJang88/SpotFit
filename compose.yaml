@@ -143,6 +143,7 @@ services:
     build:
       context: .
       dockerfile: infra/airflow/Dockerfile
+    user: "${AIRFLOW_UID:-50000}:0"
     command: standalone
     environment: &airflow-environment
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
@@ -152,10 +153,13 @@ services:
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_USERS: ${AIRFLOW_ADMIN_USER:-spotfit}:admin
       MLFLOW_TRACKING_URI: http://mlflow:5000
+      DATA_GO_KR_API_KEY: ${DATA_GO_KR_API_KEY:-}
       PYTHONPATH: /opt/spot_fit
     volumes:
       - ./infra/airflow/dags:/opt/airflow/dags:ro
       - ./ml:/opt/spot_fit/ml:ro
+      - ./scripts:/opt/spot_fit/scripts:ro
+      - ./data/raw:/opt/spot_fit/data/raw
       - airflow_logs:/opt/airflow/logs
       - airflow_home:/opt/airflow
     ports:

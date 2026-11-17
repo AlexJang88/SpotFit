@@ -78,9 +78,9 @@ def _number(value):
     return round(value, 4) if math.isfinite(value) else None
 
 
-def property_catalog(horizon: int = 2) -> dict:
+def property_catalog(horizon: int = 2, target_year: int | None = None) -> dict:
     with _PROPERTY_LOCK:
-        return property_forecasts(horizon)
+        return property_forecasts(horizon, target_year=target_year)
 
 
 def clear_neighborhood_cache() -> None:
@@ -169,9 +169,20 @@ def district_scores(horizon: int) -> dict:
 
 def service_catalog(horizon: int = 2, transaction: str = "sale", deposit_manwon: float | None = None,
                     area_m2: float | None = None) -> dict:
-    properties = property_catalog(horizon)
     scores = district_scores(horizon)
-    warnings = [f"매매·전세는 2026년 9월 기준 {2025 + horizon}년 9월 평당 예측가격입니다. 면적 미입력 시 전용 84㎡로 환산합니다.",
+    if scores["crime_prediction_year"] != scores["traffic_prediction_year"]:
+        raise RecommenderV1Error(
+            "범죄·교통 모델의 예측연도가 달라 통합 추천을 제공할 수 없습니다."
+        )
+    target_year = scores["crime_prediction_year"]
+    properties = property_catalog(horizon, target_year=target_year)
+    for transaction in ("sale", "rent"):
+        model = properties.get("property_models", {}).get(transaction, {})
+        if model.get("prediction_year") != target_year:
+            raise RecommenderV1Error(
+                "부동산 모델의 예측연도가 범죄·교통 모델과 달라 통합 추천을 제공할 수 없습니다."
+            )
+    warnings = [f"매매·전세는 2026년 9월 기준 {target_year}년 9월 평당 예측가격입니다. 면적 미입력 시 전용 84㎡로 환산합니다.",
                 "동네점수는 자치구 단위이며 같은 구의 행정동에 동일하게 적용됩니다."]
     if properties.get('excluded_ambiguous_dong_codes'):
         warnings.append('매매·전세 자료의 행정동 코드와 이름이 서로 다른 지역은 가격 추천에서 제외합니다.')
@@ -186,10 +197,6 @@ def service_catalog(horizon: int = 2, transaction: str = "sale", deposit_manwon:
                 for row in properties['neighborhoods']],
             'property_models': {**properties['property_models'], 'wolse': meta}}
         warnings.append(f"월세는 {meta['trained_until']}까지의 자료로 계산한 현재 조건 추정값이며 미래 연도 예측이 아닙니다. 표시 범위는 건물별 추정 월세의 25~75% 구간입니다.")
-    if scores["crime_prediction_year"] != scores["traffic_prediction_year"]:
-        warnings.append(
-            f"범죄노출 {scores['crime_prediction_year']}년 예측과 교통안전 {scores['traffic_prediction_year']}년 참고 결과를 결합합니다."
-        )
     return {"version": "v1", **properties, **scores, "warnings": warnings,
             "transaction": transaction, "deposit_manwon": deposit_manwon, "area_m2": area_m2}
 

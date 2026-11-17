@@ -65,16 +65,21 @@ def test_property_target_year_and_units(tmp_path, monkeypatch):
     for folder in ('apart_sale_final', 'apart_jeonse_final'):
         path = tmp_path / folder
         path.mkdir()
-        for h in (1,2):
+        for h in (1,2,3):
             (path / f'model_{h}y.joblib').write_bytes(b'present')
         pd.DataFrame({'행정동_코드': [123], '자치구': ['중구'], '행정동': ['중앙동'],
-                      '1년 뒤 예측(만원/평)': [1000], '2년 뒤 예측(만원/평)': [1500]}).to_csv(
+                      '1년 뒤 예측(만원/평)': [1000], '2년 뒤 예측(만원/평)': [1500],
+                      '3년 뒤 예측(만원/평)': [2000]}).to_csv(
                           path / 'neighborhood_forecasts.csv', index=False)
     first, second = final.property_forecasts(2), final.property_forecasts(3)
+    future = final.property_forecasts(3, target_year=2029)
     assert first['property_models']['sale']['prediction_year'] == 2027
     assert first['property_models']['sale']['horizon_years'] == 1
     assert first['neighborhoods'][0]['apart_sale_per_pyeong'] == 1000
     assert second['neighborhoods'][0]['apart_sale_per_pyeong'] == 1500
+    assert future['property_models']['sale']['prediction_year'] == 2029
+    assert future['property_models']['sale']['horizon_years'] == 3
+    assert future['neighborhoods'][0]['apart_sale_per_pyeong'] == 2000
     assert first['neighborhoods'][0]['apart_sale_amount'] == pytest.approx(1000 * 84 / (400 / 121))
 
 

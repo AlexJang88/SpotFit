@@ -26,13 +26,14 @@ def number(value):
     return float(value) if pd.notna(value) and math.isfinite(float(value)) else None
 
 
-@lru_cache(maxsize=2)
-def property_forecasts(horizon: int) -> dict:
-    # Crime/traffic origin is 2025, property origin is 2026-09.
-    target_year = 2025 + horizon
+@lru_cache(maxsize=6)
+def property_forecasts(horizon: int, target_year: int | None = None) -> dict:
+    # Property snapshots originate in 2026-09; choose the horizon that matches
+    # the validated crime/traffic target year, not a fixed 2025 release year.
+    target_year = 2025 + horizon if target_year is None else target_year
     property_horizon = target_year - PROPERTY_BASE_YEAR
-    if property_horizon not in (1, 2):
-        raise ValueError('2027년 또는 2028년 가격만 지원합니다.')
+    if property_horizon not in (1, 2, 3):
+        raise ValueError('부동산 모델이 지원하지 않는 예측연도입니다.')
     frames, models = [], {}
     for transaction, folder, prefix in (
         ('sale', 'apart_sale_final', 'apart_sale'),

@@ -23,17 +23,17 @@ def client(monkeypatch):
     monkeypatch.setattr(service, "forecast_payload", crime)
     monkeypatch.setattr(service, "traffic_forecasts", lambda horizon: (
         pd.DataFrame({"district": names, "traffic_score": list(range(100, 75, -1))}),
-        {"prediction_year": 2025, "score_method": "Feature 가중합", "score_formula": []}))
+        {"prediction_year": 2025 + horizon, "score_method": "Feature 가중합", "score_formula": []}))
     neighborhoods = [
         {"id": f"{name}|중앙1동", "district": name, "neighborhood": "중앙1동",
          "apart_sale_amount": 40000 + i * 1000, "apart_sale_per_pyeong": 2000,
          "apart_rent_amount": 20000 + i * 500, "apart_rent_per_pyeong": 1000}
         for i, name in enumerate(names)
     ]
-    monkeypatch.setattr(service, "property_catalog", lambda horizon=2: {
+    monkeypatch.setattr(service, "property_catalog", lambda horizon=2, target_year=None: {
         "neighborhoods": neighborhoods,
-        "property_models": {"sale": {"data_year": 2025, "is_future_forecast": False},
-                            "rent": {"data_year": 2024, "is_future_forecast": False}}})
+        "property_models": {"sale": {"data_year": 2025, "prediction_year": target_year, "is_future_forecast": False},
+                            "rent": {"data_year": 2024, "prediction_year": target_year, "is_future_forecast": False}}})
     return TestClient(app)
 
 
@@ -155,11 +155,11 @@ def test_catalog_has_fixed_two_domain_score_and_truthful_years(client):
         assert sum(row['weight_pct'] for row in data['crime_score_formula']) == 100
         assert 'Feature' in data['crime_score_method']
         assert data['crime_prediction_year'] == 2025 + horizon
-        assert data['traffic_prediction_year'] == 2025
+        assert data['traffic_prediction_year'] == 2025 + horizon
         assert len(data['districts']) == 25
         assert [r['grade'] for r in data['districts']] == list('AAAAABBBBBCCCCCDDDDDEEEEE')
         assert all(r['score'] == .5 * r['crime_score'] + .5 * r['traffic_score'] for r in data['districts'])
-        assert any('참고' in w for w in data['warnings'])
+        assert data['warnings']
 
 
 def test_detail_matches_district_and_dong_alias(client):
