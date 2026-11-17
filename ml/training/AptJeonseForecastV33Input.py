@@ -1,4 +1,4 @@
-# 전세 v33 (입력 파일 버전): AptJeonseForecastV33과 같은 모델·항목·평가인데, 데이터는 data/processed/전세_V33.csv 한 파일만 읽음
+# 전세 v33 (입력 파일 버전): AptJeonseForecastV33과 같은 모델·항목·평가인데, 데이터는 data/processed/부동산/전세_V33.csv 한 파일만 읽음
 #   입력 파일은 ml/etl/BuildJeonseInput.py가 만듦 (전세 거래 + 매매 거래 + 주택담보대출 금리)
 #   원본 v33과 달라진 점: ① 읽는 파일 1개 ② 항목 5개에 안 쓰는 계산·파일(위치·한강공원·업무지구·월세 비중·거래량 등) 제거
 #                          ③ 날짜를 코드에서 따로 자르지 않음. 끝 달 = 전세·매매·금리가 모두 있는 마지막 달 (현재 데이터에서는 2026-09)
@@ -13,7 +13,7 @@ from sklearn.inspection import permutation_importance
 from xgboost import XGBRegressor
 
 BASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data') + os.sep
-SRC, OUT = BASE + 'processed/전세_V33.csv', BASE + 'processed/output/'
+SRC, OUT = BASE + 'processed/부동산/전세_V33.csv', BASE + 'processed/output/'
 
 Y, M6, REL = '평당 가격(만원)', '6개월 상승률(%)', '상대 가격(서울 대비)'
 RT, RTCHG, JR, NEW = '주택담보대출 금리(연%)', '금리 12개월 변화(%p)', '전세가율(%)', '신축 건물 거래 비율(%)'

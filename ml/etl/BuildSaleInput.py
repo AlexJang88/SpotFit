@@ -1,4 +1,4 @@
-# 매매 최종 모델(AptSaleForecastV64)이 쓰는 데이터 컬럼만 모아 한 파일로 → data/processed/매매_V64.csv
+# 매매 최종 모델(AptSaleForecastV64)이 쓰는 데이터 컬럼만 모아 한 파일로 → data/processed/부동산/매매_V64.csv
 #   한 행 = 거래 1건. 매매 거래와 전세 거래를 '구분' 열로 나눠 위아래로 쌓음 (전세가율·전세 12개월 상승률에 전세 거래가 필요)
 #   입력: raw/부동산/아파트_매매_2010_2026.csv, 아파트_전월세_2010_2026.csv, 서울시 상권분석서비스(영역-행정동).csv, 한강공원 위치현황.csv, 예금은행_대출금리_신규취급액_기준__*.csv
 #   전처리 원칙: 원본에 있는 행을 지우지 않음 (날짜 자르기·이상값 제거·중복 제거 없음), 행 순서도 원본 그대로. 결측은 추정해서 채우지 않고 비워 둠.
@@ -11,7 +11,8 @@ from pyproj import Transformer
 from scipy.spatial import cKDTree
 
 BASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data') + os.sep
-RAW, OUT = BASE + 'raw/부동산/', BASE + 'processed/'
+RAW, OUT = BASE + 'raw/부동산/', BASE + 'processed/부동산/'
+os.makedirs(OUT, exist_ok=True)
 BIZ = {'강남(GBD)': (127.0276, 37.4979), '광화문(CBD)': (126.9770, 37.5657), '여의도(YBD)': (126.9242, 37.5216)}
 
 # ---------- 1. 거래: 매매 + 전세 쌓기 ----------

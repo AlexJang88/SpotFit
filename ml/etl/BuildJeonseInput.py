@@ -1,4 +1,4 @@
-# 전세 최종 모델(AptJeonseForecastV33)이 쓰는 데이터 컬럼만 모아 한 파일로 → data/processed/전세_V33.csv
+# 전세 최종 모델(AptJeonseForecastV33)이 쓰는 데이터 컬럼만 모아 한 파일로 → data/processed/부동산/전세_V33.csv
 #   한 행 = 거래 1건. 전세 거래와 매매 거래를 '구분' 열로 나눠 위아래로 쌓음 (전세가율에 매매 가격이 필요)
 #   입력: raw/부동산/아파트_전월세_2010_2026.csv, 아파트_매매_2010_2026.csv, 예금은행_대출금리_신규취급액_기준__*.csv
 #   V33 항목 5개: 6개월 상승률, 상대 가격(서울 대비), 금리 12개월 변화, 전세가율, 신축 건물 거래 비율(건축 5년 이내) → 위치·한강공원·업무지구 파일은 필요 없음
@@ -9,7 +9,8 @@ import glob, os
 import pandas as pd
 
 BASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data') + os.sep
-RAW, OUT = BASE + 'raw/부동산/', BASE + 'processed/'
+RAW, OUT = BASE + 'raw/부동산/', BASE + 'processed/부동산/'
+os.makedirs(OUT, exist_ok=True)
 KEY = ['행정동_코드(상권분석)', '자치구', '행정동', '계약일', '건축년도']
 
 rent = pd.read_csv(RAW + '아파트_전월세_2010_2026.csv', low_memory=False, usecols=KEY + ['전월세구분', '평당 보증금(만원)'])

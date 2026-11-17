@@ -1,4 +1,4 @@
-# 월세 최종 모델(RentConversionFinal)이 쓰는 데이터 컬럼만 모아 한 파일로 → data/processed/월세_전환율.csv
+# 월세 최종 모델(RentConversionFinal)이 쓰는 데이터 컬럼만 모아 한 파일로 → data/processed/부동산/월세_전환율.csv
 #   한 행 = 거래 1건 (월세 거래 + 전세 거래, 원본 전월세 파일의 행 순서 그대로). 월세 거래로 학습하고, 전세 거래로 기준 전세가를 만듦
 #   입력: raw/부동산/아파트_전월세_2010_2026.csv, 20261030_단지_기본정보.xlsx (K-apt 단지 기본정보 원본, 서울만 사용. 행정동 코드를 붙인 단지_행정동.csv는 쓰지 않음)
 #   전처리 원칙: 원본에 있는 행을 지우지 않음 (날짜 자르기·이상값 제거·중복 제거 없음). 결측은 추정해서 채우지 않고 비워 둠.
@@ -10,7 +10,8 @@ import os
 import numpy as np, pandas as pd
 
 BASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data') + os.sep
-RAW, OUT = BASE + 'raw/부동산/', BASE + 'processed/'
+RAW, OUT = BASE + 'raw/부동산/', BASE + 'processed/부동산/'
+os.makedirs(OUT, exist_ok=True)
 
 rent = pd.read_csv(RAW + '아파트_전월세_2010_2026.csv', low_memory=False,
                    usecols=['행정동_코드(상권분석)', '자치구', '법정동', '지번', '계약일', '전월세구분', '보증금(만원)', '월세(만원)', '임대면적(㎡)', '층', '건축년도'])

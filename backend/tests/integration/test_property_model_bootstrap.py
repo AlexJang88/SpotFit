@@ -65,7 +65,9 @@ def test_missing_input_file_is_built_before_training(tmp_path, monkeypatch):
     def fake_run(script, cwd, log_path, label):
         ran.append(script.name)
         if script.name == spec.build:
-            (tmp_path / "data" / "processed" / spec.input_file).write_text("x")
+            target = tmp_path / "data" / "processed" / spec.input_file
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text("x")
         return 0
 
     monkeypatch.setattr(boot, "_run_script", fake_run)

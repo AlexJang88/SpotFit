@@ -12,13 +12,13 @@
 #   서비스 함수: predict() = 집 한 채, dong_service() = 행정동·면적대 (docs/wolse-conversion-dong-service.md)
 #   예측 가능 조건: 같은 건물·면적대 직전 12개월 전세 2건 이상, 보증금 입력은 보증금 ≤ 전세가×0.8
 # 실행: python RentConversionFinalInput.py   (출력: 월세계약_전환율모델_최종_입력.joblib, 월세계약_전환율모델_최종_입력요약.json, 월세계약_전환율모델_입력_행정동시험.csv)
-#   ※ 이 파일은 RentConversionFinal.py와 같은 모델·항목·학습인데, 데이터를 data/processed/월세_전환율.csv 한 파일에서만 읽음 (ml/etl/BuildWolseInput.py가 만듦)
+#   ※ 이 파일은 RentConversionFinal.py와 같은 모델·항목·학습인데, 데이터를 data/processed/부동산/월세_전환율.csv 한 파일에서만 읽음 (ml/etl/BuildWolseInput.py가 만듦)
 #     달라진 점: 읽는 파일 1개 (거래마다 K-apt 단지 정보가 이미 붙어 있음) · 날짜 기준은 아래 END 한 곳 · 결과 이름에 _입력 · 서비스 단지 표(kapt)는 거래에 나온 단지만 담음
 import json, os, time
 import joblib, numpy as np, pandas as pd
 from sklearn.ensemble import HistGradientBoostingRegressor
 BASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data') + os.sep
-DATA_FILE, OUT = BASE + 'processed/월세_전환율.csv', BASE + 'processed/output/'
+DATA_FILE, OUT = BASE + 'processed/부동산/월세_전환율.csv', BASE + 'processed/output/'
 END = '2026-09-30'          # 학습·기준 전세가에 쓰는 마지막 계약일. 파일에는 2026-10-20까지 있음. 원본 모델과 같은 결과를 내려고 9월 말로 둠 (10월까지 쓰려면 이 날짜를 바꾸고 다시 학습)
 
 T0 = time.time()

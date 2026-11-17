@@ -48,7 +48,7 @@ SPECS = (
             ("아파트매매_v64_입력_동네별예측_1년2년3년뒤.json", "neighborhood_forecasts.json"),
         ),
         description="아파트 매매 v64: 행정동별 1·2·3년 뒤 평당 매매가",
-        input_file="매매_V64.csv",
+        input_file="부동산/매매_V64.csv",
         build="BuildSaleInput.py",
     ),
     ModelSpec(
@@ -62,7 +62,7 @@ SPECS = (
             ("아파트전세_v33_입력_동네별예측_1년2년3년뒤.json", "neighborhood_forecasts.json"),
         ),
         description="아파트 전세 v33: 행정동별 1·2·3년 뒤 평당 전세 보증금",
-        input_file="전세_V33.csv",
+        input_file="부동산/전세_V33.csv",
         build="BuildJeonseInput.py",
     ),
     ModelSpec(
@@ -73,7 +73,7 @@ SPECS = (
             ("월세계약_전환율모델_최종_입력요약.json", "summary.json"),
         ),
         description="아파트 월세 계약 단위 전환율 모델: 보증금이나 월세 중 하나를 입력하면 나머지를 예측 (같은 건물·면적대 직전 12개월 전세 2건 미만이면 예측 불가)",
-        input_file="월세_전환율.csv",
+        input_file="부동산/월세_전환율.csv",
         build="BuildWolseInput.py",
     ),
 )
