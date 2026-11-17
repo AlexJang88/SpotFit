@@ -22,7 +22,7 @@ def required_paths(horizon: int) -> tuple[Path, Path, Path]:
 
 def model_status() -> dict:
     horizons = []
-    for horizon in (1, 2):
+    for horizon in (2, 3):
         model, forecast, metadata = required_paths(horizon)
         horizons.append({"horizon_years": horizon, "ready": all(path.is_file() for path in (model, forecast, metadata)), "model_path": str(model), "forecast_path": str(forecast), "missing": [str(path) for path in (model, forecast, metadata) if not path.is_file()]})
     return {"service": "child_regional_crime_exposure", "ready": all(item["ready"] for item in horizons), "horizons": horizons}
@@ -30,8 +30,8 @@ def model_status() -> dict:
 
 @lru_cache(maxsize=2)
 def forecast_payload(horizon: int) -> dict:
-    if horizon not in (1, 2):
-        raise ChildCrimeExposureError("예측기간은 1년 또는 2년만 지원합니다.")
+    if horizon not in (2, 3):
+        raise ChildCrimeExposureError("예측기간은 2년 또는 3년만 지원합니다.")
     model, forecast, metadata_path = required_paths(horizon)
     missing = [path for path in (model, forecast, metadata_path) if not path.is_file()]
     if missing:

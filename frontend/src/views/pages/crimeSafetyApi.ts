@@ -49,14 +49,14 @@ export type SafetyCategoryResponse = {
   scores: SafetyCategoryScore[];
 };
 
-export async function fetchCrimeSafety(horizon = 1, signal?: AbortSignal): Promise<CrimeSafetyResponse> {
+export async function fetchCrimeSafety(horizon = 2, signal?: AbortSignal): Promise<CrimeSafetyResponse> {
   return apiRequest<CrimeSafetyResponse>(`/api/safety/crime/district-forecasts?horizon=${horizon}`, {
     signal,
     fallbackMessage: "지역점수를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
   });
 }
 
-export async function fetchSafetyCategoryScores(horizon = 1, signal?: AbortSignal): Promise<SafetyCategoryResponse> {
+export async function fetchSafetyCategoryScores(horizon = 2, signal?: AbortSignal): Promise<SafetyCategoryResponse> {
   return apiRequest<SafetyCategoryResponse>(`/api/safety/crime/category-scores?horizon=${horizon}`, {
     signal,
     fallbackMessage: "지역점수 세부 항목을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",

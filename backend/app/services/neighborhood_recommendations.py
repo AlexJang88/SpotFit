@@ -15,7 +15,8 @@ from threading import Lock
 import pandas as pd
 
 from app.services.child_crime_exposure import required_paths
-from app.services.recommender_v1 import _property_predictions, _traffic_predictions, RecommenderV1Error, MODEL_ROOT, RAW_ROOT
+from app.services.recommender_v1 import RecommenderV1Error, RAW_ROOT
+from app.services.final_model_artifacts import property_forecasts, monthly_quotes, traffic_forecasts, clear_caches, DEFAULT_AREA
 
 WEIGHTS = {"crime": 0.5, "traffic": 0.5}
 _PROPERTY_LOCK = Lock()
@@ -77,49 +78,13 @@ def _number(value):
     return round(value, 4) if math.isfinite(value) else None
 
 
-@lru_cache(maxsize=1)
-def _property_catalog_cached() -> dict:
-    # Allow a provenance-bearing snapshot exported from the same model API on
-    # machines without the large raw transaction files. Never invent prices.
-    if not all((RAW_ROOT / name).is_file() for name in ("아파트_매매.csv", "아파트_전월세.csv")):
-        snapshot = MODEL_ROOT / "property_service_forecasts.json"
-        if not snapshot.is_file():
-            raise RecommenderV1Error("아파트 원본 CSV 또는 property_service_forecasts.json이 필요합니다.")
-        payload = json.loads(snapshot.read_text(encoding="utf-8"))
-        if payload.get("schema_version") != 1 or not payload.get("provenance"):
-            raise RecommenderV1Error("가격 스냅샷의 형식 또는 출처 정보가 없습니다.")
-        rows = payload["neighborhoods"]
-        identities = [(r["district"], r["neighborhood"]) for r in rows]
-        if not rows or len(set(identities)) != len(identities):
-            raise RecommenderV1Error("가격 스냅샷에 중복되거나 빈 행정동 자료가 있습니다.")
-        for row in rows:
-            for key in ("apart_sale_amount", "apart_rent_amount", "apart_sale_per_pyeong", "apart_rent_per_pyeong"):
-                value = row[key]
-                if value is not None and (not isinstance(value, (int, float)) or not math.isfinite(value) or value <= 0):
-                    raise RecommenderV1Error("가격 스냅샷에 유효하지 않은 값이 있습니다.")
-        return {"neighborhoods": rows, "property_models": payload["property_models"],
-                "price_source": payload["provenance"]}
-    _, sale, sale_meta = _property_predictions("apart_sale")
-    _, rent, rent_meta = _property_predictions("apart_rent")
-    merged = sale.merge(rent, on=["district", "neighborhood"], how="outer", validate="one_to_one")
-    rows = []
-    for item in merged.sort_values(["district", "neighborhood"]).to_dict("records"):
-        rows.append({
-            "id": f"{item['district']}|{item['neighborhood']}",
-            "district": item["district"], "neighborhood": item["neighborhood"],
-            **{k: _number(v) for k, v in item.items() if k not in ("district", "neighborhood")},
-        })
-    return {"neighborhoods": rows, "property_models": {"sale": sale_meta, "rent": rent_meta},
-            "price_source": {"type": "local_model_inference"}}
-
-
-def property_catalog() -> dict:
+def property_catalog(horizon: int = 2) -> dict:
     with _PROPERTY_LOCK:
-        return _property_catalog_cached()
+        return property_forecasts(horizon)
 
 
 def clear_neighborhood_cache() -> None:
-    _property_catalog_cached.cache_clear()
+    clear_caches()
     popular_areas.cache_clear()
 
 
@@ -134,10 +99,10 @@ def popular_areas(transaction: str) -> dict:
                 "description": "거래 원자료가 없어 기본 면적을 제공합니다.",
                 "options": [{"label": f"{a}㎡", "area_m2": a, "transaction_count": None} for a in (59, 84, 114)]}
     column = "전용면적(㎡)" if transaction == "sale" else "임대면적(㎡)"
-    columns = ["계약연도", column] + (["전월세구분"] if transaction == "rent" else [])
+    columns = ["계약연도", column] + (["전월세구분"] if transaction != "sale" else [])
     frame = pd.read_csv(path, usecols=columns, encoding="utf-8-sig")
-    if transaction == "rent":
-        frame = frame.loc[frame["전월세구분"].astype(str).str.strip().eq("전세")].copy()
+    if transaction in ("rent", "wolse"):
+        frame = frame.loc[frame["전월세구분"].astype(str).str.strip().eq("월세" if transaction == "wolse" else "전세")].copy()
     frame["year"] = pd.to_numeric(frame["계약연도"], errors="coerce")
     frame["area"] = pd.to_numeric(frame[column], errors="coerce")
     frame = frame.loc[frame["year"].lt(date.today().year) & frame["area"].between(1, 1000)].copy()
@@ -158,17 +123,15 @@ def popular_areas(transaction: str) -> dict:
 
 def district_scores(horizon: int) -> dict:
     crime = forecast_payload(horizon)
-    traffic, traffic_meta = _traffic_predictions()
+    traffic, traffic_meta = traffic_forecasts(horizon)
     if len(traffic) != 25 or traffic.district.nunique() != 25:
         raise RecommenderV1Error("교통안전 결과가 서울 25개 자치구 구조가 아닙니다.")
     traffic = traffic.copy()
     traffic["traffic_score"] = pd.to_numeric(traffic.traffic_score, errors="raise")
     if not all(math.isfinite(float(v)) for v in traffic.traffic_score):
         raise RecommenderV1Error("교통안전 점수에 유효하지 않은 값이 있습니다.")
-    # Both domains use the same 20/40/60/80/100 scale, higher = safer.
-    # Equal traffic values receive the same rank/points.
-    ranks = traffic.traffic_score.rank(ascending=False, method="min").astype(int)
-    traffic["points"] = 100 - ((ranks - 1) // 5) * 20
+    # Preserve the delivered weighted Feature score without re-binning it.
+    traffic["points"] = traffic.traffic_score
     traffic_by = {r.district: r for r in traffic.itertuples()}
     rows = []
     for c in crime["forecasts"]:
@@ -195,26 +158,48 @@ def district_scores(horizon: int) -> dict:
         "crime_prediction_year": crime["prediction_year"],
         "traffic_prediction_year": int(traffic_meta["prediction_year"]),
         "weights": WEIGHTS,
-        "score_method": "범죄 Feature 가중합 안전점수와 교통안전 5분위 점수를 50%씩 합산",
+        "score_method": "범죄·교통 Feature 가중합 안전점수를 50%씩 합산",
+        "traffic_score_method": traffic_meta["score_method"],
+        "traffic_score_formula": traffic_meta["score_formula"],
         "crime_score_method": crime["score_method"],
         "crime_score_formula": crime["score_formula"],
         "tie_rule": "종합점수 → 범죄안전 점수 → 자치구명 순으로 동점 정렬",
     }
 
 
-def service_catalog(horizon: int = 2) -> dict:
-    properties = property_catalog()
+def service_catalog(horizon: int = 2, transaction: str = "sale", deposit_manwon: float | None = None,
+                    area_m2: float | None = None) -> dict:
+    properties = property_catalog(horizon)
     scores = district_scores(horizon)
-    warnings = ["가격은 미래 연도 가격이 아닌 최신 거래 특성 기반 대표 추정값입니다.",
+    warnings = [f"매매·전세는 2026년 9월 기준 {2025 + horizon}년 9월 평당 예측가격입니다. 면적 미입력 시 전용 84㎡로 환산합니다.",
                 "동네점수는 자치구 단위이며 같은 구의 행정동에 동일하게 적용됩니다."]
+    if properties.get('excluded_ambiguous_dong_codes'):
+        warnings.append('매매·전세 자료의 행정동 코드와 이름이 서로 다른 지역은 가격 추천에서 제외합니다.')
+    if transaction == "wolse":
+        if deposit_manwon is None or area_m2 is None:
+            raise ValueError('월세 조회에는 보증금과 면적이 필요합니다.')
+        quotes, meta = monthly_quotes(deposit_manwon, area_m2)
+        properties = {**properties,
+            'neighborhoods': [{**row, 'wolse': quotes.get(row['dong_code'], {
+                'available': False, 'monthly_rent_manwon': None,
+                'reason': '해당 동·면적대의 전세 이력이 부족해 월세를 계산할 수 없습니다.'})}
+                for row in properties['neighborhoods']],
+            'property_models': {**properties['property_models'], 'wolse': meta}}
+        warnings.append(f"월세는 {meta['trained_until']}까지의 자료로 계산한 현재 조건 추정값이며 미래 연도 예측이 아닙니다. 표시 범위는 건물별 추정 월세의 25~75% 구간입니다.")
     if scores["crime_prediction_year"] != scores["traffic_prediction_year"]:
         warnings.append(
             f"범죄노출 {scores['crime_prediction_year']}년 예측과 교통안전 {scores['traffic_prediction_year']}년 참고 결과를 결합합니다."
         )
-    return {"version": "v1", **properties, **scores, "warnings": warnings}
+    return {"version": "v1", **properties, **scores, "warnings": warnings,
+            "transaction": transaction, "deposit_manwon": deposit_manwon, "area_m2": area_m2}
 
 
 def priced_neighborhood(item: dict, transaction: str, area_m2: float | None) -> dict:
+    if transaction == 'wolse':
+        quote = item.get('wolse', {})
+        return {**item, 'estimated_amount_manwon': quote.get('monthly_rent_manwon'),
+                'transaction': transaction, 'area_m2': area_m2,
+                'price_basis': '입력 보증금 기준, 같은 면적대 건물별 예상 월세의 거래량 가중 중앙값'}
     prefix = "apart_sale" if transaction == "sale" else "apart_rent"
     amount = item.get(f"{prefix}_amount")
     if area_m2 is not None:
@@ -224,13 +209,14 @@ def priced_neighborhood(item: dict, transaction: str, area_m2: float | None) -> 
     return {
         **item, "estimated_amount_manwon": _number(amount),
         "transaction": transaction, "area_m2": area_m2,
-        "price_basis": "입력면적 × 행정동 대표 평당 추정가" if area_m2 is not None else "행정동 최신 거래 특성의 대표 총액",
+        "price_basis": "전용면적 × 행정동 미래 평당 예측가" if area_m2 is not None else "전용 84㎡ × 행정동 미래 평당 예측가",
     }
 
 
 def recommend(budget_manwon: float, transaction: str = "sale", horizon: int = 2,
-              area_m2: float | None = None, limit: int = 5, min_budget_manwon: float = 0) -> dict:
-    catalog = service_catalog(horizon)
+              area_m2: float | None = None, limit: int = 5, min_budget_manwon: float = 0,
+              deposit_manwon: float | None = None) -> dict:
+    catalog = service_catalog(horizon, transaction, deposit_manwon, area_m2)
     by_district = {row["district"]: row for row in catalog["districts"]}
     candidates = []
     excluded = 0
@@ -264,8 +250,9 @@ def recommend(budget_manwon: float, transaction: str = "sale", horizon: int = 2,
 
 
 def neighborhood_detail(district: str, neighborhood: str, horizon: int,
-                        transaction: str = "sale", area_m2: float | None = None) -> dict:
-    catalog = service_catalog(horizon)
+                        transaction: str = "sale", area_m2: float | None = None,
+                        deposit_manwon: float | None = None) -> dict:
+    catalog = service_catalog(horizon, transaction, deposit_manwon, area_m2)
     found = [row for row in catalog["neighborhoods"]
              if row["district"] == district.strip()
              and normalize_neighborhood(row["neighborhood"]) == normalize_neighborhood(neighborhood)]

@@ -26,27 +26,40 @@ def call_service(func, **kwargs):
 
 
 @router.get("/catalog")
-def catalog(horizon: int = Query(default=2, ge=2, le=3)):
-    return call_service(service.service_catalog, horizon=horizon)
+def catalog(horizon: int = Query(default=2, ge=2, le=3),
+            transaction: Literal["sale", "rent", "wolse"] = "sale",
+            deposit_manwon: float | None = Query(default=None, ge=0, le=1_000_000_000, allow_inf_nan=False),
+            area_m2: float | None = Query(default=None, ge=1, le=1000, allow_inf_nan=False)):
+    validate_monthly(transaction, deposit_manwon, area_m2)
+    return call_service(service.service_catalog, horizon=horizon, transaction=transaction,
+                        deposit_manwon=deposit_manwon, area_m2=area_m2)
+
+
+def validate_monthly(transaction, deposit, area):
+    if transaction == 'wolse' and (deposit is None or area is None):
+        raise HTTPException(422, '월세 조회에는 보증금과 전용면적이 필요합니다.')
 
 
 @router.get("/recommendations")
 def recommendations(
     budget_manwon: float = Query(gt=0, le=1_000_000_000, allow_inf_nan=False),
-    transaction: Literal["sale", "rent"] = "sale",
+    transaction: Literal["sale", "rent", "wolse"] = "sale",
     horizon: int = Query(default=2, ge=2, le=3),
     area_m2: float | None = Query(default=None, gt=0, le=1000, allow_inf_nan=False),
     limit: int = Query(default=5, ge=1, le=5),
     min_budget_manwon: float = Query(default=0, ge=0, le=1_000_000_000, allow_inf_nan=False),
+    deposit_manwon: float | None = Query(default=None, ge=0, le=1_000_000_000, allow_inf_nan=False),
 ):
+    validate_monthly(transaction, deposit_manwon, area_m2)
     if min_budget_manwon > budget_manwon:
         raise HTTPException(422, "예산 하한은 상한보다 클 수 없습니다.")
     return call_service(service.recommend, budget_manwon=budget_manwon, transaction=transaction,
-                        horizon=horizon, area_m2=area_m2, limit=limit, min_budget_manwon=min_budget_manwon)
+                        horizon=horizon, area_m2=area_m2, limit=limit, min_budget_manwon=min_budget_manwon,
+                        deposit_manwon=deposit_manwon)
 
 
 @router.get("/area-presets")
-def area_presets(transaction: Literal["sale", "rent"] = "sale"):
+def area_presets(transaction: Literal["sale", "rent", "wolse"] = "sale"):
     return call_service(service.popular_areas, transaction=transaction)
 
 
@@ -55,8 +68,10 @@ def detail(
     district: str = Query(min_length=1, max_length=30),
     neighborhood: str = Query(min_length=1, max_length=50),
     horizon: int = Query(default=2, ge=2, le=3),
-    transaction: Literal["sale", "rent"] = "sale",
+    transaction: Literal["sale", "rent", "wolse"] = "sale",
     area_m2: float | None = Query(default=None, gt=0, le=1000, allow_inf_nan=False),
+    deposit_manwon: float | None = Query(default=None, ge=0, le=1_000_000_000, allow_inf_nan=False),
 ):
+    validate_monthly(transaction, deposit_manwon, area_m2)
     return call_service(service.neighborhood_detail, district=district, neighborhood=neighborhood,
-                        horizon=horizon, transaction=transaction, area_m2=area_m2)
+                        horizon=horizon, transaction=transaction, area_m2=area_m2, deposit_manwon=deposit_manwon)

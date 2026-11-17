@@ -1,6 +1,13 @@
 import { apiRequest } from "../../services/apiClient";
 
-export type Transaction = "sale" | "rent";
+export type Transaction = "sale" | "rent" | "wolse";
+export const transactionLabel: Record<Transaction, string> = { sale: "매매", rent: "전세", wolse: "월세" };
+export const M2_PER_PYEONG = 400 / 121;
+export type MonthlyQuote = {
+  available: boolean; monthly_rent_manwon: number | null; deposit_manwon?: number;
+  p25_manwon?: number | null; p75_manwon?: number | null; conversion_rate_pct?: number | null;
+  area_band?: string; buildings_used?: number; reason?: string | null; trained_until?: string;
+};
 export type Grade = "A" | "B" | "C" | "D" | "E";
 export type DistrictScore = {
   district: string; score: number; rank: number; grade: Grade;
@@ -12,12 +19,14 @@ export type Neighborhood = {
   id: string; district: string; neighborhood: string;
   apart_sale_amount: number | null; apart_sale_per_pyeong: number | null;
   apart_rent_amount: number | null; apart_rent_per_pyeong: number | null;
+  wolse?: MonthlyQuote;
 };
 export type Catalog = {
   version: string; horizon: number; crime_base_year: number;
+  transaction: Transaction; deposit_manwon: number | null; area_m2: number | null;
   crime_prediction_year: number; traffic_prediction_year: number;
   districts: DistrictScore[]; neighborhoods: Neighborhood[];
-  property_models: Record<Transaction, { data_year: number; is_future_forecast: boolean; method: string }>;
+  property_models: Partial<Record<Transaction, { data_year: number; is_future_forecast: boolean; method: string; prediction_year?: number; trained_until?: string }>>;
   weights: { crime: number; traffic: number }; warnings: string[];
   score_method: string; tie_rule: string; crime_score_method: string;
   crime_score_formula: { feature: string; direction: "higher_risk" | "lower_risk"; weight_pct: number }[];
@@ -45,21 +54,28 @@ async function read<T>(url: string, signal?: AbortSignal): Promise<T> {
   return apiRequest<T>(url, { signal, fallbackMessage: "데이터를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요." });
 }
 
-export function fetchCatalog(horizon: number, signal?: AbortSignal) {
-  return read<Catalog>(`/api/neighborhoods/catalog?horizon=${horizon}`, signal);
+export function fetchCatalog(horizon: number, signal?: AbortSignal, transaction: Transaction = "sale", deposit?: number, area?: number | null) {
+  const query = new URLSearchParams({ horizon: String(horizon), transaction });
+  if (transaction === "wolse") {
+    if (deposit !== undefined) query.set("deposit_manwon", String(deposit));
+    if (area != null) query.set("area_m2", String(area));
+  }
+  return read<Catalog>(`/api/neighborhoods/catalog?${query}`, signal);
 }
 
 export function fetchRecommendations(budget: number, transaction: Transaction, horizon: number,
-  area: number | null, signal?: AbortSignal, minBudget = 0) {
+  area: number | null, signal?: AbortSignal, minBudget = 0, deposit?: number) {
   const query = new URLSearchParams({ budget_manwon: String(budget), transaction, horizon: String(horizon) });
   if (area !== null) query.set("area_m2", String(area));
   query.set("min_budget_manwon", String(minBudget));
+  if (transaction === "wolse" && deposit !== undefined) query.set("deposit_manwon", String(deposit));
   return read<Recommendations>(`/api/neighborhoods/recommendations?${query}`, signal);
 }
 
 export const normalizeDong = (value: string) => value.replace(/\s+/g, "").replace(/제+(?=\d)/g, "").replace(/(?<=\d)[.·ㆍ](?=\d)/g, "·");
 export const amountFor = (row: Neighborhood | undefined, transaction: Transaction, area: number | null) => {
   if (!row) return null;
+  if (transaction === "wolse") return row.wolse?.monthly_rent_manwon ?? null;
   const perPyeong = transaction === "sale" ? row.apart_sale_per_pyeong : row.apart_rent_per_pyeong;
   const amount = transaction === "sale" ? row.apart_sale_amount : row.apart_rent_amount;
   return area !== null ? (perPyeong === null ? null : perPyeong * area / (400 / 121)) : amount;

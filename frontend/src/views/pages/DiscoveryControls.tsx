@@ -19,18 +19,20 @@ export const budgetLabel = (amount: number) => amount >= 10000
   ? `${(amount / 10000).toLocaleString("ko-KR", { maximumFractionDigits: 2 })}억원`
   : `${amount.toLocaleString("ko-KR")}만원`;
 
-export function BudgetRange({ lower, upper, onLower, onUpper }: {
+export function BudgetRange({ lower, upper, onLower, onUpper, monthly = false }: {
   lower: string; upper: string; onLower: (value: string) => void; onUpper: (value: string) => void;
+  monthly?: boolean;
 }) {
   const min = Math.max(0, Number(lower) || 0);
   const max = Math.max(min, Number(upper) || 0);
-  const ceiling = Math.max(300000, Math.ceil(max / 100000) * 100000);
+  const step = monthly ? 5 : 1000;
+  const ceiling = monthly ? Math.max(500, Math.ceil(max / 100) * 100) : Math.max(300000, Math.ceil(max / 100000) * 100000);
   const setAtPointer = (event: PointerEvent<HTMLDivElement>, thumb?: "lower" | "upper") => {
     const rect = event.currentTarget.getBoundingClientRect();
-    const value = Math.round(Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width)) * ceiling / 1000) * 1000;
+    const value = Math.round(Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width)) * ceiling / step) * step;
     const which = thumb ?? (Math.abs(value - min) <= Math.abs(value - max) ? "lower" : "upper");
     if (which === "lower") onLower(String(Math.min(value, max)));
-    else onUpper(String(Math.max(1000, value, min)));
+    else onUpper(String(Math.max(step, value, min)));
     return which;
   };
   return <div className="budget-range">
@@ -43,8 +45,8 @@ export function BudgetRange({ lower, upper, onLower, onUpper }: {
       }}
       onPointerMove={e => { if (e.currentTarget.hasPointerCapture(e.pointerId)) setAtPointer(e, e.currentTarget.dataset.thumb as "lower" | "upper"); }}>
       <div className="range-rail"/><div className="range-fill"/>
-      <input className="range-lower" type="range" aria-label="예산 하한 슬라이더" aria-valuetext={budgetLabel(min)} min="0" max={ceiling} step="1000" value={min} onChange={e => onLower(String(Math.min(Number(e.target.value), max)))}/>
-      <input className="range-upper" type="range" aria-label="예산 상한 슬라이더" aria-valuetext={budgetLabel(max)} min="0" max={ceiling} step="1000" value={max} onChange={e => onUpper(String(Math.max(1000, Number(e.target.value), min)))}/>
+      <input className="range-lower" type="range" aria-label="예산 하한 슬라이더" aria-valuetext={budgetLabel(min)} min="0" max={ceiling} step={step} value={min} onChange={e => onLower(String(Math.min(Number(e.target.value), max)))}/>
+      <input className="range-upper" type="range" aria-label="예산 상한 슬라이더" aria-valuetext={budgetLabel(max)} min="0" max={ceiling} step={step} value={max} onChange={e => onUpper(String(Math.max(step, Number(e.target.value), min)))}/>
     </div>
     <div className="range-scale"><span>0원</span><span>{budgetLabel(ceiling)}</span></div>
     <div className="budget-inputs">
@@ -52,6 +54,6 @@ export function BudgetRange({ lower, upper, onLower, onUpper }: {
       <span aria-hidden="true">—</span>
       <div className="filter-field"><label htmlFor="budget">최대 금액</label><div className="input-unit"><input id="budget" type="number" min="1" max="1000000000" step="any" value={upper} onChange={e => onUpper(e.target.value)}/><span>만원</span></div></div>
     </div>
-    <p className="field-hint">두 손잡이를 움직이거나 금액을 직접 입력하세요. 슬라이더는 1천만원 단위입니다.</p>
+    <p className="field-hint">두 손잡이를 움직이거나 금액을 직접 입력하세요. 슬라이더는 {monthly ? "월 5만원" : "1천만원"} 단위입니다.</p>
   </div>;
 }

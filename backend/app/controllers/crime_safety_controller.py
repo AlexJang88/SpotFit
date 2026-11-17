@@ -13,7 +13,7 @@ router = APIRouter(prefix="/safety/crime", tags=["crime_safety"])
 
 
 @router.get("/category-scores")
-def category_scores(horizon: int = Query(default=1, ge=1, le=2)) -> dict:
+def category_scores(horizon: int = Query(default=2, ge=2, le=3)) -> dict:
     """교통사고·범죄·안전 인프라의 자치구별 백분위 점수를 반환한다."""
     try:
         return get_safety_category_scores(horizon)
@@ -26,7 +26,7 @@ def category_scores(horizon: int = Query(default=1, ge=1, le=2)) -> dict:
 @router.get("/district-forecasts", response_model=CrimeSafetyForecastResponse)
 def district_forecasts(
     district: str | None = Query(default=None, description="선택한 서울 자치구만 반환"),
-    horizon: int = Query(default=1, ge=1, le=2, description="1년 또는 2년 뒤 예측"),
+    horizon: int = Query(default=2, ge=2, le=3, description="2년 또는 3년 뒤 예측"),
 ) -> CrimeSafetyForecastResponse:
     """서울 25개 구의 아동 지역범죄 노출 예측점수와 상대순위를 반환한다."""
     try:

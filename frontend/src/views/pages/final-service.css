@@ -74,6 +74,10 @@ button { transition: background-color .15s, box-shadow .15s; }
 .card-heading button { border: 0; background: none; color: var(--muted); font-size: 24px; }
 .eyebrow { font-size: 9px; font-weight: 700; letter-spacing: 2px; color: var(--green); }
 .selection-card h2 { font-size: 25px; margin: 10px 0 18px; letter-spacing: -1px; }
+.monthly-summary { margin: 14px 0; padding: 14px; background: var(--mint, #edf4f0); border-radius: 10px; color: var(--ink, #354f49); font-size: 13px; line-height: 1.65; }
+.monthly-summary p { margin: 0 0 8px; }
+.monthly-summary small { display: block; color: var(--muted); }
+.area-unit { margin-bottom: 14px; }
 .selection-card h2 small { display: block; margin-top: 6px; color: var(--muted); font-weight: 400; font-size: 12px; letter-spacing: 0; }
 .price-highlight { background: #f1f6f3; border-radius: 8px; padding: 16px; display: grid; gap: 5px; }
 .price-highlight span { font-size: 12px; color: var(--muted); }

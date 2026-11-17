@@ -21,16 +21,16 @@ def client(monkeypatch):
                 "forecasts": [{"district": name, "predicted_score": 100 - (i // 5) * 20,
                                "predicted_exposure_y": i / 10} for i, name in enumerate(names)]}
     monkeypatch.setattr(service, "forecast_payload", crime)
-    monkeypatch.setattr(service, "_traffic_predictions", lambda: (
+    monkeypatch.setattr(service, "traffic_forecasts", lambda horizon: (
         pd.DataFrame({"district": names, "traffic_score": list(range(100, 75, -1))}),
-        {"prediction_year": 2025}))
+        {"prediction_year": 2025, "score_method": "Feature 가중합", "score_formula": []}))
     neighborhoods = [
         {"id": f"{name}|중앙1동", "district": name, "neighborhood": "중앙1동",
          "apart_sale_amount": 40000 + i * 1000, "apart_sale_per_pyeong": 2000,
          "apart_rent_amount": 20000 + i * 500, "apart_rent_per_pyeong": 1000}
         for i, name in enumerate(names)
     ]
-    monkeypatch.setattr(service, "property_catalog", lambda: {
+    monkeypatch.setattr(service, "property_catalog", lambda horizon=2: {
         "neighborhoods": neighborhoods,
         "property_models": {"sale": {"data_year": 2025, "is_future_forecast": False},
                             "rent": {"data_year": 2024, "is_future_forecast": False}}})
@@ -173,7 +173,7 @@ def test_detail_matches_district_and_dong_alias(client):
 
 
 def test_invalid_traffic_artifact_fails_without_fake_score(client, monkeypatch):
-    monkeypatch.setattr(service, '_traffic_predictions', lambda: (pd.DataFrame({
+    monkeypatch.setattr(service, 'traffic_forecasts', lambda horizon: (pd.DataFrame({
         'district': ['구00'], 'traffic_score': [100]}), {'prediction_year': 2025}))
     assert client.get('/api/neighborhoods/catalog').status_code == 503
 
@@ -187,3 +187,36 @@ def test_invalid_traffic_artifact_fails_without_fake_score(client, monkeypatch):
 ])
 def test_official_display_aliases(left, right):
     assert service.normalize_neighborhood(left) == service.normalize_neighborhood(right)
+
+
+def test_traffic_feature_score_is_not_rebinned(client):
+    data = client.get('/api/neighborhoods/catalog').json()
+    scores = {r['district']: r['traffic_score'] for r in data['districts']}
+    assert scores['구01'] == 99
+    assert scores['구24'] == 76
+
+
+@pytest.mark.parametrize('params', [
+    {'transaction': 'wolse'},
+    {'transaction': 'wolse', 'area_m2': 84},
+    {'transaction': 'wolse', 'deposit_manwon': 5000},
+    {'transaction': 'wolse', 'deposit_manwon': -1, 'area_m2': 84},
+])
+def test_wolse_requires_valid_deposit_and_area(client, params):
+    assert client.get('/api/neighborhoods/catalog', params=params).status_code == 422
+
+
+def test_monthly_recommendations_filter_monthly_not_deposit(client, monkeypatch):
+    original = service.property_catalog()
+    for i, row in enumerate(original['neighborhoods']):
+        row['dong_code'] = i
+    quotes = {i: {'available': True, 'monthly_rent_manwon': 75 + i, 'deposit_manwon': 5000}
+              for i in range(25)}
+    quotes[0] = {'available': False, 'monthly_rent_manwon': None}
+    monkeypatch.setattr(service, 'monthly_quotes', lambda *_: (quotes, {'trained_until': '2026-09-30'}))
+    result = client.get('/api/neighborhoods/recommendations', params={
+        'transaction': 'wolse', 'deposit_manwon': 5000, 'area_m2': 84,
+        'min_budget_manwon': 80, 'budget_manwon': 85}).json()
+    assert len(result['recommendations']) == 5
+    assert all(80 <= r['estimated_amount_manwon'] <= 85 for r in result['recommendations'])
+    assert result['recommendations'][0]['district'] == '구05'

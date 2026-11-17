@@ -2,12 +2,9 @@ from fastapi import APIRouter, Header, HTTPException, Query, status
 
 from app.services.recommender_v1 import RecommenderV1Error, get_district_forecasts
 from app.services.crime_model_training import verify_admin_key
-from app.services.traffic_accident_v51 import (
-    TrafficAccidentV51Error,
-    ensure_models as ensure_traffic_models,
-    forecast_payload as traffic_forecast_payload,
-    model_status as traffic_model_status,
-)
+from app.services.final_model_artifacts import traffic_forecasts
+from app.services.neighborhood_recommendations import service_catalog
+from app.services.service_model_bootstrap import bootstrap_status, start_model_bootstrap
 
 
 router = APIRouter(prefix="/recommender", tags=["recommender_v1"])
@@ -15,8 +12,8 @@ router = APIRouter(prefix="/recommender", tags=["recommender_v1"])
 
 @router.get("/model-status")
 def recommender_model_status() -> dict:
-    """Show the temporary traffic-v51 artifacts alongside recommender-v1."""
-    return {"version": "v1", "traffic_accident": traffic_model_status()}
+    """Show readiness of the delivered final models."""
+    return {"version": "v1", **bootstrap_status()}
 
 
 @router.post("/models/ensure", status_code=status.HTTP_202_ACCEPTED)
@@ -24,13 +21,13 @@ def ensure_recommender_models(
     force: bool = Query(default=False),
     admin_key: str | None = Header(default=None, alias="X-Model-Admin-Key"),
 ) -> dict:
-    """Create missing v51 traffic artifacts under models/recommender/v1."""
+    """Restore missing final model artifacts in the background."""
     try:
         verify_admin_key(admin_key)
-        return {"version": "v1", "traffic_accident": ensure_traffic_models(force=force)}
+        return {"version": "v1", "started": start_model_bootstrap(force=force), **bootstrap_status()}
     except PermissionError as error:
         raise HTTPException(status_code=403, detail=str(error)) from error
-    except (RuntimeError, TrafficAccidentV51Error, OSError, ValueError, KeyError) as error:
+    except (RuntimeError, OSError, ValueError, KeyError) as error:
         raise HTTPException(status_code=503, detail=str(error)) from error
 
 
@@ -39,10 +36,11 @@ def traffic_accident_district_forecasts(
     horizon: int = Query(default=2, ge=2, le=3),
     district: str | None = Query(default=None),
 ) -> dict:
-    """Return temporary model-51 traffic forecasts for 2027 or 2028."""
+    """Return final v94 Feature-weighted safety scores."""
     try:
-        payload = traffic_forecast_payload(horizon)
-    except (TrafficAccidentV51Error, OSError, ValueError, KeyError) as error:
+        frame, metadata = traffic_forecasts(horizon)
+        payload = {**metadata, "district_count": len(frame), "forecasts": frame.to_dict('records')}
+    except (RecommenderV1Error, OSError, ValueError, KeyError) as error:
         raise HTTPException(status_code=503, detail=str(error)) from error
     if district:
         selected = [row for row in payload["forecasts"] if row["district"] == district.strip()]
@@ -53,10 +51,12 @@ def traffic_accident_district_forecasts(
 
 
 @router.get("/district-forecasts")
-def district_forecasts(district: str | None = Query(default=None)) -> dict:
+def district_forecasts(district: str | None = Query(default=None), horizon: int = Query(default=2, ge=2, le=3)) -> dict:
     """Return results produced by every model delivered in recommender/v1."""
     try:
-        payload = get_district_forecasts()
+        catalog = service_catalog(horizon)
+        payload = {**catalog, 'forecasts': catalog['districts'], 'district_count': len(catalog['districts']),
+                   'neighborhood_count': len(catalog['neighborhoods'])}
     except (RecommenderV1Error, OSError, ValueError, KeyError) as error:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(error)

@@ -16,25 +16,17 @@ logger = logging.getLogger(__name__)
 
 GROUPS = {
     "property": {
-        "script": "scripts/rebuild_property_service_models.py",
-        "required": (
-            "apart_sale/model_bundle.joblib", "apart_sale/model_contract.json",
-            "apart_rent/model_bundle.joblib", "apart_rent/model_contract.json",
-            "apart_sale_final/model_1y.joblib", "apart_sale_final/model_2y.joblib",
-            "apart_sale_final/model_3y.joblib", "apart_sale_final/neighborhood_forecasts.csv",
-            "apart_jeonse_final/model_1y.joblib", "apart_jeonse_final/model_2y.joblib",
-            "apart_jeonse_final/model_3y.joblib", "apart_jeonse_final/neighborhood_forecasts.csv",
-            "apart_wolse_final/model_bundle.joblib", "apart_wolse_final/summary.json",
-            "property_service_forecasts.json",
-        ),
+        "script": "scripts/rebuild_final_property_models.py",
+        "required": tuple(
+            f"{folder}/{file}"
+            for folder in ("apart_sale_final", "apart_jeonse_final")
+            for file in ("model_1y.joblib", "model_2y.joblib", "model_3y.joblib", "neighborhood_forecasts.csv")
+        ) + ("apart_wolse_final/model_bundle.joblib", "apart_wolse_final/summary.json"),
     },
     "traffic": {
-        "script": "scripts/rebuild_traffic_service_model.py",
-        "required": (
-            "traffic_accident/교통사고_2차_모델.joblib",
-            "traffic_accident/2025년_최종검증_예측결과.csv",
-            "traffic_accident/모델정보.json",
-        ),
+        "script": "scripts/rebuild_final_traffic_v94.py",
+        "required": tuple(f"traffic_accident_v94/{file}" for file in (
+            "traffic_accident_2y.joblib", "traffic_accident_3y.joblib", "service_forecast.csv", "model_metadata.json")),
     },
     "child_crime": {
         "script": "scripts/child_crime/rebuild_service_crime_models.py",
