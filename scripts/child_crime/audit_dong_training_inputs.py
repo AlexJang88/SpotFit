@@ -6,7 +6,7 @@ from html import unescape
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[2]
-RAW = ROOT / 'data/raw/아동범죄_행정동'
+RAW = ROOT / 'data/raw/child_crime_exposure'
 OUT = ROOT / 'artifacts/child_crime_dong_audit'
 
 
@@ -31,10 +31,7 @@ def main():
     (OUT / 'target_audit.json').write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
     coverage.to_csv(OUT / 'crime_year_coverage.csv', encoding='utf-8-sig')
     print(json.dumps({k: v for k, v in report.items() if k != 'files'}, ensure_ascii=False, indent=2))
-    for folder in sorted(p for p in RAW.iterdir() if p.is_dir()):
-        path = next((p for p in sorted(folder.iterdir()) if p.suffix in ('.csv', '.xls')), None)
-        if path is None:
-            continue
+    for path in sorted(p for p in RAW.iterdir() if p.is_file() and p.suffix in ('.csv', '.xls')):
         print('\nSOURCE:', path.relative_to(RAW))
         if path.suffix == '.xls':
             # Preview only: some exports contain XML-invalid unescaped text.

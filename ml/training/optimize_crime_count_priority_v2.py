@@ -19,17 +19,17 @@ sys.path.insert(0, str(ROOT))
 from ml.training import compare_child_crime_borough_v2 as old
 from ml.training import optimize_borough_crime_count_3y as crime
 
-PRIORITY = ROOT / "artifacts" / "child_population_priority_v1"
+PRIORITY = ROOT / "data/processed/child_crime_exposure/population_features"
 OUT = ROOT / "artifacts" / "borough_crime_count_priority_v2"
 MODEL_OUT = ROOT / "models" / "experiments" / "borough_crime_count_priority_v2"
 
 
 def old_setup():
-    panel = pd.read_csv(old.OUT / "panel.csv")
-    groups = json.loads((old.OUT / "feature_groups.json").read_text(encoding="utf-8"))
+    panel = pd.read_csv(old.DATA / "panel.csv")
+    groups = json.loads((old.DATA / "feature_groups.json").read_text(encoding="utf-8"))
     columns = list(dict.fromkeys(old.CORE + [c for values in groups.values() for c in values]))
     pairs = old.make_pairs(panel, 3)
-    row = pd.read_csv(old.OUT / "3y" / "best_by_method_cv.csv").query("method == 'components'").iloc[0]
+    row = pd.read_csv(ROOT / "artifacts/child_crime_borough_v2/3y/best_by_method_cv.csv").query("method == 'components'").iloc[0]
     return panel, pairs, columns, ast.literal_eval(row.features), float(row.alpha)
 
 

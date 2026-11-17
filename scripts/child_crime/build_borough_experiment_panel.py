@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from inspect_borough_inputs import ROOT, RAW, csvread, spreadsheet
 
-OUT=ROOT/'artifacts/child_crime_borough_v2'
+OUT=ROOT/'data/processed/child_crime_exposure/borough_panel'
 GU=['종로구','중구','용산구','성동구','광진구','동대문구','중랑구','성북구','강북구','도봉구','노원구','은평구','서대문구','마포구','양천구','강서구','구로구','금천구','영등포구','동작구','관악구','서초구','강남구','송파구','강동구']
 def num(x):
     return pd.to_numeric(str(x).replace(',',''),errors='coerce')
@@ -28,7 +28,7 @@ def main():
     OUT.mkdir(parents=True,exist_ok=True)
     audit=[]
     frames=[]
-    for path in sorted((RAW/'연령별 인구수').glob('*.csv')):
+    for path in sorted(RAW.glob('*연령별인구현황_연간.csv')):
         year=int(path.name[:4]); d=csvread(path)
         names=d['행정구역'].str.extract(r'서울특별시\s+(.+?구)\s+([^()]+)\s*\(')
         # Aggregate dong rows only; never add published borough totals again.
@@ -57,7 +57,7 @@ def main():
     for col in ['child','age0_5','age6_12','age13_17','elderly']:
         panel[col+'_share']=panel[col]/panel.population
     for name in ['유흥주점','단란주점']:
-        d=csvread(next((RAW/'유흥주점·단란주점').glob(f'*{name}*.csv')),dtype=str).fillna('')
+        d=csvread(next(RAW.glob(f'*{name}*.csv')),dtype=str).fillna('')
         assert not d['관리번호'].duplicated().any()
         d['gu']=d['지번주소'].str.extract(r'서울특별시\s+(\S+구)')
         d['gu']=d.gu.fillna(d['도로명주소'].str.extract(r'서울특별시\s+(\S+구)')[0])
@@ -75,15 +75,11 @@ def main():
         panel=panel.merge(pd.DataFrame(observations),on=['year','gu'],validate='one_to_one')
     for col in ['유흥주점','단란주점']:
         panel[col+'_per10k']=panel[col]/panel.population*10000
-    worker_map={'총종사자수':'workers','자영업주 및 무급가족':'self_family','상용근로자':'regular','임시 및 일용근로자':'temporary','기타 종사자':'other_workers'}
-    w=wide_xml(next((RAW/'종사상지위별 종사자수').glob('*.xls')),lambda r:worker_map.get(r[1]),4)
-    for col in list(worker_map.values())[1:]:w[col+'_share']=w[col]/w.workers
-    panel=panel.merge(w,on=['year','gu'],how='left',validate='one_to_one')
     densmap={'사업체수':'businesses','사업체밀도':'business_density','종사자밀도(A)':'worker_density','평균종사자':'workers_per_business'}
-    b=wide_xml(RAW/'사업체 밀도와 조직 형태/사업체 및 종사자 밀도.xls',lambda r:densmap.get(r[1]),3)
+    b=wide_xml(RAW/'사업체 및 종사자 밀도.xls',lambda r:densmap.get(r[1]),3)
     panel=panel.merge(b,on=['year','gu'],how='left',validate='one_to_one')
     hhmap={'총가구_가구[가구]':'households','일반가구_가구[가구]':'ordinary_households','일반가구_가구원_계[명]':'ordinary_members','집단가구_집단시설가구_가구원_계[명]':'institution_members','외국인가구_가구[가구]':'foreign_households'}
-    hh=wide_xml(next((RAW/'1인 가구').glob('*.xls')),lambda r:hhmap.get(r[1]),3)
+    hh=wide_xml(RAW/'101_DT_1JC1501_20261106110150.xls',lambda r:hhmap.get(r[1]),3)
     hh['household_size']=hh.ordinary_members/hh.ordinary_households
     hh['ordinary_share']=hh.ordinary_households/hh.households
     hh['foreign_household_share']=hh.foreign_households/hh.households
@@ -91,7 +87,7 @@ def main():
     audit.append({'source':'1인 가구','actual_content':'가구형태별 가구 및 가구원; 1인가구 수 없음','used':'자치구 공표 합계; 가구구조로 명명'})
     # Organization export omits parent categories. Do not guess row order semantics.
     audit.append({'source':'사업체현황(조직형태별동별).xls','used':False,'reason':'조직형태 상위 항목명이 누락되어 사업체수/종사자수만 반복됨. 조직형태는 MDIS 명시적 코드로 대체'})
-    mig=csvread(next((RAW/'인구이동').glob('*.csv')))
+    mig=csvread(RAW/'서울시 인구이동(2015년 이후) 통계.csv')
     mig=mig[(mig['성별명']=='계')&mig['구명'].isin(GU)].copy()
     mig['year']=pd.to_numeric(mig['통계연도']);mig['value']=mig['인구수'].map(num)
     # Use the published borough total, validating a single row for each movement type.
@@ -104,7 +100,7 @@ def main():
     mt=mt.rename(columns={col:'migration_'+col for col in mt.columns if col not in ['year','gu']})
     panel=panel.merge(mt,on=['year','gu'],how='left',validate='one_to_one')
     births=[]
-    for path in sorted((RAW/'출생사망인구').glob('*.xls')):
+    for path in sorted(RAW.glob('출생사망인구수_*.xls')):
         rows=spreadsheet(path)
         for row in rows[2:]:
             if len(row)<5 or row[0] not in GU or row[1]!='합계':continue
@@ -127,12 +123,12 @@ def main():
     cache=OUT/'mdis_borough_counts.csv'
     if cache.exists(): mdis=pd.read_csv(cache)
     else:
-        book=next((RAW/'집객시설').glob('*.xlsx'))
+        book=next(RAW.glob('파일설계서*.xlsx'))
         codes=pd.read_excel(book,sheet_name='행정구역',header=3,dtype=str)
         codes=codes[codes.CITY_CD=='11']
         code_map=dict(zip(codes.SIGUN_CD.str[-3:],codes.SIGUN_NM))
         results=[]
-        for path in sorted((RAW/'집객시설').glob('*.csv')):
+        for path in sorted(RAW.glob('*_연간자료_*.csv')):
             year=int(path.name[:4])
             if year<2014:continue
             indices=[1,2,4,5] if year==2014 else [1,2,7,9,10]
@@ -165,7 +161,6 @@ def main():
     groups={
         '인구구조':['log_child','child_share','age0_5_share','age6_12_share','age13_17_share','elderly_share'],
         '유흥시설':['유흥주점','단란주점','유흥주점_per10k','단란주점_per10k'],
-        '고용구조':['workers','self_family_share','regular_share','temporary_share','other_workers_share'],
         '사업체밀도':list(densmap.values()),
         '가구구조':['households','ordinary_share','household_size','foreign_household_share','institution_members'],
         '인구이동':[c+'_rate' for c in mt.columns if c not in ['year','gu']],

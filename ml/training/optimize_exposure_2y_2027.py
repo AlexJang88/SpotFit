@@ -28,8 +28,8 @@ sys.path.insert(0, str(ROOT))
 from ml.training import optimize_exposure_rank_3y as metrics_lib
 from ml.training import optimize_borough_crime_count_3y as model_lib
 
-BASE = ROOT / "artifacts" / "child_crime_borough_v2"
-PRIORITY = ROOT / "artifacts" / "child_population_priority_v1"
+BASE = ROOT / "data/processed/child_crime_exposure/borough_panel"
+PRIORITY = ROOT / "data/processed/child_crime_exposure/population_features"
 OUT = ROOT / "artifacts" / "child_crime_exposure_2y_2027_v1"
 MODEL_OUT = ROOT / "models" / "experiments" / "child_crime_exposure_2y_2027_v1"
 HORIZON = 2

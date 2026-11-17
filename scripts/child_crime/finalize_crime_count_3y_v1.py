@@ -33,12 +33,12 @@ def count_metrics(actual_log: np.ndarray, predicted_log: np.ndarray) -> dict[str
 
 
 def previous_component_benchmark() -> dict[str, object]:
-    panel = pd.read_csv(old.OUT / "panel.csv")
-    groups = json.loads((old.OUT / "feature_groups.json").read_text(encoding="utf-8"))
+    panel = pd.read_csv(old.DATA / "panel.csv")
+    groups = json.loads((old.DATA / "feature_groups.json").read_text(encoding="utf-8"))
     columns = list(dict.fromkeys(old.CORE + [column for values in groups.values() for column in values]))
     gus = sorted(panel.gu.unique())
     pairs = old.make_pairs(panel, 3)
-    row = pd.read_csv(old.OUT / "3y" / "best_by_method_cv.csv").query("method == 'components'").iloc[0]
+    row = pd.read_csv(ROOT / "artifacts/child_crime_borough_v2/3y/best_by_method_cv.csv").query("method == 'components'").iloc[0]
     features = ast.literal_eval(row.features)
     indices = [columns.index(column) for column in features]
 

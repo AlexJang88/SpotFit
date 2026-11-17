@@ -11,7 +11,7 @@ from sklearn.linear_model import Ridge
 
 ROOT = Path(__file__).resolve().parents[2]
 BASE = ROOT / "artifacts" / "child_crime_exposure_rank_3y_v1"
-PANEL = ROOT / "artifacts" / "child_crime_borough_v2" / "panel.csv"
+PANEL = ROOT / "data/processed/child_crime_exposure/borough_panel/panel.csv"
 
 
 def metrics(actual: np.ndarray, prediction: np.ndarray) -> dict[str, float]:

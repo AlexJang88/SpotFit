@@ -21,11 +21,11 @@ MODEL_OUT = ROOT / "models" / "experiments" / "borough_crime_count_ensemble_3y_v
 
 
 def inputs():
-    old_panel = pd.read_csv(old.OUT / "panel.csv")
-    old_groups = json.loads((old.OUT / "feature_groups.json").read_text(encoding="utf-8"))
+    old_panel = pd.read_csv(old.DATA / "panel.csv")
+    old_groups = json.loads((old.DATA / "feature_groups.json").read_text(encoding="utf-8"))
     old_columns = list(dict.fromkeys(old.CORE + [c for values in old_groups.values() for c in values]))
     old_pairs = old.make_pairs(old_panel, 3)
-    row = pd.read_csv(old.OUT / "3y" / "best_by_method_cv.csv").query("method == 'components'").iloc[0]
+    row = pd.read_csv(ROOT / "artifacts/child_crime_borough_v2/3y/best_by_method_cv.csv").query("method == 'components'").iloc[0]
     old_features = ast.literal_eval(row.features)
 
     result = json.loads((new.OUT / "result.json").read_text(encoding="utf-8"))

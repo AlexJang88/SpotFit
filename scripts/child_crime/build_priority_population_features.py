@@ -9,9 +9,9 @@ import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[2]
-RAW_ROOT = ROOT / "data" / "raw"
-BASE = ROOT / "artifacts" / "child_crime_borough_v2"
-OUT = ROOT / "artifacts" / "child_population_priority_v1"
+RAW_ROOT = ROOT / "data" / "raw" / "child_crime_exposure"
+BASE = ROOT / "data/processed/child_crime_exposure/borough_panel"
+OUT = ROOT / "data/processed/child_crime_exposure/population_features"
 
 
 def number(value):
@@ -22,10 +22,9 @@ def number(value):
 
 
 def raw_dir() -> Path:
-    matches = [p for p in RAW_ROOT.iterdir() if p.is_dir() and any(x.name.startswith("2008-2025_") for x in p.glob("*.xlsx"))]
-    if len(matches) != 1:
-        raise RuntimeError(f"Cannot uniquely identify raw directory: {matches}")
-    return matches[0]
+    if not RAW_ROOT.is_dir():
+        raise FileNotFoundError(f"범죄모델 원자료 폴더가 없습니다: {RAW_ROOT}")
+    return RAW_ROOT
 
 
 def exact_book(folder: Path, marker: str) -> Path:
@@ -36,11 +35,8 @@ def exact_book(folder: Path, marker: str) -> Path:
 
 
 def load_single_age(folder: Path, gus: list[str]) -> pd.DataFrame:
-    age_dirs = [p for p in folder.iterdir() if p.is_dir() and any(x.name.startswith("201012_") for x in p.glob("*.csv"))]
-    if len(age_dirs) != 1:
-        raise RuntimeError(f"Cannot uniquely identify single-age directory: {age_dirs}")
     records = []
-    for path in sorted(age_dirs[0].glob("*.csv")):
+    for path in sorted(folder.glob("*연령별인구현황_연간.csv")):
         year = int(path.name[:4])
         frame = pd.read_csv(path, encoding="cp949", dtype=str)
         admin = frame.columns[0]
@@ -154,21 +150,17 @@ def main() -> int:
     gus = sorted(panel.gu.unique().tolist())
     folder = raw_dir()
     cohort = load_single_age(folder, gus)
-    students = parse_student_counts(exact_book(folder, "학급당"), gus)
     moves = parse_student_moves(exact_book(folder, "학생변동상황"), gus)
-    stress = parse_stress(exact_book(folder, "스트레스"), gus)
     result = panel[["year", "gu"]].merge(cohort, on=["year", "gu"], how="left", validate="one_to_one")
-    for source in (students, moves, stress):
+    for source in (moves,):
         result = result.merge(source, on=["year", "gu"], how="left", validate="one_to_one")
     groups = {
         "cohort": [c for c in cohort.columns if c not in ("year", "gu")],
-        "student_count": [c for c in students.columns if c not in ("year", "gu")],
         "student_movement": [c for c in moves.columns if c not in ("year", "gu")],
-        "stress": ["stress_standardized_rate"],
     }
     # Administrative survey/school statistics are only available after the
     # reference year. A one-year availability lag prevents release leakage.
-    for group in ("student_count", "student_movement", "stress"):
+    for group in ("student_movement",):
         lagged = []
         for col in groups[group]:
             new = f"{col}_available_lag1"
@@ -181,9 +173,7 @@ def main() -> int:
     coverage.to_csv(OUT / "feature_coverage.csv", encoding="utf-8-sig")
     audit = {
         "cohort": {"years": [int(cohort.year.min()), int(cohort.year.max())], "rows": len(cohort), "availability": "same-year resident-register population"},
-        "student_count": {"years": [int(students.year.min()), int(students.year.max())], "rows": len(students), "applied_lag": 1},
         "student_movement": {"years": [int(moves.year.min()), int(moves.year.max())], "rows": len(moves), "applied_lag": 1},
-        "stress": {"years": [int(stress.year.min()), int(stress.year.max())], "rows": len(stress), "measure": "age-standardized rate", "applied_lag": 1},
     }
     (OUT / "source_audit.json").write_text(json.dumps(audit, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps({"output": str(OUT), "shape": result.shape, "audit": audit}, ensure_ascii=False, indent=2))

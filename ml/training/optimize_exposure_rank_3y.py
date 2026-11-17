@@ -104,11 +104,11 @@ def fitted_population_predict(model, frame: pd.DataFrame, features: list[str], m
 
 
 def crime_setup():
-    panel = pd.read_csv(old.OUT / "panel.csv")
-    groups = json.loads((old.OUT / "feature_groups.json").read_text(encoding="utf-8"))
+    panel = pd.read_csv(old.DATA / "panel.csv")
+    groups = json.loads((old.DATA / "feature_groups.json").read_text(encoding="utf-8"))
     columns = list(dict.fromkeys(old.CORE + [c for values in groups.values() for c in values]))
     pairs = old.make_pairs(panel, 3)
-    row = pd.read_csv(old.OUT / "3y" / "best_by_method_cv.csv").query("method == 'components'").iloc[0]
+    row = pd.read_csv(ROOT / "artifacts/child_crime_borough_v2/3y/best_by_method_cv.csv").query("method == 'components'").iloc[0]
     old_features = ast.literal_eval(row.features)
     new_result = json.loads((crime_new.OUT / "result.json").read_text(encoding="utf-8"))
     new_winner = new_result["winner_cv"]

@@ -15,7 +15,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 ROOT = Path(__file__).resolve().parents[2]
-PANEL = ROOT / "artifacts" / "child_crime_borough_v2" / "panel.csv"
+PANEL = ROOT / "data/processed/child_crime_exposure/borough_panel/panel.csv"
 OUT = ROOT / "models" / "recommender" / "v1" / "child_crime_exposure" / "1y"
 CV_YEARS = (2022, 2023, 2024)
 CORE = ["y", "log_crime", "log_child", "y_lag1", "y_lag2", "y_change", "log_crime_change", "log_child_change"]

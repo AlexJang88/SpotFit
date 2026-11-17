@@ -21,6 +21,7 @@ from sklearn.ensemble import ExtraTreesRegressor, HistGradientBoostingRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
 ROOT=Path(__file__).resolve().parents[2]
+DATA=ROOT/'data/processed/child_crime_exposure/borough_panel'
 OUT=ROOT/'artifacts/child_crime_borough_v2'
 MODELS=ROOT/'models/experiments/child_crime_borough_v2'
 CORE=['y','log_crime','log_child']
@@ -177,7 +178,7 @@ def evaluate_subset(mask,h,groups,columns,contexts,one_contexts):
 def main():
     ap=argparse.ArgumentParser();ap.add_argument('--smoke',action='store_true');ap.add_argument('--jobs',type=int,default=2)
     args=ap.parse_args();start=time.time()
-    panel=pd.read_csv(OUT/'panel.csv');groups=json.loads((OUT/'feature_groups.json').read_text(encoding='utf-8'))
+    panel=pd.read_csv(DATA/'panel.csv');groups=json.loads((DATA/'feature_groups.json').read_text(encoding='utf-8'))
     columns=list(dict.fromkeys(CORE+[c for cols in groups.values() for c in cols]));gus=sorted(panel.gu.unique())
     summary=[];one_pairs=make_pairs(panel,1)
     for h in [1,3]:

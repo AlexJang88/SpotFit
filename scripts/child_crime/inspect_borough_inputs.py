@@ -4,7 +4,7 @@ from html import unescape
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[2]
-RAW = ROOT / 'data/raw/아동범죄_행정동'
+RAW = ROOT / 'data/raw/child_crime_exposure'
 def spreadsheet(path):
     text = path.read_text(encoding='cp949')
     rows=[]
@@ -33,9 +33,9 @@ if __name__=='__main__':
         gu=[r for r in rows[2:] if r and r[0] in ('종로구','강남구','강동구')]
         print('GU',gu[:5])
         print('SAMPLE',rows[25:27])
-    for p in sorted((RAW/'집객시설').glob('*.csv')):
+    for p in sorted(RAW.glob('*_연간자료_*.csv')):
         print('MDIS',p.name,csvread(p,header=None,nrows=1).shape,csvread(p,header=None,nrows=1).values.tolist())
-    p=next((RAW/'집객시설').glob('*.xlsx'))
+    p=next(RAW.glob('파일설계서*.xlsx'))
     book=pd.ExcelFile(p)
     print('CODEBOOK SHEETS',book.sheet_names)
     for sheet in book.sheet_names:

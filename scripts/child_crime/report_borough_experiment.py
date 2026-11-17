@@ -17,7 +17,7 @@ def table(headers,rows):
     return '\n'.join(['| '+' | '.join(headers)+' |','| '+' | '.join(['---']*len(headers))+' |']+['| '+' | '.join(map(str,r))+' |' for r in rows])
 
 def main():
-    panel=pd.read_csv(OUT/'panel.csv');groups=json.loads((OUT/'feature_groups.json').read_text(encoding='utf-8'))
+    panel=pd.read_csv(DATA/'panel.csv');groups=json.loads((DATA/'feature_groups.json').read_text(encoding='utf-8'))
     columns=list(dict.fromkeys(CORE+[c for v in groups.values() for c in v]));gus=sorted(panel.gu.unique())
     results=json.loads((OUT/'results.json').read_text(encoding='utf-8'));lines=[];summary=[];tests=[]
     assert not panel.duplicated(['year','gu']).any()
@@ -198,7 +198,7 @@ def main():
             sheet.freeze_panes='A2';sheet.auto_filter.ref=sheet.dimensions
     import hashlib
     manifest={}
-    for path in [OUT/'panel.csv',OUT/'feature_groups.json',ROOT/'ml/training/compare_child_crime_borough_v2.py',
+    for path in [DATA/'panel.csv',DATA/'feature_groups.json',ROOT/'ml/training/compare_child_crime_borough_v2.py',
                  ROOT/'scripts/child_crime/build_borough_experiment_panel.py']:
         manifest[str(path.relative_to(ROOT))]=hashlib.sha256(path.read_bytes()).hexdigest()
     (OUT/'reproducibility_hashes.json').write_text(json.dumps(manifest,indent=2),encoding='utf-8')

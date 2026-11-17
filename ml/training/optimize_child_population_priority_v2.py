@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 from ml.training import optimize_exposure_rank_3y as rank_v1
 
-PRIORITY = ROOT / "artifacts" / "child_population_priority_v1"
+PRIORITY = ROOT / "data/processed/child_crime_exposure/population_features"
 OUT = ROOT / "artifacts" / "child_population_priority_v2"
 MODEL_OUT = ROOT / "models" / "experiments" / "child_population_priority_v2"
 

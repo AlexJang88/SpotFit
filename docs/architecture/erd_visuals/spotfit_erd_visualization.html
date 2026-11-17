@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SpotFit ERD</title><style>
+body{margin:0;background:#eef4f2;font-family:Pretendard,'Noto Sans KR','Malgun Gothic',sans-serif;color:#16383b}
+main{max-width:1500px;margin:0 auto;padding:32px}.head{display:flex;justify-content:space-between;align-items:end;margin-bottom:20px}
+h1{margin:0;font-size:34px}p{color:#607d79}.panel{background:white;border:1px solid #d6e4e0;border-radius:18px;padding:16px;margin:20px 0;box-shadow:0 8px 24px #002d3514}
+.panel h2{margin:6px 8px 14px}.frame{overflow:auto;border-radius:12px;background:#f5f8f7}.frame img{display:block;width:100%;min-width:1100px;height:auto}
+.note{font-size:14px;margin:10px 8px}.badge{display:inline-block;background:#00d084;color:#002d35;border-radius:999px;padding:7px 12px;font-weight:800}
+</style></head><body><main><div class="head"><div><h1>SpotFit PostgreSQL ERD</h1><p>비회원 서비스 · Airflow 자동화 · 5개 최종모델 기준</p></div><span class="badge">2026-11-13</span></div>
+<section class="panel"><h2>1. 전체 구조</h2><div class="frame"><img src="spotfit_erd_full.svg" alt="SpotFit 전체 ERD"></div><p class="note">데이터 수집부터 서비스·운영까지 Schema 단위 흐름입니다.</p></section>
+<section class="panel"><h2>2. 모델·서비스 상세</h2><div class="frame"><img src="spotfit_erd_service_detail.svg" alt="SpotFit 모델 서비스 상세 ERD"></div><p class="note">확대하면 각 테이블의 PK·FK와 주요 컬럼을 확인할 수 있습니다.</p></section>
+</main></body></html>

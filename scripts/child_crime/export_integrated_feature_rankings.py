@@ -10,7 +10,7 @@ OUT = ROOT / "artifacts" / "child_crime_exposure_rank_3y_v1"
 
 def main() -> int:
     weights = pd.read_csv(OUT / "integrated_feature_weights.csv")
-    panel = pd.read_csv(ROOT / "artifacts" / "child_crime_borough_v2" / "panel.csv")
+    panel = pd.read_csv(ROOT / "data/processed/child_crime_exposure/borough_panel/panel.csv")
     latest = panel[panel.year == 2025].sort_values("gu")
     rows = []
     summary = []

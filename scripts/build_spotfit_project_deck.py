@@ -302,11 +302,11 @@ def main():
     s.shapes[9].left=Inches(7.6);s.shapes[9].top=Inches(7.8);s.shapes[9].width=Inches(2.8)
     s.shapes[29].width=Inches(16)
     remove(s,[10,30])
-    panel_data=pd.read_csv(ROOT/'artifacts/child_crime_borough_v2/panel.csv')
+    panel_data=pd.read_csv(ROOT/'data/processed/child_crime_exposure/borough_panel/panel.csv')
     counts=panel_data.groupby('year').y.count()
     chart(s,[str(v)[2:] for v in counts.index],[('Y 관측 자치구',counts.tolist())],1.25,4.45,9.1,3.25,25,5)
     table(s,[['자료 / 산출물','기간 · 범위','적용 내용'],['연령별 인구 패널','2010–2025 / 서울 25구','0–17세 아동인구 산출'],['범죄건수와 Y 유효값','2014–2025 / 연 25구','5대범죄 ÷ 아동인구 × 10,000'],['2년 모델 최종 학습쌍','입력 2015–2023 → 정답 2017–2025','225개 자치구·연도 표본']],1.25,8.7,17.5,1.7,[3.4,5,6],17)
-    note(s,'기본 패널은 2010–2025, 400행이다. Y와 범죄 건수 유효값은 2014년부터다. 그래프는 핵심 Y의 유효 구 수이며 모든 보조 Feature가 이 전체 기간을 충족한다는 뜻이 아니다. 1인가구로 받은 파일은 실제 가구형태별 자료여서 가구구조로 명명했다. 인허가 이력은 현재 주소와 개폐업일로 재구성하므로 과거 이전·휴업 정보 한계가 있다.', ['artifacts/child_crime_borough_v2/panel.csv','artifacts/child_crime_borough_v2/source_audit.json','models/recommender/v1/child_crime_exposure/2y/model_metadata.json'])
+    note(s,'기본 패널은 2010–2025, 400행이다. Y와 범죄 건수 유효값은 2014년부터다. 그래프는 핵심 Y의 유효 구 수이며 모든 보조 Feature가 이 전체 기간을 충족한다는 뜻이 아니다. 1인가구로 받은 파일은 실제 가구형태별 자료여서 가구구조로 명명했다. 인허가 이력은 현재 주소와 개폐업일로 재구성하므로 과거 이전·휴업 정보 한계가 있다.', ['data/processed/child_crime_exposure/borough_panel/panel.csv','data/processed/child_crime_exposure/borough_panel/source_audit.json','models/recommender/v1/child_crime_exposure/2y/model_metadata.json'])
 
     # Supplemental slides reuse the exact original section header/frame.
     additions=[]

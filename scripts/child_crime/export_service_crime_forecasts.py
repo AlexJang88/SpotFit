@@ -16,7 +16,7 @@ TWO_YEAR_EXPERIMENT = ROOT / "models" / "experiments" / "child_crime_exposure_2y
 TWO_YEAR_ARTIFACT = ROOT / "artifacts" / "child_crime_exposure_2y_2027_v1"
 THREE_YEAR_EXPERIMENT = ROOT / "models" / "experiments" / "child_crime_exposure_integrated_v2"
 THREE_YEAR_ARTIFACT = ROOT / "artifacts" / "child_crime_exposure_integrated_v2"
-PANEL = ROOT / "artifacts" / "child_crime_borough_v2" / "panel.csv"
+PANEL = ROOT / "data/processed/child_crime_exposure/borough_panel/panel.csv"
 
 
 def ridge_numeric_formula(bundle: dict) -> pd.DataFrame:

@@ -24,10 +24,10 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 ROOT = Path(__file__).resolve().parents[2]
-BASE = ROOT / "artifacts" / "child_crime_borough_v2"
+BASE = ROOT / "data/processed/child_crime_exposure/borough_panel"
 OUT = ROOT / "artifacts" / "borough_crime_count_3y_v1"
 MODEL_OUT = ROOT / "models" / "experiments" / "borough_crime_count_3y_v1"
-RAW_DIR = ROOT / "data" / "raw" / "아동범죄_행정동"
+RAW_DIR = ROOT / "data" / "raw" / "child_crime_exposure"
 CV_YEARS = (2022, 2023, 2024)
 HOLDOUT_YEAR = 2025
 HORIZON = 3
