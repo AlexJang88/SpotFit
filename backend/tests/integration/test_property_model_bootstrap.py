@@ -51,3 +51,28 @@ def test_missing_data_folder_is_reported_not_raised(tmp_path):
 def test_bootstrap_can_be_disabled(tmp_path, monkeypatch):
     monkeypatch.setenv("PROPERTY_MODEL_BOOTSTRAP", "0")
     assert boot.start_background_bootstrap(tmp_path) is False
+
+
+def test_missing_input_file_is_built_before_training(tmp_path, monkeypatch):
+    (tmp_path / "ml" / "training").mkdir(parents=True)
+    (tmp_path / "ml" / "etl").mkdir(parents=True)
+    (tmp_path / "data" / "processed").mkdir(parents=True)
+    spec = boot.SPECS[0]
+    (tmp_path / "ml" / "training" / spec.script).write_text("")
+    (tmp_path / "ml" / "etl" / spec.build).write_text("")
+    ran = []
+
+    def fake_run(script, cwd, log_path, label):
+        ran.append(script.name)
+        if script.name == spec.build:
+            target = tmp_path / "data" / "processed" / spec.input_file
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text("x")
+        return 0
+
+    monkeypatch.setattr(boot, "_run_script", fake_run)
+    assert boot._train(spec, tmp_path) == 0
+    assert ran == [spec.build, spec.script]
+    ran.clear()
+    assert boot._train(spec, tmp_path) == 0           # input file already exists -> only training runs
+    assert ran == [spec.script]
