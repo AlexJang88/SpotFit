@@ -13,7 +13,7 @@ from apt_sale_compare import AGE_COLS, AREA, add_age, add_area, compare
 
 NEW = '단지 평균 세대수'
 d = add_age(add_area(load()))
-cx = pd.read_csv(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data', 'processed', '행정동별_단지정보.csv'), encoding='utf-8-sig').set_index('행정동_코드')
+cx = pd.read_csv(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data', 'raw', '부동산', '행정동별_단지정보.csv'), encoding='utf-8-sig').set_index('행정동_코드')
 d[NEW] = cx[NEW].reindex(d.index)
 n0 = len(d)
 d = d.dropna(subset=[NEW])

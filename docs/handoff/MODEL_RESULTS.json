@@ -1,0 +1,359 @@
+{
+  "as_of": "2026-11-10",
+  "target": {
+    "name": "아동 지역범죄 노출지수",
+    "formula": "ln(1 + five_major_crimes / resident_children_age_0_17 * 10000)",
+    "not_actual_child_victimization_rate": true,
+    "log_vs_raw_ablation_verified": false
+  },
+  "service_horizons": [
+    1,
+    2
+  ],
+  "service_1y": {
+    "source": "models/recommender/v1/child_crime_exposure/1y/model_metadata.json",
+    "base_year": 2025,
+    "target_year": 2026,
+    "metadata": {
+      "objective": "1년 뒤 아동 지역범죄 노출 순위",
+      "selection_cv_years": [
+        2022,
+        2023,
+        2024
+      ],
+      "winner": {
+        "features": [
+          "y",
+          "log_crime",
+          "log_child",
+          "y_lag1",
+          "y_lag2",
+          "y_change",
+          "log_crime_change",
+          "log_child_change",
+          "log_crime_lag1",
+          "log_crime_lag2",
+          "log_child_lag1",
+          "log_child_lag2"
+        ],
+        "alpha": 1,
+        "mode": "delta",
+        "Spearman": 0.9746153846153846,
+        "rank_MAE": 1.2000000000000002,
+        "exact_quintile_pct": 78.66666666666667,
+        "top20_overlap_pct": 100.0
+      },
+      "candidate_count": 20
+    },
+    "separate_holdout_in_metadata": false
+  },
+  "service_2y": {
+    "source": "models/recommender/v1/child_crime_exposure/2y/model_metadata.json",
+    "base_year": 2025,
+    "target_year": 2027,
+    "metadata": {
+      "horizon": 2,
+      "training_origin_years": [
+        2015,
+        2023
+      ],
+      "training_target_years": [
+        2017,
+        2025
+      ],
+      "n_training_pairs": 225,
+      "cv_years": [
+        2022,
+        2023,
+        2024
+      ],
+      "locked_holdout": 2025,
+      "baseline_cv": {
+        "ranking_score": 91.15213675213676,
+        "Spearman": 0.9620512820512821,
+        "rank_MAE": 1.4933333333333334,
+        "exact_quintile_pct": 65.33333333333333,
+        "top20_overlap_pct": 93.33333333333333,
+        "top40_overlap_pct": 86.66666666666667,
+        "y_RMSE": 0.12154369820450901,
+        "y_MAE": 0.09881751802827797
+      },
+      "strict_forward_history": [
+        {
+          "step": 0,
+          "selected_groups": [],
+          "spec": "ridge:10",
+          "mode": "direct",
+          "features": [
+            "y",
+            "log_crime",
+            "log_child",
+            "y_lag1",
+            "y_lag2",
+            "y_change",
+            "log_crime_change",
+            "log_child_change"
+          ],
+          "ranking_score": 95.55854700854701,
+          "Spearman": 0.9748717948717949,
+          "rank_MAE": 1.0933333333333333,
+          "exact_quintile_pct": 81.33333333333333,
+          "top20_overlap_pct": 100.0,
+          "top40_overlap_pct": 93.33333333333333,
+          "y_RMSE": 0.12209345541204421,
+          "y_MAE": 0.0980507958691546
+        },
+        {
+          "step": 1,
+          "selected_groups": [
+            "추세"
+          ],
+          "spec": "ridge:10",
+          "mode": "direct",
+          "features": [
+            "y",
+            "log_crime",
+            "log_child",
+            "y_lag1",
+            "y_lag2",
+            "y_change",
+            "log_crime_change",
+            "log_child_change",
+            "log_crime_lag1",
+            "log_crime_lag2",
+            "log_child_lag1",
+            "log_child_lag2"
+          ],
+          "ranking_score": 95.98119658119658,
+          "Spearman": 0.9746153846153846,
+          "rank_MAE": 1.0666666666666667,
+          "exact_quintile_pct": 84.0,
+          "top20_overlap_pct": 100.0,
+          "top40_overlap_pct": 93.33333333333333,
+          "y_RMSE": 0.12298962796959441,
+          "y_MAE": 0.09931755660855023
+        }
+      ],
+      "strict_winner_cv": {
+        "policy": "strict_2025",
+        "selected_groups": [
+          "추세"
+        ],
+        "spec": "ridge:10",
+        "mode": "direct",
+        "features": [
+          "y",
+          "log_crime",
+          "log_child",
+          "y_lag1",
+          "y_lag2",
+          "y_change",
+          "log_crime_change",
+          "log_child_change",
+          "log_crime_lag1",
+          "log_crime_lag2",
+          "log_child_lag1",
+          "log_child_lag2"
+        ],
+        "ranking_score": 95.98119658119658,
+        "Spearman": 0.9746153846153846,
+        "rank_MAE": 1.0666666666666667,
+        "exact_quintile_pct": 84.0,
+        "top20_overlap_pct": 100.0,
+        "top40_overlap_pct": 93.33333333333333,
+        "y_RMSE": 0.12298962796959441,
+        "y_MAE": 0.09931755660855023
+      },
+      "baseline_holdout": {
+        "ranking_score": 89.39615384615385,
+        "Spearman": 0.9723076923076923,
+        "rank_MAE": 1.2,
+        "exact_quintile_pct": 68.0,
+        "top20_overlap_pct": 80.0,
+        "top40_overlap_pct": 90.0,
+        "y_RMSE": 0.09282827721892019,
+        "y_MAE": 0.07819823789135992
+      },
+      "strict_holdout": {
+        "ranking_score": 90.3371794871795,
+        "Spearman": 0.9676923076923077,
+        "rank_MAE": 1.36,
+        "exact_quintile_pct": 76.0,
+        "top20_overlap_pct": 80.0,
+        "top40_overlap_pct": 90.0,
+        "y_RMSE": 0.10146276386258615,
+        "y_MAE": 0.08254394693344903
+      },
+      "continuous_y_tradeoff": "rank composite and quintile accuracy improved, but locked-holdout Y RMSE/MAE did not"
+    }
+  },
+  "historical_3y_rank_research": {
+    "source": "artifacts/child_crime_exposure_rank_3y_v1/result.json",
+    "not_deployed_as_current_1y_or_2y": true,
+    "metrics": {
+      "objective": "rank final Y=log1p(crime/child*10000)",
+      "ranking_score_formula": "40% Spearman rescaled + 25% normalized rank MAE + 20% top20 overlap + 15% exact quintile",
+      "cv_years": [
+        2022,
+        2023,
+        2024
+      ],
+      "holdout_year": 2025,
+      "configuration_count": 32880,
+      "baseline_cv": {
+        "ranking_score": 90.12435897435897,
+        "Spearman": 0.9587179487179487,
+        "rank_MAE": 1.52,
+        "exact_quintile_pct": 68.0,
+        "top20_overlap_pct": 86.66666666666667,
+        "top40_overlap_pct": 90.0,
+        "y_RMSE": 0.11886644216747609,
+        "y_MAE": 0.09392465077835424
+      },
+      "winner_cv": {
+        "stage": "all_subsets_linear",
+        "mask": 377,
+        "groups": [
+          "인구구조",
+          "사업체밀도",
+          "가구구조",
+          "인구이동",
+          "출생사망",
+          "추세"
+        ],
+        "features": [
+          "log_child",
+          "child_share",
+          "age0_5_share",
+          "age6_12_share",
+          "age13_17_share",
+          "elderly_share",
+          "businesses_available_lag1",
+          "business_density_available_lag1",
+          "worker_density_available_lag1",
+          "workers_per_business_available_lag1",
+          "households_available_lag1",
+          "ordinary_share_available_lag1",
+          "household_size_available_lag1",
+          "foreign_household_share_available_lag1",
+          "institution_members_available_lag1",
+          "migration_구간이동전입_rate_available_lag1",
+          "migration_구간이동전출_rate_available_lag1",
+          "migration_구내이동전입_rate_available_lag1",
+          "migration_구내이동전출_rate_available_lag1",
+          "migration_시도간이동전입_rate_available_lag1",
+          "migration_시도간이동전출_rate_available_lag1",
+          "migration_총전입_rate_available_lag1",
+          "migration_총전출_rate_available_lag1",
+          "births_rate_available_lag1",
+          "deaths_rate_available_lag1",
+          "natural_growth_available_lag1",
+          "y_lag1",
+          "y_lag2",
+          "y_change",
+          "log_crime_lag1",
+          "log_crime_lag2",
+          "log_crime_change",
+          "log_child_lag1",
+          "log_child_lag2",
+          "log_child_change"
+        ],
+        "spec": "ridge:0.01",
+        "mode": "delta",
+        "child_log_RMSE": 0.07961656228174889,
+        "child_MAPE_pct": 5.897620116488409,
+        "crime_candidate": "average_log",
+        "ranking_score": 94.00641025641025,
+        "Spearman": 0.9694871794871794,
+        "rank_MAE": 1.2,
+        "exact_quintile_pct": 81.33333333333333,
+        "top20_overlap_pct": 93.33333333333333,
+        "top40_overlap_pct": 96.66666666666667,
+        "y_RMSE": 0.09731299254321944,
+        "y_MAE": 0.07489361450548233
+      },
+      "baseline_holdout": {
+        "ranking_score": 89.13076923076923,
+        "Spearman": 0.9715384615384616,
+        "rank_MAE": 1.44,
+        "exact_quintile_pct": 68.0,
+        "top20_overlap_pct": 80.0,
+        "top40_overlap_pct": 90.0,
+        "y_RMSE": 0.12157007729101657,
+        "y_MAE": 0.09879296081076415
+      },
+      "winner_holdout": {
+        "ranking_score": 91.71282051282051,
+        "Spearman": 0.9723076923076923,
+        "rank_MAE": 1.28,
+        "exact_quintile_pct": 84.0,
+        "top20_overlap_pct": 80.0,
+        "top40_overlap_pct": 100.0,
+        "y_RMSE": 0.18507738323302036,
+        "y_MAE": 0.15601224729643065
+      },
+      "influence_method": "mean absolute final-Y change from +1 training SD perturbation across locked CV folds; directions are signed average changes, not causal effects",
+      "score_rule": "score-eligible external features only; annual borough quintiles 100/80/60/40/20; weights normalized to 100",
+      "score_formula_validation": {
+        "status": "experimental only; do not use as the production score formula",
+        "accepted": false,
+        "cv": {
+          "pool": "all",
+          "feature_count": 55,
+          "alpha": 10000,
+          "ranking_score": 88.97435897435896,
+          "Spearman": 0.9420512820512821,
+          "rank_MAE": 1.92,
+          "exact_quintile_pct": 65.33333333333333,
+          "top20_overlap_pct": 86.66666666666667,
+          "top40_overlap_pct": 90.0
+        },
+        "holdout_2025": {
+          "ranking_score": 89.02435897435898,
+          "Spearman": 0.9353846153846154,
+          "rank_MAE": 2.0,
+          "exact_quintile_pct": 76.0,
+          "top20_overlap_pct": 80.0,
+          "top40_overlap_pct": 90.0
+        },
+        "reason": "The predictive pipeline improves ranking, but the compressed quintile-weight formula does not beat persistence on the composite ranking score."
+      }
+    }
+  },
+  "historical_3y_blend_research": {
+    "source": "artifacts/child_crime_exposure_integrated_v2/result.json",
+    "not_deployed_as_current_1y_or_2y": true,
+    "blend": {
+      "baseline_weight": 0.92,
+      "direct_integrated_weight": 0.08,
+      "selection": "maximum CV ranking score on 0.01 grid",
+      "cv": {
+        "ranking_score": 94.04957264957264,
+        "Spearman": 0.9702564102564102,
+        "rank_MAE": 1.1733333333333333,
+        "exact_quintile_pct": 81.33333333333333,
+        "top20_overlap_pct": 93.33333333333333,
+        "top40_overlap_pct": 96.66666666666667,
+        "y_RMSE": 0.09471996355369944,
+        "y_MAE": 0.07275503815976475
+      },
+      "holdout_2025": {
+        "ranking_score": 91.72820512820513,
+        "Spearman": 0.9730769230769231,
+        "rank_MAE": 1.28,
+        "exact_quintile_pct": 84.0,
+        "top20_overlap_pct": 80.0,
+        "top40_overlap_pct": 100.0,
+        "y_RMSE": 0.17644111209401164,
+        "y_MAE": 0.14768988965776209
+      }
+    }
+  },
+  "interpretation_rules": [
+    "Spearman and R2 are not classification accuracy percentages.",
+    "Compare improvements only within same target/horizon/validation conditions.",
+    "Current 2y holdout quintile accuracy improved but rank MAE and Y RMSE worsened.",
+    "Service score = predicted Y ascending rank quintile, not feature-weighted score.",
+    "CV used for model selection is not independent future accuracy."
+  ]
+}

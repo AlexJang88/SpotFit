@@ -1,3 +1,5 @@
+import { apiRequest } from "../../services/apiClient";
+
 export type DistrictModelForecast = {
   district: string;
   apart_sale: number | null;
@@ -35,7 +37,8 @@ export type RecommenderResponse = {
 };
 
 export async function fetchRecommenderForecasts(signal?: AbortSignal): Promise<RecommenderResponse> {
-  const response = await fetch("/api/recommender/district-forecasts", { signal });
-  if (!response.ok) throw new Error(`v1 모델 예측값 조회 실패 (${response.status})`);
-  return response.json() as Promise<RecommenderResponse>;
+  return apiRequest<RecommenderResponse>("/api/recommender/district-forecasts", {
+    signal,
+    fallbackMessage: "가격 예측 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+  });
 }

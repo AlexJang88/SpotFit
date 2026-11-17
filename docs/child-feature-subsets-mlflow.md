@@ -178,6 +178,12 @@ python ml/training/train_child_feature_subsets.py --tracking-uri http://127.0.0.
 - `spotfit-child-safety-zone-middle`
 - `spotfit-child-safety-zone-high`
 
+기본 학습을 수행하면 Registry에는 등록하지 않습니다.
+
+`.env.dev`에 `MLFLOW_TRACKING_URI`가 설정되어 있으면 아래 명령도 해당 공유 서버에
+Run과 아티팩트를 기록합니다. 완전히 로컬에서 검증하려면 실행 시 해당 환경변수를 비우거나
+`--tracking-uri`에 로컬 SQLite URI를 명시하세요. CLI의 `--tracking-uri`가 환경변수보다 우선합니다.
+
 ### 학습 시작 전 MinIO 데이터 동기화
 
 이 스크립트는 기본적으로 모델 학습보다 먼저 MinIO 데이터 버킷의 모든 데이터 객체를 로컬
@@ -214,7 +220,8 @@ python ml/training/train_child_safety_zone.py --data-prefix data/
 python ml/training/train_child_safety_zone.py --skip-data-sync
 ```
 
-로컬 검증만 수행하면 다음 명령을 사용합니다. Registry에는 등록하지 않습니다.
+Registry 등록 없이 기본 학습을 수행하려면 다음 명령을 사용합니다. `.env.dev`에 공유
+MLflow 주소가 있으면 해당 서버에 Run을 기록하고, 없으면 로컬 SQLite에 기록합니다.
 
 ```powershell
 python ml/training/train_child_safety_zone.py

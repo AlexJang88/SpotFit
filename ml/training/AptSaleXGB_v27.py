@@ -14,7 +14,7 @@ V23 = '단지 평균 세대수'
 V24 = '지역난방 단지 비율(%)'
 NEW = '거래 수'
 d = add_age(add_area(load()))
-cx = pd.read_csv(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data', 'processed', '행정동별_단지정보.csv'), encoding='utf-8-sig').set_index('행정동_코드')
+cx = pd.read_csv(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data', 'raw', '부동산', '행정동별_단지정보.csv'), encoding='utf-8-sig').set_index('행정동_코드')
 d[V23] = cx[V23].reindex(d.index)
 d[V24] = cx[V24].reindex(d.index)
 print(f'K-apt 단지 정보가 없어 빈 값으로 두는 동네 {d[V24].isna().sum()}곳 (전체 {len(d)}곳)')

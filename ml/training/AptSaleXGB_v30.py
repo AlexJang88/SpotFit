@@ -22,14 +22,14 @@ d = add_age(add_area(load()))
 P = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data', 'processed') + os.sep
 norm = lambda s: re.sub(r'제(?=\d)', '', str(s)).replace('·', '.').replace('ㆍ', '.').replace(' ', '')
 key = lambda df: df['자치구'].astype(str) + '|' + df['행정동'].map(norm)
-cn = pd.read_csv(P + '행정동별_지역아동센터_최종.csv', encoding='utf-8-sig')
+cn = pd.read_csv(P + '../raw/부동산/행정동별_지역아동센터_최종.csv', encoding='utf-8-sig')
 cn = cn[cn['기준연도'] == cn['기준연도'].max()]
-pop = pd.read_csv(P + '행정동별_아동인구 데이터_최종.csv', encoding='utf-8-sig')
+pop = pd.read_csv(P + '../raw/부동산/행정동별_아동인구 데이터_최종.csv', encoding='utf-8-sig')
 pop = pop[pop['행정동'].notna() & pop['자치구'].notna() & (pop['연도'] == pop['연도'].max())]
 k = key(d)
 d[NEW] = k.map(key(cn).value_counts()).fillna(0).where(k.isin(key(pop)))
 print(f'지역아동센터 수: 센터 있는 동네 {int((d[NEW] > 0).sum())}곳, 이름이 안 붙어 빈 값인 동네 {int(d[NEW].isna().sum())}곳 (전체 {len(d)}곳)')
-cx = pd.read_csv(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data', 'processed', '행정동별_단지정보.csv'), encoding='utf-8-sig').set_index('행정동_코드')
+cx = pd.read_csv(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data', 'raw', '부동산', '행정동별_단지정보.csv'), encoding='utf-8-sig').set_index('행정동_코드')
 d[V23] = cx[V23].reindex(d.index)
 d[V24] = cx[V24].reindex(d.index)
 d[V25] = cx[V25].reindex(d.index)

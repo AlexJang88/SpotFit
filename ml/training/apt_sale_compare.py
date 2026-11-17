@@ -9,7 +9,7 @@ import joblib, mlflow, mlflow.sklearn, numpy as np, pandas as pd
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.inspection import permutation_importance
 from sklearn.model_selection import RepeatedKFold
-from apt_sale_data import DATA, JUSO, KINDS, OLD, OUT, PROC, Y
+from apt_sale_data import DATA, JUSO, KINDS, OLD, OUT, PROC, PROC_VILLA, Y
 warnings.simplefilter('ignore')
 
 REPEAT = 20
@@ -31,11 +31,11 @@ def mean():                                                                     
 MODELS = {'random_forest': ('랜덤포레스트', 'RF', rf), 'xgboost': ('XGBoost', 'XGB', xgb), 'ridge': ('릿지', 'Ridge', ridge), 'mean': ('기준(평균으로 찍기)', 'Mean', mean)}   # 이름: (한글 이름, 파일 이름용 약자, 모델 만드는 함수)
 
 def add_area(d, kind='apt'):        # 동네 매매 거래의 평균 전용면적 (apt_sale_data.py 와 같은 거래 기준, kind='villa' 이면 빌라 거래)
-    t = pd.read_csv(PROC + KINDS[kind][1], low_memory=False, usecols=['행정동_코드(상권분석)', '전용면적(㎡)'])
+    t = pd.read_csv((PROC if kind == 'apt' else PROC_VILLA) + KINDS[kind][1], low_memory=False, usecols=['행정동_코드(상권분석)', '전용면적(㎡)'])
     return d.join(t.groupby(t['행정동_코드(상권분석)'].astype(int))['전용면적(㎡)'].mean().rename(AREA))
 
 def add_age(d):         # 상주인구 연령대 비율 6개 (값이 이상한 2022년 4분기~2023년 3분기는 빼고 분기 평균)
-    p = pd.read_csv(DATA + '../raw/서울시 상권분석서비스(상주인구-행정동).csv', encoding='cp949')
+    p = pd.read_csv(DATA + '../raw/부동산/서울시 상권분석서비스(상주인구-행정동).csv', encoding='cp949')
     raw = [f'연령대_{k}_상주인구_수' for k in AGES]
     tot = p.groupby('기준_년분기_코드')[raw].sum()
     start = pd.Series(tot.index, index=tot.index).groupby((tot.diff().abs().sum(axis=1) > 0).cumsum()).transform('min')   # 값이 바뀐 분기 = 그 자료의 시작 분기

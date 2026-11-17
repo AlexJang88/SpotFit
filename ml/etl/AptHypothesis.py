@@ -33,7 +33,7 @@ def when(d):            # 계약 연/월/일 → 날짜 하나 + 2024.5 같은 �
     return t, t.dt.year + (t.dt.dayofyear - 1) / 365
 
 def load(kw):           # 상권분석 csv를 이름으로 찾아 불러옴 (모든 분기)
-    files = [f for f in glob.glob(RAW + '*.csv') if kw in unicodedata.normalize('NFC', os.path.basename(f))]
+    files = [f for f in glob.glob(RAW + '*.csv') + glob.glob(RAW + '부동산/*.csv') if kw in unicodedata.normalize('NFC', os.path.basename(f))]
     return pd.concat([pd.read_csv(f, encoding='cp949') for f in files])
 
 # ---------- 1) 동네 특징 X 10개: 전체 기간 평균 ----------

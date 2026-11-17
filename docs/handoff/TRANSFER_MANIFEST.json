@@ -1,0 +1,834 @@
+{
+  "as_of": "2026-11-10",
+  "original_workspace": "C:\\Users\\M\\Desktop\\JUS\\SpotFit",
+  "purpose": "Context, selected source snapshots, presentation assets, metadata and aggregated panels; not a full deploy backup",
+  "git": {
+    "branch": "feature/frontend_us",
+    "head": "983cfa0814276d9d61634d43eb5e7014319fd7f3",
+    "head_subject": "Merge pull request #12 from AlexJang88/feature/crime_model_us",
+    "status_porcelain": "M frontend/src/views/pages/HomePage.tsx\n?? docs/handoff/\n?? frontend/src/views/pages/readability-refresh.css\n?? scripts/audit_spotfit_presentation.ps1\n?? scripts/build_spotfit_crime_improvements_deck.py\n?? scripts/build_spotfit_project_deck.py\n?? scripts/inspect_spotfit_template.py\n?? scripts/package_spotfit_handoff.py\n?? scripts/render_spotfit_presentation.ps1\n?? scripts/verify_spotfit_deck_evidence.py"
+  },
+  "environment": {
+    "python": "3.14.9 (tags/v3.14.9:ead82c0, Oct 21 2026, 06:26:14) [MSC v.1944 64 bit (AMD64)]",
+    "platform": "Windows-11-10.0.26100-SP0",
+    "packages": {
+      "python-pptx": "1.0.2",
+      "pandas": "3.1.0",
+      "numpy": "2.5.4",
+      "scikit-learn": "1.9.1",
+      "joblib": "1.6.0",
+      "Pillow": "13.0.0"
+    },
+    "fonts_required_not_bundled": [
+      "네모고딕",
+      "네모고딕 Medium",
+      "네모고딕 Light"
+    ]
+  },
+  "original_template": {
+    "path": "C:\\Users\\M\\Desktop\\SPOT_FIT_발표자료.pptx",
+    "exists": true,
+    "sha256": "ce189665c42a78f14f2b670aa4715added18366f5e9387c6c891ecd2494a4795",
+    "archive_path": "external/SPOT_FIT_발표자료.pptx"
+  },
+  "packaged_files": [
+    {
+      "path": "docs/handoff/README.md",
+      "exists": true,
+      "bytes": 9160,
+      "sha256": "7a977d48d0d38bab7d1621b6a66a4620f79efad4b5b45dac9ffdd14689bf22fd"
+    },
+    {
+      "path": "docs/handoff/PROJECT_STATE.md",
+      "exists": true,
+      "bytes": 21525,
+      "sha256": "8b4c5305dd87f6ae086d59aac1d9483a48f996199f259e0d77f1cb86b3b6bff6"
+    },
+    {
+      "path": "docs/handoff/MODEL_RESULTS.json",
+      "exists": true,
+      "bytes": 12078,
+      "sha256": "554b75dc32203395a98bc6dbfb9612afef2f237cb08aff9105101c499a253fff"
+    },
+    {
+      "path": "scripts/package_spotfit_handoff.py",
+      "exists": true,
+      "bytes": 13285,
+      "sha256": "3191177bcc20be360dec1dcba07019ff23ebf51041ffcdf973c1e3cf2928ce23"
+    },
+    {
+      "path": "scripts/build_spotfit_project_deck.py",
+      "exists": true,
+      "bytes": 33039,
+      "sha256": "42c370ec60fa6e7f99635b5cafb2babd48dd94deff1f191d7ff8f1ab2f1caae7"
+    },
+    {
+      "path": "scripts/build_spotfit_crime_improvements_deck.py",
+      "exists": true,
+      "bytes": 14890,
+      "sha256": "893c492cb606068d6f71daac9df3c5fe35d966d31694a5537abbe531d1291308"
+    },
+    {
+      "path": "scripts/inspect_spotfit_template.py",
+      "exists": true,
+      "bytes": 1550,
+      "sha256": "37203cca16a2f12c5bb6ac1b74998600c68a52f9203e973a899c8bf5f197b538"
+    },
+    {
+      "path": "scripts/render_spotfit_presentation.ps1",
+      "exists": true,
+      "bytes": 450,
+      "sha256": "30d8aa089b11b4ef7f0e87e7041f821ba04786c7e4433666dfec610ab0f8c529"
+    },
+    {
+      "path": "scripts/audit_spotfit_presentation.ps1",
+      "exists": true,
+      "bytes": 1534,
+      "sha256": "fae5420445a7436fc62dbd34aa5390ca69e06b1ee3fcc405fc3ded5fcb87d422"
+    },
+    {
+      "path": "scripts/verify_spotfit_deck_evidence.py",
+      "exists": true,
+      "bytes": 2375,
+      "sha256": "6b1e75718f1ba3a17ae623904d8b70fbdcfff25e1a398e6779be0bd92e2dc3ca"
+    },
+    {
+      "path": "frontend/src/views/pages/HomePage.tsx",
+      "exists": true,
+      "bytes": 29225,
+      "sha256": "0dbb4277f4f0be900bed02773507222825cad26168569effcfa413b579e8d2dc"
+    },
+    {
+      "path": "frontend/src/views/pages/readability-refresh.css",
+      "exists": true,
+      "bytes": 10710,
+      "sha256": "2d5f861d55933fcc097e6e1ff0978447f409b9e663d0fe2b1e274c42b25f7b14"
+    },
+    {
+      "path": "backend/app/services/child_crime_exposure.py",
+      "exists": true,
+      "bytes": 3487,
+      "sha256": "70e48c7b824fd9fbf5260999b9f547232839a49da0660ac01317709f5edd39d0"
+    },
+    {
+      "path": "backend/app/services/crime_model_training.py",
+      "exists": true,
+      "bytes": 2590,
+      "sha256": "ac54308a30a6c9045c701137ef7f9ebd6d46921d60d7cba9cdfaa5654317bff2"
+    },
+    {
+      "path": "backend/app/data/admin_boundary_registry.json",
+      "exists": true,
+      "bytes": 656,
+      "sha256": "20b08b589f6f156ee6478d140160545640021f86348b57f3b46020d9e121463c"
+    },
+    {
+      "path": "ml/training/train_service_crime_exposure_1y.py",
+      "exists": true,
+      "bytes": 4599,
+      "sha256": "93e0903d9e5a0ba7c4bb83d6aa64161a2d9d4def91309ec3d46f073655f304bc"
+    },
+    {
+      "path": "ml/training/optimize_exposure_2y_2027.py",
+      "exists": true,
+      "bytes": 12518,
+      "sha256": "4cd72202ab3fa2c4b77ddfd51eca0910f23deec28bd2139d60844b92d4b222d4"
+    },
+    {
+      "path": "ml/training/optimize_exposure_rank_3y.py",
+      "exists": true,
+      "bytes": 22050,
+      "sha256": "faa4a7e0b43c4bf757cb181f2c41102634a13b71371d5ec627c2d19542a419e8"
+    },
+    {
+      "path": "ml/training/optimize_borough_crime_count_3y.py",
+      "exists": true,
+      "bytes": 14903,
+      "sha256": "72ceca0bfa2c12bc76f9067bab0b081378e05e082e59bbb81cb48d84d1cbbde3"
+    },
+    {
+      "path": "ml/training/optimize_exposure_integrated_v2.py",
+      "exists": true,
+      "bytes": 9848,
+      "sha256": "94aefabc29f909cbbce2475ed093bcd2f07808f064c174ae2ffb22616c466250"
+    },
+    {
+      "path": "scripts/child_crime/rebuild_service_crime_models.py",
+      "exists": true,
+      "bytes": 905,
+      "sha256": "e93a87b27f9c9f9d1c2fd1b06cee882f751b0682b050a10a0488ebd297268adc"
+    },
+    {
+      "path": "scripts/child_crime/export_service_crime_forecasts.py",
+      "exists": true,
+      "bytes": 3336,
+      "sha256": "4ff6cf63011142241d6a0cfb607b62e3ef7b4eed6177b62085a8a14f8d2eabaa"
+    },
+    {
+      "path": "scripts/child_crime/build_borough_experiment_panel.py",
+      "exists": true,
+      "bytes": 13065,
+      "sha256": "75efdc2f6e1382ec53701cbfc80fe94b79e78bb9188cf6b347de374ac9a43815"
+    },
+    {
+      "path": "scripts/child_crime/inspect_borough_inputs.py",
+      "exists": true,
+      "bytes": 1702,
+      "sha256": "d31131eb782ed6e48f8c6e24c63b54f85cef4c20e07523b32e3dfecbbc1970ff"
+    },
+    {
+      "path": "scripts/child_crime/build_priority_population_features.py",
+      "exists": true,
+      "bytes": 10019,
+      "sha256": "7ab66bb2b76e5ce76f6e7dde0ee72bccbd6821f0a11612a4c377ab426d548c59"
+    },
+    {
+      "path": "scripts/child_infrastructure/build_child_environment_scores.py",
+      "exists": true,
+      "bytes": 19668,
+      "sha256": "6050a10069967bb0be11b2fa91c2b582811bb05c1e30eace03e81e7ff4e9e4bb"
+    },
+    {
+      "path": "ml/training/train_child_environment_forecasts.py",
+      "exists": true,
+      "bytes": 14723,
+      "sha256": "051e2d398f1fe0601e8573eb91a5d8431df629bbbb304e045543c7e8e6a8a0b1"
+    },
+    {
+      "path": "ml/inference/predict_child_environment.py",
+      "exists": true,
+      "bytes": 2053,
+      "sha256": "e1b13353a5fa4a2b2d53d5a95318a2648883bdb2110f5cf26d434b904ad6be4e"
+    },
+    {
+      "path": "ml/etl/property_amount/train_and_save_final_models.py",
+      "exists": true,
+      "bytes": 8058,
+      "sha256": "463a2f423f669c790e0e98a6a915134b34f07aa3e90976a8da4c293db6300508"
+    },
+    {
+      "path": "docs/crime-exposure-service.md",
+      "exists": true,
+      "bytes": 1786,
+      "sha256": "7641f479ef5ea1783c6a6e277c558d4d5cfd0952374548ec5b7b09921e045e2c"
+    },
+    {
+      "path": "docs/admin-boundary-automation.md",
+      "exists": true,
+      "bytes": 2240,
+      "sha256": "31b4a829c6dc2e5e0a5cb23317622d2cf6c1f411b031c634ac5eebdf554ca768"
+    },
+    {
+      "path": "docs/architecture/spotfit-erd-draft.md",
+      "exists": true,
+      "bytes": 3179,
+      "sha256": "084bc7e99fff6fe490f6f5845b50b7fdf5c7c6024eb4370f223f88103640aae3"
+    },
+    {
+      "path": "requirements-dev.txt",
+      "exists": true,
+      "bytes": 818,
+      "sha256": "0bda88227fc47bd9438972310a8b96d43245b64e1bd97e8134f5408ed8924937"
+    },
+    {
+      "path": "requirements-server.txt",
+      "exists": true,
+      "bytes": 641,
+      "sha256": "9ab7972644d4155b96a0aef32377b565198bd2d64df1fe717dfdc3ebeb456a28"
+    },
+    {
+      "path": "artifacts/presentations/SPOT_FIT_프로젝트발표_템플릿유지_20261110.pptx",
+      "exists": true,
+      "bytes": 2129270,
+      "sha256": "9365e79affdb4894609e90e2490c19fd51935a585166e4621d23adf04a3b6234"
+    },
+    {
+      "path": "artifacts/presentations/SPOT_FIT_범죄모델_개선과정_5장_20261110.pptx",
+      "exists": true,
+      "bytes": 1884831,
+      "sha256": "6a8f462f3991a9d0871a0476fc1a8ccdaac9a68d5fd9be931aa3c277bfcb38c9"
+    },
+    {
+      "path": "artifacts/presentations/template_review/service-ui.png",
+      "exists": true,
+      "bytes": 250820,
+      "sha256": "f6d844675f099b33da2efdfd29b07cc5a8b3799326bfb77a2a2b612587a59a98"
+    },
+    {
+      "path": "artifacts/presentations/template_review/verification.json",
+      "exists": true,
+      "bytes": 29345,
+      "sha256": "f7fa1354476c22a88d5f75e9423b60b333d5db64cebd030e906533d19a4204f6"
+    },
+    {
+      "path": "artifacts/presentations/crime_improvement_review/contact.jpg",
+      "exists": true,
+      "bytes": 168896,
+      "sha256": "ee0ec2b1a30bbadc8ea705e08904832f5b3c5ade54f45fcc9c77bf73a2c7b172"
+    },
+    {
+      "path": "artifacts/presentations/crime_improvement_review/overflow-audit.json",
+      "exists": true,
+      "bytes": 1168,
+      "sha256": "38fc48c3621f63d848cb4fbfe41fef7ec167c3f5d8621645ccc3496df6766e47"
+    },
+    {
+      "path": "artifacts/crime_rate_3y/REPORT.md",
+      "exists": true,
+      "bytes": 3699,
+      "sha256": "ebb360d7df21f260583340b7a6782095df690e1e5263302a33751f31b533365d"
+    },
+    {
+      "path": "artifacts/crime_rate_3y/모델설명.json",
+      "exists": true,
+      "bytes": 6352,
+      "sha256": "cd6889f46fa79efd61f060b5b7cf6a66010c59e471ede93196e755d26f0ce23d"
+    },
+    {
+      "path": "artifacts/crime_rate_3y/기준모델부터_성능개선기록.csv",
+      "exists": true,
+      "bytes": 851,
+      "sha256": "7cac4310e0b6dba306de2afbec2c890342612b4230e763d1bf87fb3467306cf3"
+    },
+    {
+      "path": "artifacts/child_crime_borough_v2/panel.csv",
+      "exists": true,
+      "bytes": 635069,
+      "sha256": "d8489aac48e089b05e51b10771d6a02d92f1e845e906381eb9c6c6f963a25feb"
+    },
+    {
+      "path": "artifacts/child_crime_borough_v2/feature_groups.json",
+      "exists": true,
+      "bytes": 2347,
+      "sha256": "82c3a5a2f1311613bacfd88e6089b9ebaae4727cb54d9d60d192e0ed0df00afe"
+    },
+    {
+      "path": "artifacts/child_crime_borough_v2/feature_dictionary.csv",
+      "exists": true,
+      "bytes": 5349,
+      "sha256": "6469faa46a44624ac837660dc6038ff6558b0b7d04ab784f612f3db7fd2b98b4"
+    },
+    {
+      "path": "artifacts/child_crime_borough_v2/feature_coverage.csv",
+      "exists": true,
+      "bytes": 4306,
+      "sha256": "2418b7a7def2d693af43254755818a5767b721fe073f72b193e6600e8a00237d"
+    },
+    {
+      "path": "artifacts/child_crime_borough_v2/source_audit.json",
+      "exists": true,
+      "bytes": 897,
+      "sha256": "6585cce61ad5c79736ba6f6450bdc393fd7204f08713eee2b611228e8a948d61"
+    },
+    {
+      "path": "artifacts/child_crime_borough_v2/experiment_report.md",
+      "exists": true,
+      "bytes": 14896,
+      "sha256": "c72ccd212c870b6b16a2d9f4d33a790604b5dbd338c3c44de2e3523c2527b34c"
+    },
+    {
+      "path": "artifacts/child_crime_borough_v2/final_summary.csv",
+      "exists": true,
+      "bytes": 847,
+      "sha256": "f73b95ba03ee8f4d3565004f9d6356fb78edadd56ac32242f95ea8ba5f876ab0"
+    },
+    {
+      "path": "artifacts/child_population_priority_v1/priority_features.csv",
+      "exists": true,
+      "bytes": 182385,
+      "sha256": "45a6506532f3972ba006dd0c7edbdf90c5fb1e99e4e7d5d4744f7ccb3348d3c4"
+    },
+    {
+      "path": "artifacts/child_population_priority_v1/feature_groups.json",
+      "exists": true,
+      "bytes": 1486,
+      "sha256": "61a26c021ef270c6247805be8600fa377f97e7f6a260afb6770e96119d5c0186"
+    },
+    {
+      "path": "artifacts/child_crime_exposure_rank_3y_v1/result.json",
+      "exists": true,
+      "bytes": 4401,
+      "sha256": "8dc09f5bc5136b44f48aae72ab314d4562db16f06f61620afd12ff91cd3c4a46"
+    },
+    {
+      "path": "artifacts/child_crime_exposure_rank_3y_v1/experiment_report.md",
+      "exists": true,
+      "bytes": 2282,
+      "sha256": "120b7b6895cfd5301542430c059b099db203bc39d32c6cd1ccba5efb924fa6a5"
+    },
+    {
+      "path": "artifacts/child_crime_exposure_integrated_v2/result.json",
+      "exists": true,
+      "bytes": 5246,
+      "sha256": "17021289d2acfe46dc1cb36d4c60b13d5f0ea6f6eae56de2c0f9d43de7cf7d48"
+    },
+    {
+      "path": "artifacts/child_crime_exposure_2y_2027_v1/result.json",
+      "exists": true,
+      "bytes": 12160,
+      "sha256": "e97eda53ea1105f0554813b8938be12d55274d3c3266e01832fa596e776c8801"
+    },
+    {
+      "path": "artifacts/child_crime_exposure_2y_2027_v1/forecast_2027.csv",
+      "exists": true,
+      "bytes": 1811,
+      "sha256": "87d3eeb73c105d0f5a28e5a5c3d25ffd4913bbdebfadcb40b3923c233d72916d"
+    },
+    {
+      "path": "artifacts/child_crime_exposure_2y_2027_v1/holdout_2025_predictions.csv",
+      "exists": true,
+      "bytes": 2409,
+      "sha256": "b7941ad467811c759d5868dbf39a785859a5a9a4a564c05b11925162f4082d4e"
+    },
+    {
+      "path": "artifacts/child_crime_exposure_2y_2027_v1/all_comparisons.csv",
+      "exists": true,
+      "bytes": 192806,
+      "sha256": "eebf1f0dd1538859382e747ec052a7652290516c0d4b9ddf535ada2f650bacd5"
+    },
+    {
+      "path": "models/recommender/v1/child_crime_exposure/service_manifest.json",
+      "exists": true,
+      "bytes": 285,
+      "sha256": "b05d5952a5a27320c1b9f9e4acb3d6268e476cccd52dd369421efd276b035d76"
+    },
+    {
+      "path": "models/recommender/v1/child_crime_exposure/1y/model_metadata.json",
+      "exists": true,
+      "bytes": 653,
+      "sha256": "ed1c8e995be20f9ed8d2f17a57a69f52cc4b6ebb50f31aa841bfaba3f18315da"
+    },
+    {
+      "path": "models/recommender/v1/child_crime_exposure/1y/service_forecast.csv",
+      "exists": true,
+      "bytes": 1832,
+      "sha256": "92147aa09bbc14d3ffd9256f2f47eb8a45a34d12ae48a62c90bbb18769a5781e"
+    },
+    {
+      "path": "models/recommender/v1/child_crime_exposure/1y/raw_forecast.csv",
+      "exists": true,
+      "bytes": 1032,
+      "sha256": "dc85eecb0c03779dc486dada308649273fe6412a5c9b2400354abc6fc8bf8aa1"
+    },
+    {
+      "path": "models/recommender/v1/child_crime_exposure/2y/model_metadata.json",
+      "exists": true,
+      "bytes": 12160,
+      "sha256": "e97eda53ea1105f0554813b8938be12d55274d3c3266e01832fa596e776c8801"
+    },
+    {
+      "path": "models/recommender/v1/child_crime_exposure/2y/service_forecast.csv",
+      "exists": true,
+      "bytes": 1823,
+      "sha256": "ef0202f80585114b15c64e07489a3a90ff75120f13da9eed63fd201607debe2f"
+    },
+    {
+      "path": "models/recommender/v1/child_environment/model_metadata.json",
+      "exists": true,
+      "bytes": 2261,
+      "sha256": "e624a7700e417d670ea42434b7ee53b06e4546ac21b29ee46d2cb6134988797e"
+    },
+    {
+      "path": "models/recommender/v1/child_environment/REPORT.md",
+      "exists": true,
+      "bytes": 921,
+      "sha256": "3ee268a419e258a815fabe9de62a26e199eedf4d75cc42b51146694f41b4bb42"
+    },
+    {
+      "path": "data/processed/child_environment_scores/FORMULA.md",
+      "exists": true,
+      "bytes": 1434,
+      "sha256": "4d9cd9ff39b15bc004f6a45345681daace394a93f649f7ec3562a949cc0a0b82"
+    },
+    {
+      "path": "data/processed/child_environment_scores/weights.csv",
+      "exists": true,
+      "bytes": 1023,
+      "sha256": "5dc69eb9104268f2d4b698b84c9a930ca358a72425b17b81e5035f352d03ddb5"
+    },
+    {
+      "path": "data/processed/child_environment_scores/scored_training_panel_updated.csv",
+      "exists": true,
+      "bytes": 77311,
+      "sha256": "b61e08f9633ebced7f1475f6b5e72fd78f1de678026244c0852146402c7941c5"
+    },
+    {
+      "path": "models/recommender/v1/apart_sale/model_contract.json",
+      "exists": true,
+      "bytes": 1213,
+      "sha256": "b424dbf00bc68419bf8f915ac057016f143677c8d544d8da83460b8e847338f0"
+    },
+    {
+      "path": "models/recommender/v1/apart_rent/model_contract.json",
+      "exists": true,
+      "bytes": 1202,
+      "sha256": "b4a4f826aab4afb99b30e0a0c9cca1845ddbce5f51af76012165c1666d114b38"
+    },
+    {
+      "path": "models/recommender/v1/traffic_accident/모델정보.json",
+      "exists": true,
+      "bytes": 1144,
+      "sha256": "6e09b98cf902b24e17418d9d37e5501ff0b5c405abe30e947c05270f7d42ed78"
+    }
+  ],
+  "excluded_categories": [
+    "credentials/.env",
+    "raw individual records",
+    "joblib model binaries",
+    "Docker persistent volumes",
+    "node_modules",
+    "browser profiles"
+  ],
+  "runtime_asset_inventory_not_all_packaged": [
+    {
+      "path": "models/recommender/v1/property_model_summary.csv",
+      "exists": true,
+      "bytes": 404,
+      "sha256": "bdb004f367563512841ad5de0eeb79ee1f272b7accd80ec4cfc979163134da7b"
+    },
+    {
+      "path": "models/recommender/v1/apart_rent/model_bundle.joblib",
+      "exists": true,
+      "bytes": 589501699,
+      "sha256": null
+    },
+    {
+      "path": "models/recommender/v1/apart_rent/model_contract.json",
+      "exists": true,
+      "bytes": 1202,
+      "sha256": "b4a4f826aab4afb99b30e0a0c9cca1845ddbce5f51af76012165c1666d114b38"
+    },
+    {
+      "path": "models/recommender/v1/apart_sale/model_bundle.joblib",
+      "exists": true,
+      "bytes": 321408902,
+      "sha256": null
+    },
+    {
+      "path": "models/recommender/v1/apart_sale/model_contract.json",
+      "exists": true,
+      "bytes": 1213,
+      "sha256": "b424dbf00bc68419bf8f915ac057016f143677c8d544d8da83460b8e847338f0"
+    },
+    {
+      "path": "models/recommender/v1/child_crime_exposure/service_manifest.json",
+      "exists": true,
+      "bytes": 285,
+      "sha256": "b05d5952a5a27320c1b9f9e4acb3d6268e476cccd52dd369421efd276b035d76"
+    },
+    {
+      "path": "models/recommender/v1/child_environment/child_environment_1y.joblib",
+      "exists": true,
+      "bytes": 4797,
+      "sha256": "3713dee033072404d358269611de95c677602782fe9f29767e8879be9138f498"
+    },
+    {
+      "path": "models/recommender/v1/child_environment/child_environment_3y.joblib",
+      "exists": true,
+      "bytes": 1328267,
+      "sha256": "eb3b68d8c44e5d6c04bfa09452a871563d3ca6d246d151d266a00bc34f808a88"
+    },
+    {
+      "path": "models/recommender/v1/child_environment/forecasts_2025_2027.csv",
+      "exists": true,
+      "bytes": 4659,
+      "sha256": "35c2e814e15a6f7671e31fec02b364700365d8293ad8376ae7630a7be5955358"
+    },
+    {
+      "path": "models/recommender/v1/child_environment/grade_accuracy_2024.csv",
+      "exists": true,
+      "bytes": 125,
+      "sha256": "e49473ee7e1516f41f97a1b76b0c7a81287b2a8a3d5c172ea054e61834d8929f"
+    },
+    {
+      "path": "models/recommender/v1/child_environment/model_comparison.csv",
+      "exists": true,
+      "bytes": 1260,
+      "sha256": "3311b587826424f121fe5e1b8ea2ff0c987a7bb2de10d519a291d47269a85bc7"
+    },
+    {
+      "path": "models/recommender/v1/child_environment/model_metadata.json",
+      "exists": true,
+      "bytes": 2261,
+      "sha256": "e624a7700e417d670ea42434b7ee53b06e4546ac21b29ee46d2cb6134988797e"
+    },
+    {
+      "path": "models/recommender/v1/child_environment/REPORT.md",
+      "exists": true,
+      "bytes": 921,
+      "sha256": "3ee268a419e258a815fabe9de62a26e199eedf4d75cc42b51146694f41b4bb42"
+    },
+    {
+      "path": "models/recommender/v1/crime_rate_3y/crime_rate_3y.joblib",
+      "exists": true,
+      "bytes": 5041,
+      "sha256": "5db0b3784cbf20e4d4c6083aba113f647660fb778099ba22dc21f1dc741feb4c"
+    },
+    {
+      "path": "models/recommender/v1/crime_rate_3y/model_metadata.json",
+      "exists": true,
+      "bytes": 6352,
+      "sha256": "cd6889f46fa79efd61f060b5b7cf6a66010c59e471ede93196e755d26f0ce23d"
+    },
+    {
+      "path": "models/recommender/v1/crime_safety/2024_예측.csv",
+      "exists": true,
+      "bytes": 3269,
+      "sha256": "6e95c5aff0b4bf6e96fab88b044ab863800dc63a5ec6ab56c7a94f1d60750002"
+    },
+    {
+      "path": "models/recommender/v1/crime_safety/report.md",
+      "exists": true,
+      "bytes": 3342,
+      "sha256": "4136aef20b8987471021b18edddce47d92e1f6a9d6e3c4481163aeea9f28fd97"
+    },
+    {
+      "path": "models/recommender/v1/crime_safety/standard_1y_models.joblib",
+      "exists": true,
+      "bytes": 2512770,
+      "sha256": null
+    },
+    {
+      "path": "models/recommender/v1/crime_safety/모델비교_검증2022.csv",
+      "exists": true,
+      "bytes": 2335,
+      "sha256": "0aca6b3122936aec76b1d4ec312dd667524f30aeacaab3e2b127cc3fd45f82f3"
+    },
+    {
+      "path": "models/recommender/v1/crime_safety/지표별_2023_테스트성능.csv",
+      "exists": true,
+      "bytes": 989,
+      "sha256": "6b7125cfbf0fd742825ef4134e3e790c0031ae2d1e68dc6f9f03c7aaa622be23"
+    },
+    {
+      "path": "models/recommender/v1/crime_safety/평가지표.json",
+      "exists": true,
+      "bytes": 722,
+      "sha256": "85195350202f85441edaa45d6376f6d0f8c160d950b38ed818bfbaf5c4a79926"
+    },
+    {
+      "path": "models/recommender/v1/traffic_accident/2025년_최종검증_예측결과.csv",
+      "exists": true,
+      "bytes": 2361,
+      "sha256": "bf561f534a895ade9978f55515d6392fec7742934ea1613810d27b13829b09d0"
+    },
+    {
+      "path": "models/recommender/v1/traffic_accident/교통사고_2차_모델.joblib",
+      "exists": true,
+      "bytes": 2212,
+      "sha256": "c587aa2320b1d156f7bd22374b1200a6ce0757ec1e047008f38919a015567849"
+    },
+    {
+      "path": "models/recommender/v1/traffic_accident/내부_순차검증_결과.csv",
+      "exists": true,
+      "bytes": 5596,
+      "sha256": "50df236b6ba5f53417d3c13f97fc613049eba4ceccbf3969413d8746eee55a75"
+    },
+    {
+      "path": "models/recommender/v1/traffic_accident/모델결과보고서.md",
+      "exists": true,
+      "bytes": 515,
+      "sha256": "9b315bc59a252bf241f3f2290706529d822d6d164e5bb24dbbacc46951a4afc9"
+    },
+    {
+      "path": "models/recommender/v1/traffic_accident/모델정보.json",
+      "exists": true,
+      "bytes": 1144,
+      "sha256": "6e09b98cf902b24e17418d9d37e5501ff0b5c405abe30e947c05270f7d42ed78"
+    },
+    {
+      "path": "models/recommender/v1/traffic_accident/변수중요도.csv",
+      "exists": true,
+      "bytes": 416,
+      "sha256": "d351584f562df493a96c56196b1b00151ed96213875b46c6f3f479323fa3b461"
+    },
+    {
+      "path": "models/recommender/v1/traffic_accident/후보모델_비교.csv",
+      "exists": true,
+      "bytes": 2640,
+      "sha256": "e9b6e1199aa92ef80c49fc63d59512fd017aa83da9c9382ac6dd980fe665d4f5"
+    },
+    {
+      "path": "models/recommender/v1/_archive/property_legacy/rent_random_forest.joblib",
+      "exists": true,
+      "bytes": 3500495985,
+      "sha256": null
+    },
+    {
+      "path": "models/recommender/v1/_archive/property_legacy/rent_scaler.joblib",
+      "exists": true,
+      "bytes": 1447,
+      "sha256": "f30f80bf2f5d52cd4d51cff47c14fd8f1058b5b6552c316bf56bd062f3449a60"
+    },
+    {
+      "path": "models/recommender/v1/_archive/property_legacy/아파트매매_XGB_v32.joblib",
+      "exists": true,
+      "bytes": 350662,
+      "sha256": "ad3d04ec1107531abfcde8688c4c4f9fb3e62fdc8ef11941c9521af0bfc47616"
+    },
+    {
+      "path": "models/recommender/v1/traffic_accident/교통사고_2차모델_입력데이터/자치구별_운전자안전_2차.csv",
+      "exists": true,
+      "bytes": 20612,
+      "sha256": "98a42234d4c4223247b6d8af652be5996f70070984cdca6d2c66a6cddde98945"
+    },
+    {
+      "path": "models/recommender/v1/traffic_accident/교통사고_2차모델_입력데이터/자치구별_인구만명당_의료보장사업장수_2017_2024.csv",
+      "exists": true,
+      "bytes": 37209,
+      "sha256": "960b62ad24e34101c056ad0c993046e37b806e2fbe6c0a2c56189a87d1af9344"
+    },
+    {
+      "path": "models/recommender/v1/traffic_accident/교통사고_2차모델_입력데이터/자치구별_주민등록인구_2017_2025.csv",
+      "exists": true,
+      "bytes": 43289,
+      "sha256": "40904cd2a5d4a58e0d03aa1d25ed1d26286797564a0db01bfa1566120061d2ab"
+    },
+    {
+      "path": "models/recommender/v1/child_crime_exposure/1y/child_crime_exposure_1y.joblib",
+      "exists": true,
+      "bytes": 4737,
+      "sha256": "003224541917daef72e2b6e4f3a23e94aa195b63e086151c16091ec82b16b950"
+    },
+    {
+      "path": "models/recommender/v1/child_crime_exposure/1y/model_metadata.json",
+      "exists": true,
+      "bytes": 653,
+      "sha256": "ed1c8e995be20f9ed8d2f17a57a69f52cc4b6ebb50f31aa841bfaba3f18315da"
+    },
+    {
+      "path": "models/recommender/v1/child_crime_exposure/1y/raw_forecast.csv",
+      "exists": true,
+      "bytes": 1032,
+      "sha256": "dc85eecb0c03779dc486dada308649273fe6412a5c9b2400354abc6fc8bf8aa1"
+    },
+    {
+      "path": "models/recommender/v1/child_crime_exposure/1y/service_forecast.csv",
+      "exists": true,
+      "bytes": 1832,
+      "sha256": "92147aa09bbc14d3ffd9256f2f47eb8a45a34d12ae48a62c90bbb18769a5781e"
+    },
+    {
+      "path": "models/recommender/v1/child_crime_exposure/2y/child_crime_exposure_2y.joblib",
+      "exists": true,
+      "bytes": 12379,
+      "sha256": "69a851c09cb5df4feff232c35db6388b2f3780ef7d98ab1d76b49eaa5d473399"
+    },
+    {
+      "path": "models/recommender/v1/child_crime_exposure/2y/model_metadata.json",
+      "exists": true,
+      "bytes": 12160,
+      "sha256": "e97eda53ea1105f0554813b8938be12d55274d3c3266e01832fa596e776c8801"
+    },
+    {
+      "path": "models/recommender/v1/child_crime_exposure/2y/service_forecast.csv",
+      "exists": true,
+      "bytes": 1823,
+      "sha256": "ef0202f80585114b15c64e07489a3a90ff75120f13da9eed63fd201607debe2f"
+    },
+    {
+      "path": "models/recommender/v1/child_crime_exposure/3y/child_crime_exposure_3y.joblib",
+      "exists": true,
+      "bytes": 7299,
+      "sha256": "779c40b32f8cfa2fb8c18f3785f91e8d166a50859fd1a4c5cb1b22177758172c"
+    },
+    {
+      "path": "models/recommender/v1/child_crime_exposure/3y/model_metadata.json",
+      "exists": true,
+      "bytes": 8293,
+      "sha256": "c8b256dfc0e82068b8a0b4047e5f1f841d13175bf59e19629b3ff0e5aa865703"
+    }
+  ],
+  "transfer_directory_inventory": [
+    {
+      "path": "data/raw/아동범죄",
+      "exists": false,
+      "files": 0,
+      "bytes": 0,
+      "note": "Directory inventory only; NOT automatically included in ZIP"
+    },
+    {
+      "path": "data/raw/아동범죄_행정동",
+      "exists": true,
+      "files": 47,
+      "bytes": 4676497954,
+      "note": "Directory inventory only; NOT automatically included in ZIP"
+    },
+    {
+      "path": "data/raw/아동인프라",
+      "exists": false,
+      "files": 0,
+      "bytes": 0,
+      "note": "Directory inventory only; NOT automatically included in ZIP"
+    },
+    {
+      "path": "data/interim",
+      "exists": true,
+      "files": 372,
+      "bytes": 2721694878,
+      "note": "Directory inventory only; NOT automatically included in ZIP"
+    },
+    {
+      "path": "data/processed",
+      "exists": true,
+      "files": 501,
+      "bytes": 1110663409,
+      "note": "Directory inventory only; NOT automatically included in ZIP"
+    },
+    {
+      "path": "models/recommender/v1",
+      "exists": true,
+      "files": 45,
+      "bytes": 4415833473,
+      "note": "Directory inventory only; NOT automatically included in ZIP"
+    },
+    {
+      "path": "models/experiments",
+      "exists": true,
+      "files": 14,
+      "bytes": 1111676,
+      "note": "Directory inventory only; NOT automatically included in ZIP"
+    },
+    {
+      "path": "artifacts/child_crime_borough_v2",
+      "exists": true,
+      "files": 39,
+      "bytes": 68944481,
+      "note": "Directory inventory only; NOT automatically included in ZIP"
+    },
+    {
+      "path": "artifacts/child_population_priority_v1",
+      "exists": true,
+      "files": 4,
+      "bytes": 187289,
+      "note": "Directory inventory only; NOT automatically included in ZIP"
+    },
+    {
+      "path": "artifacts/child_crime_exposure_2y_2027_v1",
+      "exists": true,
+      "files": 5,
+      "bytes": 219393,
+      "note": "Directory inventory only; NOT automatically included in ZIP"
+    },
+    {
+      "path": "artifacts/child_crime_exposure_rank_3y_v1",
+      "exists": true,
+      "files": 15,
+      "bytes": 13934249,
+      "note": "Directory inventory only; NOT automatically included in ZIP"
+    },
+    {
+      "path": "artifacts/child_crime_exposure_integrated_v2",
+      "exists": true,
+      "files": 7,
+      "bytes": 347224,
+      "note": "Directory inventory only; NOT automatically included in ZIP"
+    }
+  ],
+  "notes": [
+    "SHA256 for model inventory is omitted for files >2 MB; byte counts alone are not integrity verification.",
+    "A manifest entry for a runtime asset does NOT mean the asset is in this archive.",
+    "Manifest itself is included but not self-hashed.",
+    "No git commits, pushes or model retraining are performed by this script."
+  ]
+}

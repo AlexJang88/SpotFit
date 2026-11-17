@@ -101,8 +101,8 @@ def main():
     note = ('아파트 매매 동네 평당 금액(행정동 1곳=1행, 동네 중앙값) 알고리즘 비교. 동네 단위 정적 집계이며 미래 예측·인과 모델이 아님. 동일 검증에서 여러 후보를 비교한 성능은 낙관적일 수 있고, '
             '독립 테스트 데이터가 없어 선정 후보도 운영 승인이 아님. 직장인구·1인가구가 빈 11개 동네는 모든 후보 공통으로 제외(' + str(len(d)) + '곳 사용). 빈 값은 채우지 않음.')
     with mlflow.start_run(run_name='apt_sale_algorithm_comparison_' + stamp) as parent:
-        mlflow.log_params({'data_apt_sale': 'processed/부동산(전처리)/아파트_매매.csv', 'data_apt_sale_sha256': sha(PROC + '아파트_매매.csv'),
-                           'data_dong_features': '평당금액_행정동표.csv', 'data_dong_features_sha256': sha(OUT + '평당금액_행정동표.csv'), 'dataset_sha256': dataset_sha, 'split_sha256': split_sha,
+        mlflow.log_params({'data_apt_sale': 'raw/부동산/아파트_매매.csv', 'data_apt_sale_sha256': sha(PROC + '아파트_매매.csv'),
+                           'data_dong_features': '평당금액_행정동표.csv', 'data_dong_features_sha256': sha(OUT + '../../raw/부동산/평당금액_행정동표.csv'), 'dataset_sha256': dataset_sha, 'split_sha256': split_sha,
                            'reference_period': '거래 2021-01~2026-09 (상권분석 자료는 2021년 1분기~2026년 2분기 평균)', 'n_dongs': len(d), 'min_deals_per_dong': MIN_N, 'cv': f'RepeatedKFold(n_splits={SPLITS}, n_repeats={REPEAT})',
                            'seed': SEED, 'n_folds': len(folds), 'target': '평당 금액(만원) = 거래금액 ÷ (전용면적 ÷ 3.3058), 동네 중앙값', 'features': json.dumps(X_COLS, ensure_ascii=False),
                            'missing_policy': '빈 값은 채우지 않음. 직장인구·1인가구가 빈 행정동 11곳은 모든 후보에서 제외(릿지가 빈 값을 처리하지 못하고 후보를 같은 408곳으로 비교하기 위해). 랜덤포레스트·XGBoost는 빈 값을 처리할 수 있음', 'candidates': json.dumps(ALGORITHMS), 'baseline': 'dummy_mean(학습 동네 평균)',

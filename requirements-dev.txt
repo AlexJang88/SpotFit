@@ -3,6 +3,9 @@
 # 팀원은 별도 requirements를 조합하지 않고 이 파일 하나만 설치합니다.
 -r requirements-server.txt
 
+# Automated backend tests
+pytest>=8,<10
+
 # 데이터 분석·시각화
 matplotlib>=3.9,<4.0
 seaborn>=0.13.2,<0.14

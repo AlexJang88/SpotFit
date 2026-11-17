@@ -15,10 +15,10 @@ V23 = '단지 평균 세대수'
 V24 = '지역난방 단지 비율(%)'
 NEW = '일반교습학원 수'
 d = add_age(add_area(load()))
-st = pd.read_csv(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data', 'raw', '서울시 상권분석서비스(점포-행정동).csv'), encoding='cp949', usecols=['행정동_코드', '서비스_업종_코드', '전체_점포_수'])
+st = pd.read_csv(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data', 'raw', '부동산', '서울시 상권분석서비스(점포-행정동).csv'), encoding='cp949', usecols=['행정동_코드', '서비스_업종_코드', '전체_점포_수'])
 d[NEW] = st[st['서비스_업종_코드'] == 'CS200001'].groupby('행정동_코드')['전체_점포_수'].median().reindex(d.index)
 print(f'일반교습학원 수가 없어 빈 값으로 두는 동네 {d[NEW].isna().sum()}곳')
-cx = pd.read_csv(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data', 'processed', '행정동별_단지정보.csv'), encoding='utf-8-sig').set_index('행정동_코드')
+cx = pd.read_csv(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data', 'raw', '부동산', '행정동별_단지정보.csv'), encoding='utf-8-sig').set_index('행정동_코드')
 d[V23] = cx[V23].reindex(d.index)
 d[V24] = cx[V24].reindex(d.index)
 print(f'K-apt 단지 정보가 없어 빈 값으로 두는 동네 {d[V24].isna().sum()}곳 (전체 {len(d)}곳)')

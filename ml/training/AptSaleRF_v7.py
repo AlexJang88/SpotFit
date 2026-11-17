@@ -34,7 +34,7 @@ d = load()
 t = pd.read_csv(PROC + '아파트_매매.csv', low_memory=False, usecols=['행정동_코드(상권분석)', '전용면적(㎡)'])          # apt_sale_data.py 와 같은 거래 파일 (취소 거래·지번 불일치는 이미 제외됨)
 d = d.join(t.groupby(t['행정동_코드(상권분석)'].astype(int))['전용면적(㎡)'].mean().rename(AREA))
 
-p = pd.read_csv(DATA + '../raw/서울시 상권분석서비스(상주인구-행정동).csv', encoding='cp949')
+p = pd.read_csv(DATA + '../raw/부동산/서울시 상권분석서비스(상주인구-행정동).csv', encoding='cp949')
 assert not p.duplicated(['기준_년분기_코드', '행정동_코드']).any()
 raw = [f'연령대_{k}_상주인구_수' for k in AGES]
 tot = p.groupby('기준_년분기_코드')[raw].sum()                                                   # 분기별 서울 전체 연령대 인구

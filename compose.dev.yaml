@@ -49,17 +49,25 @@ services:
       MLFLOW_TRACKING_URI: ${MLFLOW_TRACKING_URI:-http://192.168.0.3:5000}
       WATCHFILES_FORCE_POLLING: ${WATCH_USE_POLLING:-true}
       MODEL_CACHE_DIR: /model-cache
+      MODEL_TRAINING_API_KEY: ${MODEL_TRAINING_API_KEY:-}
+      MODEL_AUTO_BOOTSTRAP: ${MODEL_AUTO_BOOTSTRAP:-1}
+      APP_LOG_DIR: /var/log/spotfit
+      APP_LOG_FILE: spotfit-api-dev.log
+      APP_LOG_LEVEL: ${APP_LOG_LEVEL:-INFO}
+      APP_LOG_RETENTION_DAYS: ${APP_LOG_RETENTION_DAYS:-30}
+      APP_TIMEZONE: ${APP_TIMEZONE:-Asia/Seoul}
     volumes:
       - ./backend:/app
-      - ./artifacts:/artifacts:ro
-      # recommender/v1 must be writable: backend startup publishes missing
-      # service artifacts here (traffic v51 is temporary for the presentation).
-      - ./models/recommender/v1:/models/recommender/v1
-      - ./models/교통사고/51차~60차/51차:/models/교통사고/51차:ro
-      - ./data/processed:/data/processed:ro
+
+      - ./artifacts:/artifacts
+      - ./models:/models
+      - ./ml:/ml:ro
+      - ./scripts:/scripts:ro
       - ./data/raw:/data/raw:ro
       - ./data/interim:/data/interim:ro
+      - ./data/processed:/data/processed
       - ./model_registry:/model_registry:ro
+      - ./logs/backend:/var/log/spotfit
       - dev_model_cache:/model-cache
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/spot_fit')"]

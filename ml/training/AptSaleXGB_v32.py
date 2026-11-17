@@ -19,12 +19,12 @@ NEW = ['중심 x좌표', '중심 y좌표']
 d = add_age(add_area(load()))
 
 DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data') + os.sep
-area = pd.read_csv(DATA + 'raw/서울시 상권분석서비스(영역-행정동).csv', encoding='cp949').drop_duplicates('행정동_코드').set_index('행정동_코드')
+area = pd.read_csv(DATA + 'raw/부동산/서울시 상권분석서비스(영역-행정동).csv', encoding='cp949').drop_duplicates('행정동_코드').set_index('행정동_코드')
 d[NEW[0]] = area['엑스좌표_값'].reindex(d.index)
 d[NEW[1]] = area['와이좌표_값'].reindex(d.index)
 assert d[NEW].notna().all().all(), '좌표가 없는 동네가 있음'
 print(f'좌표: x {d[NEW[0]].min():,.0f}~{d[NEW[0]].max():,.0f}, y {d[NEW[1]].min():,.0f}~{d[NEW[1]].max():,.0f} (전체 {len(d)}곳, 빈 값 없음)')
-cx = pd.read_csv(DATA + 'processed/행정동별_단지정보.csv', encoding='utf-8-sig').set_index('행정동_코드')
+cx = pd.read_csv(DATA + 'raw/부동산/행정동별_단지정보.csv', encoding='utf-8-sig').set_index('행정동_코드')
 d[V23] = cx[V23].reindex(d.index)
 d[V24] = cx[V24].reindex(d.index)
 d[V25] = cx[V25].reindex(d.index)

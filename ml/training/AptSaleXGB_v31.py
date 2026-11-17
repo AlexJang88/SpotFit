@@ -19,11 +19,11 @@ NEW = '생활방범 CCTV 수'
 d = add_age(add_area(load()))
 
 DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data') + os.sep
-cc = pd.read_csv(DATA + 'interim/기타/CCTV_행정동.csv', encoding='utf-8-sig', low_memory=False)
+cc = pd.read_csv(DATA + 'raw/부동산/CCTV_행정동.csv', encoding='utf-8-sig', low_memory=False)
 cc = cc[cc['설치목적구분'] == '생활방범']
 d[NEW] = cc.groupby('행정동_코드')['카메라대수'].sum().reindex(d.index).fillna(0)
 print(f'생활방범 CCTV 수: CCTV가 없어 0인 동네 {int((d[NEW] == 0).sum())}곳 (전체 {len(d)}곳)')
-cx = pd.read_csv(DATA + 'processed/행정동별_단지정보.csv', encoding='utf-8-sig').set_index('행정동_코드')
+cx = pd.read_csv(DATA + 'raw/부동산/행정동별_단지정보.csv', encoding='utf-8-sig').set_index('행정동_코드')
 d[V23] = cx[V23].reindex(d.index)
 d[V24] = cx[V24].reindex(d.index)
 d[V25] = cx[V25].reindex(d.index)

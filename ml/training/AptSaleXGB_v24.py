@@ -14,7 +14,7 @@ from apt_sale_compare import AGE_COLS, AREA, add_age, add_area, compare
 V23 = '단지 평균 세대수'
 NEW = '지역난방 단지 비율(%)'
 d = add_age(add_area(load()))
-cx = pd.read_csv(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data', 'processed', '행정동별_단지정보.csv'), encoding='utf-8-sig').set_index('행정동_코드')
+cx = pd.read_csv(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data', 'raw', '부동산', '행정동별_단지정보.csv'), encoding='utf-8-sig').set_index('행정동_코드')
 d[V23] = cx[V23].reindex(d.index)
 d[NEW] = cx[NEW].reindex(d.index)
 print(f'K-apt 단지 정보가 없어 빈 값으로 두는 동네 {d[NEW].isna().sum()}곳 (전체 {len(d)}곳)')

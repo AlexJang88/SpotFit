@@ -12,7 +12,7 @@ from apt_sale_compare import compare
 
 NEW = 'CCTV 수(주소 매핑)'
 d = load()
-cctv = pd.read_csv(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data', 'processed', '행정동별_CCTV.csv'), encoding='utf-8-sig').set_index('행정동_코드')
+cctv = pd.read_csv(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data', 'raw', '부동산', '행정동별_CCTV.csv'), encoding='utf-8-sig').set_index('행정동_코드')
 d[NEW] = cctv['CCTV 수'].reindex(d.index)
 assert d[NEW].notna().all(), '새 CCTV 수가 없는 동네가 있음'
 X20 = [NEW if c == 'CCTV 수' else c for c in X_COLS]
