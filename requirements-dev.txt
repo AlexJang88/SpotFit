@@ -18,6 +18,9 @@ shapely>=2.0,<3.0
 geopandas>=1.0,<2.0
 libpysal>=4.12,<5.0
 
+# 테스트
+pytest>=8.3,<9.0
+
 # Child-environment panel preprocessing and paper-compatible classification
 pandas>=3.0,<4.0
 scipy>=1.15,<2.0

@@ -34,7 +34,12 @@ def get_safety_category_scores(horizon: int = 1) -> dict:
     return {
         "district_count": len(scores),
         "source_years": {
-            "traffic": int(traffic_meta["prediction_year"]),
+            "traffic": int(
+                traffic_meta.get(
+                    "prediction_year",
+                    max(traffic_meta.get("prediction_years", [2027])),
+                )
+            ),
             "crime": int(forecast_payload(horizon)["prediction_year"]),
             "infrastructure": int(child_meta["prediction_years"][0]),
         },

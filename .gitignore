@@ -74,6 +74,9 @@ yarn-error.log*
 .cache/
 tmp/
 temp/
+.tmp_mlflow_traffic/
+.tmp_pdf_extract/
+/tmpit*/
 .ipynb_checkpoints/
 mlruns/
 mlartifacts/

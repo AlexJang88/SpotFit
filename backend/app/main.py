@@ -10,6 +10,8 @@ from app.controllers.model_bootstrap_controller import router as model_bootstrap
 from app.controllers.neighborhood_controller import router as neighborhood_router
 from app.controllers.recommender_controller import router as recommender_router
 from app.controllers.spot_fit_controller import router as spot_fit_router
+
+from app.services.traffic_accident_v51 import ensure_models as ensure_traffic_models
 from app.core.error_handling import install_error_handling
 from app.core.logging_config import configure_logging
 from app.services.service_model_bootstrap import start_model_bootstrap
@@ -29,13 +31,13 @@ async def lifespan(_: FastAPI):
     finally:
         logger.info("SpotFit API stopping")
 
-
 app = FastAPI(
     lifespan=lifespan,
     title="spot_fit API",
     docs_url="/api/docs",
     redoc_url="/api/redoc",
     openapi_url="/api/openapi.json",
+    lifespan=lifespan,
 )
 install_error_handling(app)
 app.include_router(spot_fit_router, prefix="/api")

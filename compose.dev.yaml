@@ -58,6 +58,7 @@ services:
       APP_TIMEZONE: ${APP_TIMEZONE:-Asia/Seoul}
     volumes:
       - ./backend:/app
+
       - ./artifacts:/artifacts
       - ./models:/models
       - ./ml:/ml:ro
