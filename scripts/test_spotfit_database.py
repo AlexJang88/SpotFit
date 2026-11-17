@@ -5,7 +5,6 @@ Docker and the already pulled postgis/postgis:17-3.5-alpine image.
 """
 from pathlib import Path
 import json
-import re
 import subprocess
 import time
 import uuid
@@ -43,13 +42,24 @@ def main():
             p=run(*base,'-f','/sql/000_install.sql')
             (OUT/f'install_{i}.log').write_text(p.stdout+p.stderr,encoding='utf-8')
             print(f'PASS: install {i} (atomic + repeatable)',flush=True)
-        # Compare table names to all 33 ERD entities, not just an expected total.
+        # Keep an independent inventory of the 33 service tables plus 2 support tables.
         tables=set(run(*base,'-At','-c',"SELECT tablename FROM pg_tables WHERE schemaname='spotfit'").stdout.split())
-        erd=(ROOT/'docs/architecture/spotfit-service-erd-v2.md').read_text(encoding='utf-8')
-        expected={x.lower() for x in re.findall(r'^    ([A-Z][A-Z_]+) \{',erd,re.M)}
-        assert len(expected)==33 and expected <= tables,expected-tables
-        assert tables-expected=={'schema_migration','ml_model_type'},tables-expected
-        print('PASS: all 33 ERD entities + 2 support tables',flush=True)
+        expected=set('''
+            ml_model_type schema_migration
+            meta_data_source meta_ingestion_run meta_data_asset_version
+            meta_pipeline_run meta_pipeline_input meta_data_quality_result
+            ref_admin_area ref_admin_area_alias ref_boundary_notice ref_boundary_notice_area
+            core_apartment core_property_transaction core_population_stat
+            core_crime_stat core_traffic_accident_stat core_facility_snapshot
+            feature_dataset_version ml_training_run ml_model_version ml_model_metric
+            ml_model_feature ml_model_deployment service_property_prediction
+            service_safety_prediction service_scoring_policy service_grade_policy
+            service_neighborhood_score service_recommendation_policy
+            service_recommendation_request service_recommendation_result
+            analytics_service_event ops_audit_log ops_service_incident
+        '''.split())
+        assert len(expected)==35 and expected==tables,(expected-tables,tables-expected)
+        print('PASS: all 35 migration tables',flush=True)
         p=run(*base,'-f','/sql/tests/constraints.sql')
         (OUT/'constraints.log').write_text(p.stdout+p.stderr,encoding='utf-8')
         print(p.stdout[-4000:],flush=True)

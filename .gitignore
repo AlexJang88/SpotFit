@@ -81,6 +81,9 @@ temp/
 mlruns/
 mlartifacts/
 wandb/
+*.ppt
+*.pptx
+*.docx
 
 # Local datasets, model artifacts and persistent infrastructure data
 /data/**
