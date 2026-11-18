@@ -3,15 +3,17 @@ from __future__ import annotations
 
 import json
 import re
+import os
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[2]
-RAW_ROOT = ROOT / "data" / "raw" / "child_crime_exposure"
-BASE = ROOT / "data/processed/child_crime_exposure/borough_panel"
-OUT = ROOT / "data/processed/child_crime_exposure/population_features"
+RAW_ROOT = Path(os.environ.get('CRIME_RAW_ROOT', ROOT / 'data/raw/child_crime_exposure'))
+PROCESSED = Path(os.environ.get('CRIME_PROCESSED_ROOT', ROOT / 'data/processed/child_crime_exposure'))
+BASE = PROCESSED / 'borough_panel'
+OUT = PROCESSED / 'population_features'
 
 
 def number(value):
@@ -151,6 +153,11 @@ def main() -> int:
     folder = raw_dir()
     cohort = load_single_age(folder, gus)
     moves = parse_student_moves(exact_book(folder, "학생변동상황"), gus)
+    if (folder/'student_movement_refresh.csv').is_file():
+        import sys
+        sys.path.insert(0,str(ROOT))
+        from scripts.child_crime.refresh_inputs import student_frame, merge_complete
+        moves = merge_complete(moves,student_frame(folder/'student_movement_refresh.csv'))
     result = panel[["year", "gu"]].merge(cohort, on=["year", "gu"], how="left", validate="one_to_one")
     for source in (moves,):
         result = result.merge(source, on=["year", "gu"], how="left", validate="one_to_one")

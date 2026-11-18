@@ -13,12 +13,23 @@ def run(relative: str, *args: str) -> None:
 
 
 def main() -> None:
+    service = ROOT / "models/recommender/v1/child_crime_exposure"
+    if (service / 'current_release.json').is_file():
+        sys.path.insert(0, str(ROOT / 'backend'))
+        from app.services.service_model_bootstrap import missing
+        if not missing('child_crime', ROOT):
+            return
+        from scripts.child_crime.run_refresh import process, write_json, REPORT
+        result = process(force=True)
+        write_json(REPORT, {'process': result})
+        if result['state'] != 'promoted':
+            raise RuntimeError('Crime release restoration did not pass validation; see refresh report')
+        return
     data = ROOT / "data/processed/child_crime_exposure"
     if not all((data / path).is_file() for path in (
             "borough_panel/panel.csv", "population_features/priority_features.csv",
             "inference/latest_features.csv", "training/2y.csv", "training/3y.csv")):
         run("scripts/child_crime/prepare_service_data.py")
-    service = ROOT / "models/recommender/v1/child_crime_exposure"
     core = [service / f"{h}y" / name for h in (2, 3) for name in
         (f"child_crime_exposure_{h}y.joblib", "service_forecast.csv", "model_metadata.json")]
     scores = [service / f"{h}y" / name for h in (2, 3) for name in
@@ -31,4 +42,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    sys.path.insert(0, str(ROOT))
+    from scripts.child_crime.run_refresh import exclusive_run
+    with exclusive_run():
+        main()

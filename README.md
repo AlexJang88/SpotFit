@@ -26,6 +26,10 @@ Git에는 애플리케이션 코드와 환경변수 예시가 있습니다. `dat
 
 ## 확인
 
+범죄 데이터 자동 수집 → 전처리 → 2·3년 재학습 → 검증 후 서비스 전환은
+[범죄 갱신 파이프라인 안내](docs/crime-refresh-pipeline.md)를 참고하세요.
+Airflow DAG는 `crime_refresh_pipeline`이며, 단란주점 API 활용신청과 MDIS 신규 연도 직접 추출은 별도로 필요합니다.
+
 ```bash
 docker compose --env-file .env.server -f compose.yaml -f compose.server.yaml logs --tail=100 backend
 docker compose --env-file .env.server -f compose.yaml -f compose.server.yaml logs --tail=100 frontend
