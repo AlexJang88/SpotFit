@@ -98,6 +98,16 @@ button { transition: background-color .15s, box-shadow .15s; }
 .service-dialog > form { text-align: right; }
 .service-dialog form button { border: 0; background: none; font-size: 26px; color: var(--muted); }
 .service-dialog h2 { margin-top: 10px; }
+.detail-facts, .detail-trend { margin: 18px 0; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: #f7faf8; }
+.detail-facts h3, .detail-trend h3 { margin: 0 0 12px; font-size: 16px; }
+.detail-facts p { margin: 7px 0; line-height: 1.55; }
+.detail-trend svg { display: block; width: 100%; height: auto; overflow: visible; }
+.detail-trend svg text { fill: var(--ink); font-size: 10px; font-family: inherit; }
+.detail-trend small { display: block; color: var(--muted); line-height: 1.5; }
+.trend-axis { stroke: #bccfc7; stroke-width: 1; }
+.trend-line { stroke: var(--green); stroke-width: 2.5; }
+.trend-observed { fill: var(--green); }
+.trend-forecast { fill: #fff; stroke: var(--green); stroke-width: 2.5; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
 
 .discovery-actions { display: flex; flex: 1; min-width: 0; justify-content: space-between; gap: 3px; border-left: 1px solid #e0e8e4; padding-left: 12px; }
@@ -115,6 +125,15 @@ button { transition: background-color .15s, box-shadow .15s; }
 .area-presets strong { font-size: 17px; }
 .area-presets span, .area-presets small { font-size: 10px; color: var(--muted); }
 .custom-area { padding-top: 8px; }
+.score-weight-values { display: flex; justify-content: space-between; gap: 12px; margin: 20px 0 12px; }
+.score-weight-values > div { display: grid; gap: 6px; }
+.score-weight-values > div:last-child { text-align: right; }
+.score-weight-values span { font-size: 12px; color: var(--muted); }
+.score-weight-values strong { font-size: 30px; color: #405e58; font-variant-numeric: tabular-nums; }
+.score-weight-values small { font-size: 15px; margin-left: 3px; }
+.score-weight-slider { width: 100%; height: 30px; margin: 0; accent-color: var(--green); cursor: pointer; }
+.score-weight-footer { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 6px; }
+.score-weight-footer > span { font-size: 11px; color: var(--muted); }
 .text-button { border: 0; background: transparent; color: var(--green); padding: 12px 0; font-size: 11px; text-decoration: underline; }
 .budget-range-value { font-size: 23px; font-weight: 700; color: #405e58; letter-spacing: -.7px; margin: 8px 0 20px; }
 .budget-range-value span { color: #97aaa2; margin: 0 6px; }
@@ -139,11 +158,12 @@ button { transition: background-color .15s, box-shadow .15s; }
   .brand { font-size: 0; gap: 0; }
   .brand-icon { width: 32px; height: 32px; font-size: 24px; }
   .discovery-actions { padding-left: 7px; gap: 0; }
-  .control-button { min-width: 34px; min-height: 44px; padding: 4px; flex: 1; }
+  .control-button { min-width: 0; min-height: 44px; padding: 4px 2px; flex: 1; }
   .control-button span { font-size: 9px; }
   .control-button svg { width: 19px; height: 19px; }
   .discovery-panel { top: 72px; padding: 18px; max-height: calc(100dvh - 110px); }
-  .map-context { margin-top: 7px; padding: 7px 10px; gap: 6px; font-size: 10px; }
+  .map-context { margin-top: 7px; padding: 7px 10px; gap: 6px; font-size: 10px; flex-wrap: wrap; }
+  .map-context span { white-space: normal; }
   .map-context small { font-size: 9px; }
   .map-notices { max-height: 90px; overflow: auto; }
   .map-legend { left: 12px; bottom: 26px; }

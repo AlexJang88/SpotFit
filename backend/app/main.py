@@ -14,6 +14,8 @@ from app.controllers.spot_fit_controller import router as spot_fit_router
 from app.core.error_handling import install_error_handling
 from app.core.logging_config import configure_logging
 from app.services.service_model_bootstrap import start_model_bootstrap
+from app.services.price_history_bootstrap import start_price_history_bootstrap
+from app.services.historical_safety_bootstrap import start_historical_safety_bootstrap
 
 
 log_path = configure_logging()
@@ -26,6 +28,8 @@ async def lifespan(_: FastAPI):
     try:
         # Restore missing property, traffic and child-crime service models in background.
         start_model_bootstrap()
+        start_price_history_bootstrap()
+        start_historical_safety_bootstrap()
         yield
     finally:
         logger.info("SpotFit API stopping")

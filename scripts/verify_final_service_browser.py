@@ -1,5 +1,6 @@
 """Browser smoke check against the local development service (no data writes)."""
 import json
+import math
 from pathlib import Path
 
 from playwright.sync_api import sync_playwright, expect
@@ -20,7 +21,30 @@ def main():
         expect(page.locator('.map-context')).to_contain_text('추천', timeout=30000)
         print('initial catalog OK', flush=True)
 
+        page.get_by_role('button', name='예산 범위', exact=True).click()
+        expect(page.locator('#budget-min')).to_have_value('0')
+        expect(page.locator('#budget')).to_have_value('100000')
+        expect(page.locator('.budget-range-value')).to_contain_text('10억원')
+        page.get_by_role('button', name='설정 닫기', exact=True).click()
+
         page.get_by_role('button', name='전용면적', exact=True).click()
+        cards = page.locator('.area-presets button')
+        expect(cards).to_have_count(3)
+        square_labels = cards.locator('strong').all_text_contents()
+        areas = [float(label.replace('㎡', '').replace(',', '')) for label in square_labels]
+        pyeong_labels = [f'{math.floor(value / (400 / 121) + .5)}평' for value in areas]
+        for index, label in enumerate(pyeong_labels):
+            expect(cards.nth(index).locator('span')).to_have_text(f'약 {label}')
+        page.get_by_role('button', name='평', exact=True).click()
+        for index, label in enumerate(pyeong_labels):
+            expect(cards.nth(index).locator('strong')).to_have_text(label)
+            expect(cards.nth(index).locator('span')).to_have_text(f'전용 {square_labels[index]}')
+        cards.first.click()
+        assert abs(float(page.locator('#area').input_value()) - areas[0] / (400 / 121)) < .0001
+        page.get_by_role('button', name='㎡', exact=True).click()
+        assert float(page.locator('#area').input_value()) == areas[0]
+        assert cards.locator('strong').all_text_contents() == square_labels
+        print('default budget and unit-aware area cards OK', flush=True)
         page.locator('#area').fill('84')
         print('area panel:', page.locator('#discovery-panel').inner_text(), flush=True)
         page.get_by_role('button', name='평', exact=True).click()

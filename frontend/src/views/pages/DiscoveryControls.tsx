@@ -1,6 +1,7 @@
 import type { CSSProperties, PointerEvent } from "react";
+import { formatMoney } from "../../services/formatMoney";
 
-export type Panel = "search" | "transaction" | "budget" | "area" | "year" | "info";
+export type Panel = "search" | "transaction" | "budget" | "area" | "year" | "weights" | "info";
 
 export function ControlIcon({ name }: { name: Panel | "locate" }) {
   const paths = {
@@ -9,15 +10,14 @@ export function ControlIcon({ name }: { name: Panel | "locate" }) {
     budget: <><rect x="3" y="5" width="18" height="15" rx="3"/><path d="M3 9h18M16 14h5"/></>,
     area: <><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 4v4M12 4v3M16 4v4M4 12h4M4 16h3"/></>,
     year: <><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 11h18M8 15h2M14 15h2"/></>,
+    weights: <><path d="M4 3v5m0 4v9M12 3v10m0 4v4M20 3v3m0 4v11"/><circle cx="4" cy="10" r="2"/><circle cx="12" cy="15" r="2"/><circle cx="20" cy="8" r="2"/></>,
     info: <><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7v1"/></>,
     locate: <><circle cx="12" cy="12" r="6"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></>,
   };
   return <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>;
 }
 
-export const budgetLabel = (amount: number) => amount >= 10000
-  ? `${(amount / 10000).toLocaleString("ko-KR", { maximumFractionDigits: 2 })}억원`
-  : `${amount.toLocaleString("ko-KR")}만원`;
+export const budgetLabel = formatMoney;
 
 export function BudgetRange({ lower, upper, onLower, onUpper, monthly = false }: {
   lower: string; upper: string; onLower: (value: string) => void; onUpper: (value: string) => void;
@@ -54,6 +54,6 @@ export function BudgetRange({ lower, upper, onLower, onUpper, monthly = false }:
       <span aria-hidden="true">—</span>
       <div className="filter-field"><label htmlFor="budget">최대 금액</label><div className="input-unit"><input id="budget" type="number" min="1" max="1000000000" step="any" value={upper} onChange={e => onUpper(e.target.value)}/><span>만원</span></div></div>
     </div>
-    <p className="field-hint">두 손잡이를 움직이거나 금액을 직접 입력하세요. 슬라이더는 {monthly ? "월 5만원" : "1천만원"} 단위입니다.</p>
+    <p className="field-hint">금액은 만원 단위로 입력하세요. 예: 18000 입력 → 1억 8,000만원. 슬라이더는 {monthly ? "월 5만원" : "1천만원"} 단위입니다.</p>
   </div>;
 }

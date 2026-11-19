@@ -20,6 +20,42 @@ MODEL_ROOT = ROOT / 'models/recommender/v1'
 M2_PER_PYEONG = 400 / 121
 DEFAULT_AREA = 84.0
 PROPERTY_BASE_MONTH = '2026-09'      # used until the monthly refresh writes pipeline_meta.json next to the models
+PRICE_HISTORY = ROOT / 'data/processed/property_price_history/annual_by_dong.csv'
+MONTHLY_HISTORY = ROOT / 'data/processed/property_price_history/annual_monthly_by_dong.csv'
+
+
+@lru_cache(maxsize=1)
+def annual_price_history() -> dict:
+    """Read pre-aggregated observed prices; never scan the large raw files in an API request."""
+    if not PRICE_HISTORY.is_file():
+        return {}
+    frame = pd.read_csv(PRICE_HISTORY, encoding='utf-8-sig')
+    required = {'transaction', 'dong_code', 'year', 'mean_per_pyeong_manwon', 'transaction_count'}
+    if not required.issubset(frame.columns):
+        raise RecommenderV1Error('과거 가격 집계 파일의 열 구성이 올바르지 않습니다.')
+    result = {}
+    for (transaction, code), group in frame.groupby(['transaction', 'dong_code']):
+        result[(str(transaction), int(code))] = [
+            {'year': int(item.year), 'per_pyeong_manwon': float(item.mean_per_pyeong_manwon),
+             'transaction_count': int(item.transaction_count), 'kind': 'observed'}
+            for item in group.sort_values('year').itertuples(index=False)
+        ]
+    return result
+
+
+@lru_cache(maxsize=1)
+def annual_monthly_history() -> dict:
+    if not MONTHLY_HISTORY.is_file():
+        return {}
+    frame = pd.read_csv(MONTHLY_HISTORY, encoding='utf-8-sig')
+    required = {'dong_code', 'year', 'mean_monthly_rent_manwon', 'transaction_count'}
+    if not required.issubset(frame.columns):
+        raise RecommenderV1Error('과거 월세 집계 파일의 열 구성이 올바르지 않습니다.')
+    return {int(code): [
+        {'year': int(item.year), 'monthly_rent_manwon': float(item.mean_monthly_rent_manwon),
+         'transaction_count': int(item.transaction_count), 'kind': 'observed'}
+        for item in group.sort_values('year').itertuples(index=False)]
+        for code, group in frame.groupby('dong_code')}
 
 
 def property_base_month(folder: str) -> str:
@@ -57,9 +93,16 @@ def property_forecasts(horizon: int, target_year: int | None = None) -> dict:
             raise RecommenderV1Error(f'{folder} 모델이 없습니다.')
         frame = pd.read_csv(directory / 'neighborhood_forecasts.csv', encoding='utf-8-sig')
         column = f'{property_horizon}년 뒤 예측(만원/평)'
-        frame = frame[['행정동_코드', '자치구', '행정동', column]].rename(columns={
+        base_column = next((name for name in frame.columns if name.startswith('현재 평당')), None)
+        if base_column is None:
+            raise RecommenderV1Error(f'{folder} 현재 대표가격 열이 없습니다.')
+        series_columns = [base_column, *[f'{year}년 뒤 예측(만원/평)' for year in (1, 2, 3)]]
+        frame = frame[['행정동_코드', '자치구', '행정동', *series_columns]].rename(columns={
             '행정동_코드': 'dong_code', '자치구': 'district', '행정동': 'neighborhood',
-            column: f'{prefix}_per_pyeong'})
+            column: f'{prefix}_per_pyeong',
+            base_column: f'{prefix}_base_per_pyeong',
+            **{f'{year}년 뒤 예측(만원/평)': f'{prefix}_forecast_{year}y_per_pyeong'
+               for year in (1, 2, 3) if f'{year}년 뒤 예측(만원/평)' != column}})
         prices = pd.to_numeric(frame[f'{prefix}_per_pyeong'], errors='raise')
         if ((prices.notna()) & (~np.isfinite(prices) | (prices <= 0))).any():
             raise RecommenderV1Error('가격 예측에 유효하지 않은 금액이 있습니다.')
@@ -78,14 +121,30 @@ def property_forecasts(horizon: int, target_year: int | None = None) -> dict:
     if merged[['district', 'neighborhood']].duplicated().any():
         raise RecommenderV1Error('행정동 가격 식별자가 중복됩니다.')
     rows = []
+    history = annual_price_history()
+    monthly_history = annual_monthly_history()
     for item in merged.to_dict('records'):
         row = {'id': f"{item['district']}|{item['neighborhood']}",
                'dong_code': int(item['dong_code']), 'district': item['district'],
                'neighborhood': item['neighborhood'], 'default_area_m2': DEFAULT_AREA}
-        for prefix in ('apart_sale', 'apart_rent'):
+        for transaction, prefix in (('sale', 'apart_sale'), ('rent', 'apart_rent')):
             price = number(item[f'{prefix}_per_pyeong'])
             row[f'{prefix}_per_pyeong'] = price
             row[f'{prefix}_amount'] = price * DEFAULT_AREA / M2_PER_PYEONG if price else None
+            row[f'{prefix}_price_series'] = [
+                *[point for point in history.get((transaction, int(item['dong_code'])), [])
+                  if point['year'] < base_year],
+                *[
+                {'year': base_year + year, 'per_pyeong_manwon': number(item.get(
+                    f'{prefix}_base_per_pyeong' if year == 0 else
+                    f'{prefix}_per_pyeong' if year == property_horizon else
+                    f'{prefix}_forecast_{year}y_per_pyeong')),
+                 'kind': 'observed' if year == 0 else 'forecast'}
+                for year in range(property_horizon + 1)
+                ],
+            ]
+        row['monthly_rent_history'] = [point for point in monthly_history.get(int(item['dong_code']), [])
+                                       if point['year'] < base_year]
         rows.append(row)
     return {'neighborhoods': rows, 'property_models': models, 'excluded_ambiguous_dong_codes': excluded,
             'price_source': {'type': 'delivered_model_forecasts', 'base_year_month': base_month}}
@@ -196,6 +255,8 @@ def traffic_forecasts(horizon: int):
 
 
 def clear_caches():
+    annual_price_history.cache_clear()
+    annual_monthly_history.cache_clear()
     property_forecasts.cache_clear()
     wolse_buildings.cache_clear()
     monthly_quotes.cache_clear()

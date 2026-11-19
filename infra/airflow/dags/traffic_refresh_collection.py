@@ -13,7 +13,7 @@ from airflow.sdk import dag, task
 
 @dag(
     dag_id="traffic_refresh_collection",
-    schedule="0 3 2 * *",
+    schedule="0 23 L * *",  # 매월 말일 23:00 (Asia/Seoul)
     start_date=datetime(2026, 11, 1, tzinfo=ZoneInfo("Asia/Seoul")),
     catchup=False,
     max_active_runs=1,

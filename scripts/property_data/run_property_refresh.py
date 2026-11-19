@@ -92,6 +92,8 @@ def stage_process(today: date | None = None) -> dict:
     ends = raw.raw_end_months()
     base = raw.base_month(ends)
     report.update(raw_end_months=ends, base_month=base)
+    from scripts.property_data.build_price_history import build as build_price_history
+    report["price_history"] = build_price_history()
     report["models"] = refresh_models(ROOT, data_end=month_end_date(base), base_month=f"{base[:4]}-{base[4:]}")
     return report
 

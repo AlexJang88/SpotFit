@@ -2,7 +2,7 @@
 
 ## 구성
 
-`crime_refresh_pipeline` DAG: 매월 6일 05:00 Asia/Seoul, catchup 없음, 동시 실행 1개.
+`crime_refresh_pipeline` DAG: 매월 말일 23:00 Asia/Seoul, catchup 없음, 동시 실행 1개.
 
 공개 다운로드 → 원본 스냅샷/출처·SHA256 기록 → 별도 작업공간 전처리 → 입력 가용성 검증 →
 2·3년 모델 과거 시점 재학습 검증 → 최종 재학습/점수 산출 → 타 모델 연도 검증 → 원자적 서비스 전환.

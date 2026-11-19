@@ -17,9 +17,25 @@ import pandas as pd
 from app.services.child_crime_exposure import required_paths
 from app.services.recommender_v1 import RecommenderV1Error, RAW_ROOT
 from app.services.final_model_artifacts import property_forecasts, monthly_quotes, traffic_forecasts, clear_caches, DEFAULT_AREA
+from app.services.historical_safety_reference import reference_series_by_district
 
 WEIGHTS = {"crime": 0.5, "traffic": 0.5}
 _PROPERTY_LOCK = Lock()
+
+
+def score_weights(crime_weight: float | None = None, traffic_weight: float | None = None) -> dict:
+    """Resolve request-local weights; never change shared model weights."""
+    if crime_weight is None and traffic_weight is None:
+        return dict(WEIGHTS)
+    if crime_weight is None:
+        crime_weight = 1 - traffic_weight
+    if traffic_weight is None:
+        traffic_weight = 1 - crime_weight
+    if not all(math.isfinite(v) and 0 <= v <= 1 for v in (crime_weight, traffic_weight)):
+        raise ValueError("점수 반영 비율은 0~100% 사이여야 합니다.")
+    if not math.isclose(crime_weight + traffic_weight, 1, rel_tol=0, abs_tol=1e-9):
+        raise ValueError("범죄·교통 반영 비율의 합계는 100%여야 합니다.")
+    return {"crime": crime_weight, "traffic": 1 - crime_weight}
 
 
 def forecast_payload(horizon: int) -> dict:
@@ -121,7 +137,9 @@ def popular_areas(transaction: str) -> dict:
                          "transaction_count": int(r.size)} for r in grouped.itertuples()]}
 
 
-def district_scores(horizon: int) -> dict:
+def district_scores(horizon: int, crime_weight: float | None = None,
+                    traffic_weight: float | None = None) -> dict:
+    weights = score_weights(crime_weight, traffic_weight)
     crime = forecast_payload(horizon)
     traffic, traffic_meta = traffic_forecasts(horizon)
     if len(traffic) != 25 or traffic.district.nunique() != 25:
@@ -142,7 +160,7 @@ def district_scores(horizon: int) -> dict:
             "district": c["district"],
             "crime_score": float(c["predicted_score"]),
             "traffic_score": float(t.points),
-            "score": round(WEIGHTS["crime"] * c["predicted_score"] + WEIGHTS["traffic"] * t.points, 4),
+            "score": round(weights["crime"] * c["predicted_score"] + weights["traffic"] * t.points, 4),
             "crime_prediction_year": crime["prediction_year"],
             "traffic_prediction_year": int(traffic_meta["prediction_year"]),
             "predicted_exposure_y": c["predicted_exposure_y"],
@@ -157,8 +175,8 @@ def district_scores(horizon: int) -> dict:
         "crime_base_year": crime["data_year"],
         "crime_prediction_year": crime["prediction_year"],
         "traffic_prediction_year": int(traffic_meta["prediction_year"]),
-        "weights": WEIGHTS,
-        "score_method": "범죄·교통 Feature 가중합 안전점수를 50%씩 합산",
+        "weights": weights,
+        "score_method": f"범죄 안전점수 {weights['crime'] * 100:g}% + 교통 안전점수 {weights['traffic'] * 100:g}%",
         "traffic_score_method": traffic_meta["score_method"],
         "traffic_score_formula": traffic_meta["score_formula"],
         "crime_score_method": crime["score_method"],
@@ -168,14 +186,27 @@ def district_scores(horizon: int) -> dict:
 
 
 def service_catalog(horizon: int = 2, transaction: str = "sale", deposit_manwon: float | None = None,
-                    area_m2: float | None = None) -> dict:
-    scores = district_scores(horizon)
+                    area_m2: float | None = None, crime_weight: float | None = None,
+                    traffic_weight: float | None = None) -> dict:
+    scores = district_scores(horizon, crime_weight, traffic_weight)
     if scores["crime_prediction_year"] != scores["traffic_prediction_year"]:
         raise RecommenderV1Error(
             "범죄·교통 모델의 예측연도가 달라 통합 추천을 제공할 수 없습니다."
         )
     target_year = scores["crime_prediction_year"]
     properties = property_catalog(horizon, target_year=target_year)
+    other_horizon = 3 if horizon == 2 else 2
+    other_scores = district_scores(other_horizon, crime_weight, traffic_weight)
+    other_by_district = {row['district']: row for row in other_scores['districts']}
+    historical = reference_series_by_district(scores['weights']['crime'], scores['weights']['traffic'])
+    for row in scores['districts']:
+        row['historical_reference_series'] = historical.get(row['district'], [])
+        counterpart = other_by_district.get(row['district'])
+        row['score_series'] = sorted([
+            {'year': row['crime_prediction_year'], 'score': row['score'], 'kind': 'forecast'},
+            *([{'year': counterpart['crime_prediction_year'], 'score': counterpart['score'],
+                'kind': 'forecast'}] if counterpart else []),
+        ], key=lambda point: point['year'])
     for property_type in ("sale", "rent"):
         model = properties.get("property_models", {}).get(property_type, {})
         if model.get("prediction_year") != target_year:
@@ -222,8 +253,9 @@ def priced_neighborhood(item: dict, transaction: str, area_m2: float | None) -> 
 
 def recommend(budget_manwon: float, transaction: str = "sale", horizon: int = 2,
               area_m2: float | None = None, limit: int = 5, min_budget_manwon: float = 0,
-              deposit_manwon: float | None = None) -> dict:
-    catalog = service_catalog(horizon, transaction, deposit_manwon, area_m2)
+              deposit_manwon: float | None = None, crime_weight: float | None = None,
+              traffic_weight: float | None = None) -> dict:
+    catalog = service_catalog(horizon, transaction, deposit_manwon, area_m2, crime_weight, traffic_weight)
     by_district = {row["district"]: row for row in catalog["districts"]}
     candidates = []
     excluded = 0
@@ -249,7 +281,7 @@ def recommend(budget_manwon: float, transaction: str = "sale", horizon: int = 2,
         "excluded_missing_count": excluded,
         "eligible_district_count": len(cheapest_by_district),
         "recommendations": [{**row, "recommendation_rank": i + 1} for i, row in enumerate(selected)],
-        "warnings": catalog["warnings"], "weights": WEIGHTS,
+        "warnings": catalog["warnings"], "weights": catalog["weights"],
         "crime_prediction_year": catalog["crime_prediction_year"],
         "traffic_prediction_year": catalog["traffic_prediction_year"],
         "sort_rule": "예산 내 구별 최저가 행정동 1곳 → 동네점수 → 범죄안전 점수 → 자치구명",
@@ -258,8 +290,9 @@ def recommend(budget_manwon: float, transaction: str = "sale", horizon: int = 2,
 
 def neighborhood_detail(district: str, neighborhood: str, horizon: int,
                         transaction: str = "sale", area_m2: float | None = None,
-                        deposit_manwon: float | None = None) -> dict:
-    catalog = service_catalog(horizon, transaction, deposit_manwon, area_m2)
+                        deposit_manwon: float | None = None, crime_weight: float | None = None,
+                        traffic_weight: float | None = None) -> dict:
+    catalog = service_catalog(horizon, transaction, deposit_manwon, area_m2, crime_weight, traffic_weight)
     found = [row for row in catalog["neighborhoods"]
              if row["district"] == district.strip()
              and normalize_neighborhood(row["neighborhood"]) == normalize_neighborhood(neighborhood)]
@@ -271,4 +304,5 @@ def neighborhood_detail(district: str, neighborhood: str, horizon: int,
     if not found:
         raise LookupError("이 행정동의 가격 데이터가 없습니다. 지도에서 소속 자치구 점수는 확인할 수 있습니다.")
     return {**priced_neighborhood(found[0], transaction, area_m2), "district_score": score,
-            "property_models": catalog["property_models"], "warnings": catalog["warnings"]}
+            "property_models": catalog["property_models"], "warnings": catalog["warnings"],
+            "weights": catalog["weights"]}

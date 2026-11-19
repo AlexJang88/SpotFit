@@ -22,7 +22,7 @@ def call(method, payload=None):
         return json.load(response)
 
 
-@dag(dag_id='crime_refresh_pipeline', schedule='0 5 6 * *',
+@dag(dag_id='crime_refresh_pipeline', schedule='0 23 L * *',
      start_date=datetime(2026, 11, 1, tzinfo=ZoneInfo('Asia/Seoul')), catchup=False,
      max_active_runs=1, tags=['crime', 'collection', 'training'])
 def crime_refresh_pipeline():

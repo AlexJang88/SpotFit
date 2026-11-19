@@ -196,6 +196,60 @@ def test_traffic_feature_score_is_not_rebinned(client):
     assert scores['구24'] == 76
 
 
+@pytest.mark.parametrize('crime_weight', [0, .3, .5, .7, 1])
+def test_user_weights_update_catalog_detail_and_recommendations(client, monkeypatch, crime_weight):
+    # Reverse traffic order so changing weights must change ranks and recommendations.
+    names = [f'구{i:02}' for i in range(25)]
+    monkeypatch.setattr(service, 'traffic_forecasts', lambda horizon: (
+        pd.DataFrame({'district': names, 'traffic_score': [20 + i * 80 / 24 for i in range(25)]}),
+        {'prediction_year': 2025 + horizon, 'score_method': 'Feature 가중합', 'score_formula': []}))
+    params = {'crime_weight': crime_weight, 'traffic_weight': 1 - crime_weight}
+    response = client.get('/api/neighborhoods/catalog', params=params)
+    assert response.status_code == 200
+    data = response.json()
+    assert data['weights'] == {'crime': crime_weight, 'traffic': 1 - crime_weight}
+    assert [r['grade'] for r in data['districts']] == list('AAAAABBBBBCCCCCDDDDDEEEEE')
+    for row in data['districts']:
+        assert row['score'] == round(crime_weight * row['crime_score'] + (1 - crime_weight) * row['traffic_score'], 4)
+    result = client.get('/api/neighborhoods/recommendations', params={**params, 'budget_manwon': 100000}).json()
+    assert result['weights'] == data['weights']
+    assert [r['district_score'] for r in result['recommendations']] == data['districts'][:5]
+    top = data['districts'][0]
+    detail = client.get('/api/neighborhoods/detail', params={**params, 'district': top['district'], 'neighborhood': '중앙1동'}).json()
+    assert detail['district_score'] == top
+    assert detail['weights'] == data['weights']
+    if crime_weight == 0:
+        assert top['district'] == '구24'
+    if crime_weight == 1:
+        assert top['district'] == '구00'
+    # One user's settings never change subsequent users' defaults.
+    default = client.get('/api/neighborhoods/catalog').json()
+    assert default['weights'] == {'crime': .5, 'traffic': .5}
+
+
+@pytest.mark.parametrize('endpoint,required', [
+    ('catalog', {}), ('recommendations', {'budget_manwon': 50000}),
+    ('detail', {'district': '구00', 'neighborhood': '중앙1동'}),
+])
+@pytest.mark.parametrize('weights', [
+    {'crime_weight': -.1}, {'traffic_weight': 1.1}, {'crime_weight': 'nan'},
+    {'crime_weight': 'inf'}, {'traffic_weight': 'nan'}, {'traffic_weight': '-inf'},
+    {'crime_weight': .7, 'traffic_weight': .7}, {'crime_weight': 0, 'traffic_weight': 0},
+])
+def test_invalid_score_weights_return_422(client, endpoint, required, weights):
+    response = client.get(f'/api/neighborhoods/{endpoint}', params={**required, **weights})
+    assert response.status_code == 422
+
+
+@pytest.mark.parametrize('params,expected', [
+    ({'crime_weight': .7}, {'crime': .7, 'traffic': .3}),
+    ({'traffic_weight': 1}, {'crime': 0, 'traffic': 1}),
+])
+def test_one_weight_infers_complement(client, params, expected):
+    data = client.get('/api/neighborhoods/catalog', params=params).json()
+    assert data['weights'] == pytest.approx(expected)
+
+
 @pytest.mark.parametrize('params', [
     {'transaction': 'wolse'},
     {'transaction': 'wolse', 'area_m2': 84},

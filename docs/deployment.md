@@ -23,7 +23,7 @@ TOPIS 월별 교통량 수집에는 현재 별도 API 키가 필요하지 않습
 
 ## 교통 모델 신규 연도 데이터 수집 (구축 1단계)
 
-Airflow의 `traffic_refresh_collection` DAG는 매월 2일 03:00(한국시간)에 TOPIS 월별
+Airflow의 `traffic_refresh_collection` DAG는 매월 말일 23:00(한국시간)에 TOPIS 월별
 교통량 원본을 `data/raw/traffic_model_refresh/topis/<연도>/`로 수집합니다. 연도가
 바뀌면 이전 연도의 빠진 월도 다시 확인합니다. 이미 저장된 원본과 다른 내용이 공개되면
 덮어쓰지 않고 실패하여 운영자가 개정 여부를 확인하게 합니다. `data/interim`은 사용하지
@@ -46,7 +46,7 @@ docker compose --env-file .env.server -f compose.yaml -f compose.server.yaml exe
 
 ## 부동산 모델 월별 자동 갱신 (매매 V64 · 전세 V33 · 월세 전환율)
 
-Airflow의 `property_refresh_pipeline` DAG가 매월 5일 04:00(한국시간)에 아래 순서로 실행됩니다.
+Airflow의 `property_refresh_pipeline` DAG가 매월 말일 23:00(한국시간)에 아래 순서로 실행됩니다.
 
 1. **수집** (Airflow): 국토교통부 아파트 매매·전월세 실거래가 API와 한국은행 ECOS 주택담보대출 금리를 `data/raw/부동산/refresh/`로 내려받습니다. 신고 기한(30일)을 고려해 오늘 기준 두 달 전까지를 확정 월로 보고, 확정 월 중 최근 3개월은 매번 다시 받아 늦은 신고·취소를 반영합니다.
 2. **전처리·재학습·교체** (백엔드 `POST /api/models/property/refresh`): 받은 달을 기존 원본 CSV(`아파트_매매_2010_2026.csv` 등)에 병합 → 입력 파일 3개(`data/processed/부동산/`) 재생성 → 모델 3개 재학습 → 검증 → `models/recommender/v1/apart_*_final` 교체 → 서비스 캐시 갱신.
@@ -72,6 +72,8 @@ Airflow의 `property_refresh_pipeline` DAG가 매월 5일 04:00(한국시간)에
 1. `.env.server.example`을 `.env.server`로 복사하고 실제 서버 주소와 비밀키를 설정합니다. `.env.server`는 Git에 올리지 않습니다.
 2. `data/raw/`, `data/processed/`의 필요한 입력과 `models/recommender/v1/`의 최종 산출물을 서버에 전달합니다. 이 폴더들의 실제 파일은 Git에서 제외됩니다.
 3. 서버에 모델 파일이 없다면 시작 시 백그라운드에서 복구를 시도합니다. 주거 모델은 주거 전처리 입력, 교통 v94는 `data/processed/교통사고_94차_최종모델/교통사고_94차_데이터.xlsx`, 아동 범죄 모델은 해당 raw/processed 입력이 필요합니다.
+
+과거 안전 참고지표 그래프를 표시하려면 `data/processed/child_crime_exposure/borough_panel/panel.csv`와 `data/raw/94차 모델 데이터/교통사고/자치구별_어린이교통사고_2017_2021.xlsx`, `자치구별_어린이교통사고_2022_2025.xlsx`도 서버에 있어야 합니다. 백엔드 시작 시 소스보다 오래되었거나 없는 `data/processed/neighborhood_reference/annual_safety_reference.csv`를 자동 생성합니다. 수동 생성은 `python scripts/build_historical_safety_reference.py`입니다. 이 그래프는 매년 서울 25개 자치구 내 범죄 노출률·어린이 교통사고율의 5분위 상대순위 참고값으로, 2027·2028년 예측 동네점수와 동일한 산식이 아닙니다.
 
 ```bash
 docker compose --env-file .env.server -f compose.yaml -f compose.server.yaml config --quiet

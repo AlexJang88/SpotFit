@@ -36,7 +36,7 @@ def _call(path: str, method: str = "GET", admin: bool = False) -> dict:
 
 @dag(
     dag_id="property_refresh_pipeline",
-    schedule="0 4 5 * *",                       # 매월 5일 04:00 (한국시간): 신고 기한이 지난 두 달 전 거래까지 확정
+    schedule="0 23 L * *",  # 매월 말일 23:00 (Asia/Seoul)
     start_date=datetime(2026, 12, 1, tzinfo=ZoneInfo("Asia/Seoul")),
     catchup=False,
     max_active_runs=1,

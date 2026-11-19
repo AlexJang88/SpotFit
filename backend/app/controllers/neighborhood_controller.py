@@ -1,7 +1,7 @@
 import logging
 from typing import Literal
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.services import neighborhood_recommendations as service
 from app.services.child_crime_exposure import ChildCrimeExposureError
@@ -9,6 +9,17 @@ from app.services.recommender_v1 import RecommenderV1Error
 
 router = APIRouter(prefix="/neighborhoods", tags=["neighborhood_recommendations"])
 logger = logging.getLogger(__name__)
+
+
+def requested_weights(
+    crime_weight: float | None = Query(default=None, ge=0, le=1, allow_inf_nan=False),
+    traffic_weight: float | None = Query(default=None, ge=0, le=1, allow_inf_nan=False),
+):
+    try:
+        weights = service.score_weights(crime_weight, traffic_weight)
+    except ValueError as error:
+        raise HTTPException(422, str(error)) from error
+    return {"crime_weight": weights["crime"], "traffic_weight": weights["traffic"]}
 
 
 def call_service(func, **kwargs):
@@ -29,10 +40,11 @@ def call_service(func, **kwargs):
 def catalog(horizon: int = Query(default=2, ge=2, le=3),
             transaction: Literal["sale", "rent", "wolse"] = "sale",
             deposit_manwon: float | None = Query(default=None, ge=0, le=1_000_000_000, allow_inf_nan=False),
-            area_m2: float | None = Query(default=None, ge=1, le=1000, allow_inf_nan=False)):
+            area_m2: float | None = Query(default=None, ge=1, le=1000, allow_inf_nan=False),
+            weights: dict = Depends(requested_weights)):
     validate_monthly(transaction, deposit_manwon, area_m2)
     return call_service(service.service_catalog, horizon=horizon, transaction=transaction,
-                        deposit_manwon=deposit_manwon, area_m2=area_m2)
+                        deposit_manwon=deposit_manwon, area_m2=area_m2, **weights)
 
 
 def validate_monthly(transaction, deposit, area):
@@ -49,13 +61,14 @@ def recommendations(
     limit: int = Query(default=5, ge=1, le=5),
     min_budget_manwon: float = Query(default=0, ge=0, le=1_000_000_000, allow_inf_nan=False),
     deposit_manwon: float | None = Query(default=None, ge=0, le=1_000_000_000, allow_inf_nan=False),
+    weights: dict = Depends(requested_weights),
 ):
     validate_monthly(transaction, deposit_manwon, area_m2)
     if min_budget_manwon > budget_manwon:
         raise HTTPException(422, "예산 하한은 상한보다 클 수 없습니다.")
     return call_service(service.recommend, budget_manwon=budget_manwon, transaction=transaction,
                         horizon=horizon, area_m2=area_m2, limit=limit, min_budget_manwon=min_budget_manwon,
-                        deposit_manwon=deposit_manwon)
+                        deposit_manwon=deposit_manwon, **weights)
 
 
 @router.get("/area-presets")
@@ -71,7 +84,9 @@ def detail(
     transaction: Literal["sale", "rent", "wolse"] = "sale",
     area_m2: float | None = Query(default=None, gt=0, le=1000, allow_inf_nan=False),
     deposit_manwon: float | None = Query(default=None, ge=0, le=1_000_000_000, allow_inf_nan=False),
+    weights: dict = Depends(requested_weights),
 ):
     validate_monthly(transaction, deposit_manwon, area_m2)
     return call_service(service.neighborhood_detail, district=district, neighborhood=neighborhood,
-                        horizon=horizon, transaction=transaction, area_m2=area_m2, deposit_manwon=deposit_manwon)
+                        horizon=horizon, transaction=transaction, area_m2=area_m2, deposit_manwon=deposit_manwon,
+                        **weights)
