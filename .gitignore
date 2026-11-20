@@ -1,3 +1,5 @@
+# Local EDA virtual environment (dependencies are declared in data_analyze/).
+.venv-analysis/
 # macOS
 .DS_Store
 ._*
@@ -72,10 +74,16 @@ yarn-error.log*
 .cache/
 tmp/
 temp/
+.tmp_mlflow_traffic/
+.tmp_pdf_extract/
+/tmpit*/
 .ipynb_checkpoints/
 mlruns/
 mlartifacts/
 wandb/
+*.ppt
+*.pptx
+*.docx
 
 # Local datasets, model artifacts and persistent infrastructure data
 /data/**

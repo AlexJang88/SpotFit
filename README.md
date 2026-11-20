@@ -1,234 +1,436 @@
-﻿# spot_fit
+# SpotFit 배포 가이드
 
-React + TypeScript, Python FastAPI 기반의 ML/DL 서비스 개발용 초기 구조입니다.
-개발 환경은 Docker Compose로 실행하며, Linux 배포를 위한 소스와 인프라 설정을 분리합니다.
-현재 구현 범위는 기본 화면, API 생존 확인, 개발 컨테이너 설정, MinIO 모델 업로드·다운로드입니다. DB 모델·연결,
-추천·예측 로직, 데이터 파이프라인, 인증은 각 폴더에서 구현할 예정입니다.
+SpotFit은 서울 지역의 아파트 가격, 아동범죄노출, 어린이 교통안전을 함께 비교하고 예산에 맞는 동네를 추천하는 서비스입니다.
 
-## 디렉토리 구조
+이 문서는 새로운 Ubuntu 서버에 SpotFit을 배포하는 순서를 설명합니다. 서버와 네트워크가 정상이고, 모델·데이터 파일을 전달받았다고 가정합니다. 아래 명령은 별도 설명이 없으면 프로젝트 루트인 `/home/spotfit/SpotFit`에서 실행합니다.
+
+## 1. 배포 후 실행되는 서비스
+
+| 서비스 | 역할 | 기본 주소 |
+| --- | --- | --- |
+| SpotFit | 프런트엔드와 API | `http://서버IP:8080` |
+| Airflow | 데이터 수집·갱신 파이프라인 | `http://서버IP:8081` |
+| MLflow | 모델 실험·버전 기록 | `http://서버IP:5000` |
+| MinIO | 데이터·모델 객체 저장소 | API `9000`, 콘솔 `9001` |
+| PostgreSQL/PostGIS | 서비스·파이프라인 DB | `5432` |
+
+SpotFit 화면은 Nginx, React/Vite, FastAPI로 구성되며 모든 구성요소는 Docker Compose로 실행됩니다.
+
+## 2. 서버 준비
+
+권장 환경은 Ubuntu와 Docker Compose v2입니다.
+
+### 2.1 기본 프로그램 설치
+
+```bash
+sudo apt update
+sudo apt install -y git curl ca-certificates openssl nano python3 python3-venv python3-pip
+```
+
+### 2.2 Docker 설치
+
+Docker와 Compose가 이미 설치되어 있다면 이 단계는 건너뜁니다.
+
+```bash
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+. /etc/os-release
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu ${UBUNTU_CODENAME:-$VERSION_CODENAME} stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+sudo apt update
+sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+sudo systemctl enable --now docker
+sudo usermod -aG docker spotfit
+```
+
+`spotfit`이 실제 배포 계정이 아니라면 마지막 명령의 사용자명을 변경합니다. 명령 실행 후 SSH에서 로그아웃하고 다시 접속합니다.
+
+```bash
+docker --version
+docker compose version
+```
+
+Docker로 배포하므로 서버에 Node.js나 머신러닝 라이브러리를 별도로 설치할 필요는 없습니다. 이미지 빌드 과정에서 필요한 라이브러리가 자동 설치됩니다.
+
+## 3. 프로젝트 받기
+
+```bash
+cd /home/spotfit
+git clone --branch develop https://github.com/AlexJang88/SpotFit.git
+cd /home/spotfit/SpotFit
+git branch --show-current
+```
+
+배포 대상 브랜치가 변경되었다면 `develop` 대신 지정된 브랜치를 사용합니다.
+
+## 4. 서버 환경변수 설정
+
+### 4.1 환경파일 생성
+
+```bash
+cd /home/spotfit/SpotFit
+cp .env.server.example .env.server
+chmod 600 .env.server
+```
+
+### 4.2 비밀번호 생성
+
+다음 명령을 네 번 실행해 PostgreSQL, MinIO, Airflow, 모델관리 API에 서로 다른 값을 사용합니다.
+
+```bash
+openssl rand -hex 24
+```
+
+Airflow Fernet 키는 다음 명령으로 생성합니다.
+
+```bash
+python3 -c "import base64,secrets; print(base64.urlsafe_b64encode(secrets.token_bytes(32)).decode())"
+```
+
+### 4.3 `.env.server` 작성
+
+```bash
+nano .env.server
+```
+
+아래 내용을 기준으로 작성합니다. `192.168.0.3`은 실제 서버 IP로 바꾸고, `CHANGE_ME_...` 값은 앞에서 생성한 값으로 바꿉니다.
+
+```dotenv
+# SpotFit
+APP_BIND_ADDRESS=192.168.0.3
+APP_PORT=8080
+
+# PostgreSQL
+POSTGRES_DB=spot_fit
+POSTGRES_USER=spot_fit
+POSTGRES_PASSWORD=CHANGE_ME_POSTGRES_PASSWORD
+POSTGRES_BIND_ADDRESS=127.0.0.1
+POSTGRES_PORT=5432
+
+# MinIO
+MINIO_ROOT_USER=spot_fit_admin
+MINIO_ROOT_PASSWORD=CHANGE_ME_MINIO_PASSWORD
+MINIO_API_BIND_ADDRESS=127.0.0.1
+MINIO_API_PORT=9000
+MINIO_CONSOLE_PORT=9001
+
+# S3 / 모델 저장소
+S3_ENDPOINT_URL=http://minio:9000
+S3_MODEL_BUCKET=spot-fit-models
+S3_REGION=us-east-1
+S3_ACCESS_KEY_ID=
+S3_SECRET_ACCESS_KEY=
+
+# MLflow
+MLFLOW_BIND_ADDRESS=127.0.0.1
+MLFLOW_PORT=5000
+MLFLOW_ARTIFACT_BUCKET=spot-fit-mlflow
+
+# Airflow
+AIRFLOW_BIND_ADDRESS=127.0.0.1
+AIRFLOW_PORT=8081
+AIRFLOW_UID=1000
+AIRFLOW_ADMIN_USER=spotfit
+AIRFLOW_FERNET_KEY=CHANGE_ME_AIRFLOW_FERNET_KEY
+AIRFLOW_SECRET_KEY=CHANGE_ME_AIRFLOW_SECRET_KEY
+
+# 모델 생성·갱신
+MODEL_AUTO_BOOTSTRAP=1
+MODEL_TRAINING_API_KEY=CHANGE_ME_MODEL_TRAINING_API_KEY
+
+# 애플리케이션 로그
+APP_LOG_LEVEL=INFO
+APP_LOG_RETENTION_DAYS=30
+APP_TIMEZONE=Asia/Seoul
+WATCH_USE_POLLING=false
+
+# 데이터 수집 API
+DATA_GO_KR_API_KEY=발급받은_공공데이터포털_키
+ECOS_API_KEY=발급받은_ECOS_키
+```
+
+`AIRFLOW_UID`는 다음 명령의 출력값으로 설정합니다.
+
+```bash
+id -u
+```
+
+`S3_ACCESS_KEY_ID`와 `S3_SECRET_ACCESS_KEY`를 비워두면 서버 Compose가 MinIO 관리자 계정을 사용합니다. 별도의 MinIO 서비스 계정을 사용한다면 두 항목에 해당 접근키를 입력합니다.
+
+Airflow, MLflow, MinIO 콘솔을 다른 PC에서 직접 접속해야 한다면 각 `*_BIND_ADDRESS`도 실제 서버 IP로 바꿉니다. SSH 터널로 관리 화면에 접속할 경우에는 `127.0.0.1`을 유지합니다.
+
+### 4.4 VWorld 지도 키 설정
+
+```bash
+nano frontend/.env.local
+```
+
+```dotenv
+VITE_VWORLD_API_KEY=발급받은_VWorld_웹지도_키
+```
+
+VWorld에서 실제 서비스 주소 또는 도메인을 사용 주소로 등록합니다.
+
+## 5. 모델과 데이터 배치
+
+모델과 데이터는 Git에 포함되지 않으므로 담당자에게 전달받아 아래 경로에 복사합니다.
 
 ```text
-spot_fit/
-├── frontend/                   # React + TypeScript (Vite)
-│   ├── public/                 # 그대로 제공할 정적 파일
-│   ├── src/
-│   │   ├── models/             # Model: 도메인 타입, 클라이언트 상태
-│   │   ├── controllers/        # Controller: 화면 동작·상태를 연결하는 hooks
-│   │   ├── views/              # View: React 화면
-│   │   │   ├── pages/
-│   │   │   ├── components/
-│   │   │   └── layouts/
-│   │   ├── services/           # HTTP API 호출
-│   │   ├── routes/             # 화면 라우팅
-│   │   ├── styles/
-│   │   └── assets/
-│   └── tests/
-├── backend/                    # Python FastAPI
-│   ├── app/
-│   │   ├── models/             # Model: 도메인·ORM 엔티티
-│   │   ├── controllers/        # Controller: FastAPI 라우터
-│   │   ├── views/              # View: API 응답 모델·표현
-│   │   ├── schemas/            # 요청 검증용 모델
-│   │   ├── services/           # 비즈니스 로직·모델 추론
-│   │   ├── repositories/       # DB·객체 저장소 접근
-│   │   ├── core/               # 환경설정·보안·로깅
-│   │   ├── db/                 # DB 엔진·세션
-│   │   └── main.py
-│   ├── migrations/versions/    # DB 마이그레이션 (도구 설정은 추후 추가)
-│   └── tests/{unit,integration}/
-├── ml/
-│   ├── collectors/            # 공공데이터·Open API·허용된 크롤링
-│   ├── etl/                   # Pandas 기반 정제·변환
-│   ├── validation/            # 데이터 품질 검증
-│   ├── features/              # 피처 엔지니어링
-│   ├── training/              # Scikit-learn·XGBoost·선택적 PyTorch
-│   ├── evaluation/            # 평가 지표·모델 비교
-│   ├── pipelines/             # 수집 → 정제 → 학습 실행 흐름
-│   ├── notebooks/             # EDA 실험
-│   └── tests/
-├── infra/
-│   ├── nginx/                 # 개발 프록시 설정·인증서 보관 위치
-│   ├── postgres/init/         # 새 DB 볼륨 최초 시작 시 실행할 SQL
-│   ├── minio/                 # 공식 소스로 MinIO 이미지 빌드
-│   ├── airflow/dags/          # 선택적 워크플로 도입 위치
-│   └── mlflow/                # 선택적 모델 추적 설정 위치
-├── data/{raw,interim,processed}/ # 로컬 데이터 (Git 제외)
-├── artifacts/{models,reports}/  # 학습 모델·평가 결과 (Git 제외)
-├── model_registry/             # 모델 버전·저장 위치·해시 JSON (Git 포함)
-├── scripts/                   # 공통 작업 스크립트
-├── docs/architecture/         # 아키텍처 문서
-├── .github/workflows/         # 추후 GitHub Actions 추가
-├── compose.yaml               # 개발 환경
-├── .env.example               # 공유 가능한 환경변수 예시
-├── .gitignore
-├── .gitattributes             # OS 간 줄바꿈 통일
-└── .editorconfig              # UTF-8·들여쓰기 통일
+/home/spotfit/SpotFit/
+├── models/recommender/v1/
+├── data/raw/
+├── data/processed/
+├── data/interim/
+├── artifacts/
+└── model_registry/
 ```
 
-React는 전통적인 서버 MVC 프레임워크가 아니므로 역할에 맞춘 MVC 형태로 구성합니다.
-화면은 `frontend/src/views`, API의 JSON 표현은 `backend/app/views`에서 담당합니다.
-컨트롤러는 요청과 응답을 연결하고 실제 처리 로직은 서비스에 둡니다.
-학습 작업은 웹 요청 처리와 분리하여 `ml`에서 실행합니다. 기본 Compose에는 Airflow,
-MLflow, Scikit-learn, XGBoost, Pandas, NumPy, PyTorch, Transformers가 포함됩니다.
+최소한 서비스 최종 모델 폴더인 `models/recommender/v1`은 폴더 구조를 유지한 상태로 전체 복사합니다.
 
-## 공유 Ubuntu 서버를 사용하는 개발 환경
-
-일상적인 개발은 개발 PC에서 프런트엔드·백엔드·Nginx만 실행하고 Ubuntu 서버의 PostgreSQL, MinIO, Airflow, MLflow에 연결합니다. 개발 PC에 이 인프라 서비스를 별도로 설치하거나 실행할 필요가 없습니다. Docker Engine/Desktop와 Compose v2 이상, 같은 내부망의 Ubuntu 서버가 필요합니다.
-
-```powershell
-Copy-Item .env.dev.example .env.dev
+```text
+models/recommender/v1/
+├── apart_sale_final/
+├── apart_jeonse_final/
+├── apart_wolse_final/
+├── traffic_accident_v94/
+└── child_crime_exposure/
 ```
 
-macOS/Linux에서는 `cp .env.dev.example .env.dev`를 실행합니다. `.env.dev`에서 Ubuntu IP와 서버 PostgreSQL 암호, 개발 전용 MinIO 계정을 설정한 다음 실행합니다.
+아동범죄노출 모델에 `current_release.json`과 `releases/`가 있다면 모두 함께 복사합니다. 모델 파일뿐 아니라 같은 폴더의 메타데이터, 예측 CSV, Feature 점수 파일도 필요합니다.
 
-```sh
-docker compose --env-file .env.dev -f compose.dev.yaml config --quiet
-docker compose --env-file .env.dev -f compose.dev.yaml up --build -d
+상세보기의 과거 가격·안전 그래프에는 다음 결과 파일이 사용됩니다.
+
+```text
+data/processed/property_price_history/annual_by_dong.csv
+data/processed/property_price_history/annual_monthly_by_dong.csv
+data/processed/neighborhood_reference/annual_safety_reference.csv
 ```
 
-개발 화면은 `http://localhost:8080`, API 문서는 `http://localhost:8080/api/docs`입니다. Ubuntu의 Airflow·MLflow·MinIO는 각각 서버의 `8081`, `5000`, `9000` 포트로 사용합니다. 상세한 설정과 명령은 [개발 워크플로우](docs/development-workflow.md)를 참고하세요. 현재 백엔드에는 DB 조회 기능이 아직 구현되어 있지 않아 DB 접속 환경만 준비되어 있습니다.
+결과 파일을 서버 시작 시 생성하려면 다음 입력 파일을 함께 복사합니다.
 
-## 로컬 전체 스택 개발 환경 (선택)
-
-공유 서버를 사용하지 않고 PC에서 모든 인프라를 독립 실행하려면 기본 `compose.yaml`을 사용할 수 있습니다. Windows는 Docker Desktop의 Linux 컨테이너 모드를 사용합니다. 호스트에 Node.js와 Python을 설치할 필요는 없습니다. 먼저 `.env.example`을 `.env`로 복사하고 비밀번호와 키를 채웁니다. 이 로컬 모드의 PostgreSQL·MinIO 데이터는 각 PC에 따로 저장됩니다.
-
-```powershell
-Copy-Item .env.example .env
+```text
+data/raw/부동산/아파트_매매_2010_2026.csv
+data/raw/부동산/아파트_전월세_2010_2026.csv
+data/processed/child_crime_exposure/borough_panel/panel.csv
+data/raw/94차 모델 데이터/교통사고/자치구별_어린이교통사고_*.xlsx
 ```
 
-macOS/Linux에서는 `cp .env.example .env`를 실행합니다.
+누락 모델 자동 생성에는 각 모델의 원본·전처리 입력이 필요합니다. 교통사고 모델은 다음 파일도 사용합니다.
 
-MinIO 커뮤니티 버전은 [공식 안내](https://github.com/minio/minio#source-only-distribution)에 따라
-`infra/minio/Dockerfile`에서 고정된 공식 소스 태그를 빌드합니다. 최초 빌드는 Go 의존성 다운로드와
-컴파일로 몇 분 이상 걸릴 수 있으며, 이후에는 Docker 빌드 캐시를 재사용합니다.
-호스트에 Go를 설치할 필요는 없습니다. Windows와 Intel Mac에서는 amd64, Apple Silicon Mac에서는
-arm64용으로 각 환경에서 빌드합니다.
+```text
+data/processed/교통사고_94차_최종모델/교통사고_94차_데이터.xlsx
+```
 
-| 서비스 | 기본 접속 주소 |
+## 6. Compose 설정 확인
+
+```bash
+cd /home/spotfit/SpotFit
+docker compose --env-file .env.server -f compose.yaml -f compose.server.yaml config --quiet
+```
+
+명령이 출력 없이 끝나면 환경변수와 Compose 문법 확인이 완료된 것입니다.
+
+## 7. 컨테이너 빌드 및 실행
+
+```bash
+docker compose --env-file .env.server -f compose.yaml -f compose.server.yaml up --build -d
+docker compose --env-file .env.server -f compose.yaml -f compose.server.yaml ps -a
+```
+
+처음 실행할 때는 Docker 이미지와 Python·Node 라이브러리를 설치하므로 시간이 걸릴 수 있습니다. 다음 컨테이너들이 실행됩니다.
+
+- `nginx`
+- `frontend`
+- `backend`
+- `postgres`
+- `minio`
+- `mlflow`
+- `airflow`
+
+`tracking-db-init`과 `mlflow-init`은 초기화 작업을 마친 후 `Exited (0)`으로 종료되는 것이 정상입니다.
+
+컨테이너가 준비될 때까지 상태를 확인합니다.
+
+```bash
+docker compose --env-file .env.server -f compose.yaml -f compose.server.yaml ps -a
+```
+
+## 8. SpotFit DB 테이블과 초기데이터 생성
+
+PostgreSQL 컨테이너가 `healthy`가 된 후 실행합니다.
+
+```bash
+docker compose --env-file .env.server -f compose.yaml -f compose.server.yaml exec -T postgres mkdir -p /tmp/spotfit-migrations
+
+docker compose --env-file .env.server -f compose.yaml -f compose.server.yaml cp ./infra/postgres/migrations/. postgres:/tmp/spotfit-migrations/
+
+docker compose --env-file .env.server -f compose.yaml -f compose.server.yaml exec -T postgres sh -c 'psql -X -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f /tmp/spotfit-migrations/000_install.sql'
+```
+
+`000_install.sql`이 필요한 SQL을 순서대로 실행하므로 `infra/postgres/migrations` 아래 SQL을 각각 실행할 필요가 없습니다.
+
+설치 결과를 검증합니다.
+
+```bash
+docker compose --env-file .env.server -f compose.yaml -f compose.server.yaml exec -T postgres sh -c 'psql -X -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f /tmp/spotfit-migrations/090_verify.sql'
+```
+
+이 과정에서 `spotfit` 스키마, 서비스 테이블, 모델 유형, 서울시 행정구역, 기본 점수·등급·추천 정책이 생성됩니다.
+
+## 9. 배포 확인
+
+서버 IP가 `192.168.0.3`인 경우 다음 주소를 확인합니다.
+
+| 확인 항목 | 주소 |
 | --- | --- |
-| React 화면 (Nginx 경유) | http://localhost:8080 |
-| API 문서 | http://localhost:8080/api/docs |
-| API 생존 확인 | http://localhost:8080/api/spot_fit |
-| PostgreSQL + PostGIS | localhost:5432 |
-| MinIO S3 API | http://localhost:9000 |
-| MinIO 콘솔 | http://localhost:9001 |
-| Airflow | http://localhost:8081 (계정은 `.env` 참조) |
-| MLflow | http://localhost:5000 |
+| SpotFit 화면 | `http://192.168.0.3:8080` |
+| API 문서 | `http://192.168.0.3:8080/api/docs` |
+| API 실행 상태 | `http://192.168.0.3:8080/api/spot_fit` |
+| 서비스 모델 상태 | `http://192.168.0.3:8080/api/recommender/model-status` |
+| 모델 자동생성 상태 | `http://192.168.0.3:8080/api/models/status` |
 
-포트를 변경하면 표의 접속 포트도 변경합니다. 컨테이너 내부에서는 DB를 `postgres:5432`,
-객체 저장소를 `minio:9000`으로 접근합니다. 프런트엔드 API 호출은 `/api/...` 상대 경로를
-사용합니다. 모델 버킷은 아래 모델 관리 명령으로 초기화하며, 수집 데이터 버킷은 별도로 구성합니다.
-`/api/spot_fit`는 API 프로세스 생존만 확인하고 DB·MinIO 연결은 검사하지 않습니다.
-
-### 로컬 데이터와 모델을 MinIO에 업로드
-
-Python 의존성을 최초 한 번 설치한 뒤 프로젝트 루트에서 실행합니다. Docker 명령은 필요하지 않습니다.
+서버 터미널에서도 확인할 수 있습니다.
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-python3 -m pip install -r scripts/upload-requirements.txt
-python3 upload_minio.py
+curl -fsS http://192.168.0.3:8080/api/spot_fit
+curl -fsS http://192.168.0.3:8080/api/recommender/model-status
+curl -fsS http://192.168.0.3:8080/api/models/status
+curl -fsS http://192.168.0.3:8080/api/neighborhoods/catalog
 ```
 
-`upload_minio.py`는 `.env.dev`의 S3 설정을 읽고 `data` 아래 모든 일반 파일을 업로드합니다.
-`data/raw/a.csv`는 `raw/a.csv`, `data/processed/a.parquet`는 `processed/a.parquet`로 저장됩니다.
-숨김 파일·폴더(`.gitkeep`, `.DS_Store` 등)와 심볼릭 링크는 제외합니다.
-동일한 객체 경로가 이미 존재하면 내용이 달라도 업로드하지 않습니다. 파일 삭제는 원격에 반영하지 않습니다.
-기본 버킷은 `S3_DATA_BUCKET`, 미설정 시 `S3_MODEL_BUCKET`입니다. 버킷은 미리 생성되어 있어야 하며 읽기·쓰기 권한이 필요합니다.
+마지막으로 화면에서 다음 기능을 확인합니다.
 
-모델은 아래 구조로 넣으면 같은 명령으로 자동 등록합니다. 각 버전 폴더에는 모델 파일 하나를 넣습니다.
-여러 파일이 필요한 모델은 ZIP 등 하나의 아카이브로 묶으세요.
+1. 서울시 지도와 자치구·행정동 검색
+2. 매매·전세·월세 가격 조회
+3. 예산 범위와 면적 선택
+4. 아동범죄노출·교통안전 비율 조절
+5. 2027년·2028년 예측연도 변경
+6. 예산에 맞는 추천 동네 5곳 조회
+7. 자치구·행정동 상세정보와 가격 변화 그래프
+8. 자치구 동네점수와 과거 안전 참고지표
+
+## 10. 관리 화면 접속
+
+관리 포트를 `127.0.0.1`로 설정한 경우 로컬 PC 터미널에서 SSH 터널을 엽니다.
+
+```bash
+ssh -L 8081:127.0.0.1:8081 -L 5000:127.0.0.1:5000 -L 9001:127.0.0.1:9001 spotfit@192.168.0.3
+```
+
+SSH 연결을 유지한 상태에서 브라우저로 접속합니다.
+
+| 관리 화면 | 주소 |
+| --- | --- |
+| Airflow | `http://localhost:8081` |
+| MLflow | `http://localhost:5000` |
+| MinIO 콘솔 | `http://localhost:9001` |
+
+Airflow 초기 사용자와 비밀번호는 다음 로그에서 확인합니다.
+
+```bash
+docker compose --env-file .env.server -f compose.yaml -f compose.server.yaml logs airflow
+```
+
+MinIO는 `.env.server`의 `MINIO_ROOT_USER`, `MINIO_ROOT_PASSWORD`로 로그인합니다.
+
+## 11. Airflow 파이프라인 활성화
+
+Airflow에 로그인한 뒤 사용할 DAG를 활성화합니다.
+
+| DAG | 실행 주기 | 기능 |
+| --- | --- | --- |
+| `property_refresh_pipeline` | 매월 말일 23:00 | 부동산 수집·전처리·모델 갱신 |
+| `crime_refresh_pipeline` | 매월 말일 23:00 | 범죄 데이터 수집·전처리·2년/3년 모델 학습·검증·서비스 반영 |
+| `traffic_refresh_collection` | 매월 말일 23:00 | 교통사고 TOPIS 자료 수집·연간 준비 상태 확인 |
+
+범죄 파이프라인의 상세 수집 범위는 [범죄 데이터 갱신 파이프라인](docs/crime-refresh-pipeline.md)을 참고합니다. MDIS 신규 연도 자료는 직접 추출해 기존 경로에 추가하고, 유흥주점·단란주점 API는 공공데이터포털에서 활용신청을 완료해야 합니다.
+
+## 12. 서버 재부팅 후 실행
+
+`compose.server.yaml`의 상시 서비스에는 재시작 정책이 설정되어 있어 Docker 서비스가 시작되면 다시 실행됩니다. 수동으로 실행하려면 다음 명령을 사용합니다.
+
+```bash
+cd /home/spotfit/SpotFit
+docker compose --env-file .env.server -f compose.yaml -f compose.server.yaml up -d
+docker compose --env-file .env.server -f compose.yaml -f compose.server.yaml ps -a
+```
+
+## 13. 코드 업데이트 배포
+
+서버에서 새 코드를 반영할 때는 다음 순서로 실행합니다.
+
+```bash
+cd /home/spotfit/SpotFit
+git pull --ff-only origin develop
+
+docker compose --env-file .env.server -f compose.yaml -f compose.server.yaml config --quiet
+
+docker compose --env-file .env.server -f compose.yaml -f compose.server.yaml up --build -d
+
+docker compose --env-file .env.server -f compose.yaml -f compose.server.yaml up -d --force-recreate backend frontend nginx
+
+docker compose --env-file .env.server -f compose.yaml -f compose.server.yaml ps -a
+```
+
+새로운 환경변수가 추가됐다면 `.env.server.example`과 기존 `.env.server`를 비교해 실제 값을 추가합니다. 새로운 모델·데이터가 배포 대상이라면 Git pull과 별도로 동일한 경로에 복사합니다. DB 변경이 포함됐다면 8절의 설치·검증 SQL을 다시 실행합니다.
+
+## 14. 로그 확인
+
+전체 로그:
+
+```bash
+docker compose --env-file .env.server -f compose.yaml -f compose.server.yaml logs --tail=200
+```
+
+백엔드 실시간 로그:
+
+```bash
+docker compose --env-file .env.server -f compose.yaml -f compose.server.yaml logs -f --tail=100 backend
+```
+
+프런트엔드·Nginx 로그:
+
+```bash
+docker compose --env-file .env.server -f compose.yaml -f compose.server.yaml logs --tail=100 frontend nginx
+```
+
+파일로 저장되는 백엔드 로그:
 
 ```text
-models/
-└── recommender/
-    ├── v1/model.pkl
-    └── v2/model.pkl
+logs/backend/spotfit-api.log
 ```
 
-모델 파일은 기존 방식대로 MinIO의 `모델명/버전/SHA-256/파일명`에 저장됩니다.
-JSON은 `model_registry/recommender/v1.json`처럼 생성되며 모델명·버전·버킷·객체 경로·객체 버전 ID·SHA-256·크기를 담습니다.
-모델 버킷은 `.env.dev`의 `S3_MODEL_BUCKET`을 사용하며 MinIO 객체 버전 관리가 활성화되어 있어야 합니다.
-기존 모델 관리 CLI의 `init`으로 초기화할 수 있습니다.
+## 15. 서비스 중지와 재실행
+
+중지:
 
 ```bash
-docker compose --env-file .env.dev -f compose.dev.yaml run --rm model-tools init
-python3 upload_minio.py
+docker compose --env-file .env.server -f compose.yaml -f compose.server.yaml stop
 ```
 
-등록된 동일 모델은 건너뛰고, 같은 모델명·버전의 내용이 바뀌면 오류를 내므로 `v2`처럼 새 버전 폴더를 사용하세요.
-MinIO 객체만 있고 로컬 JSON이 없으면 원격 파일의 SHA-256을 검증하고 JSON을 복원하며 다시 업로드하지 않습니다.
-생성된 `model_registry/` JSON은 Git에 커밋하고 모델 파일은 커밋하지 않습니다. 모델 활성화는 별도입니다.
-다른 버킷이나 설정 파일은 `--bucket 버킷이름`, `--env-file .env.server`로 지정할 수 있습니다.
-동일 경로에 대한 동시 실행은 피하세요. 존재 확인과 업로드는 별도 요청이므로 동시 실행 시 덮어쓰기가 발생할 수 있습니다.
+재실행:
 
-Airflow와 MLflow는 PostgreSQL의 별도 `airflow`, `mlflow` 데이터베이스를 사용합니다.
-Airflow 계정은 `.env`의 `AIRFLOW_ADMIN_USER`이며, 첫 실행 시 생성되는 비밀번호를 확인하려면
-`docker compose exec airflow cat /opt/airflow/simple_auth_manager_passwords.json.generated`를 실행합니다.
-학습 의존성은 [ml/requirements.txt](ml/requirements.txt)에서 관리하고 백엔드와 Airflow 이미지 양쪽에 설치합니다.
-Airflow·MLflow 웹 포트는 호스트의 `127.0.0.1`에만 열립니다.
-
-PostgreSQL 컨테이너는 PostgreSQL 17과 PostGIS 3.5가 포함된 이미지를 사용합니다. 새 DB 볼륨을
-처음 만들 때 `postgis`와 `postgis_topology` 확장을 자동으로 활성화합니다. 기존 PostgreSQL 볼륨을
-유지하면서 PostGIS 이미지로 변경한 경우에는 컨테이너를 다시 만든 뒤 DB에서 확장을 한 번 활성화합니다.
-
-```sql
-CREATE EXTENSION IF NOT EXISTS postgis;
-CREATE EXTENSION IF NOT EXISTS postgis_topology;
-SELECT PostGIS_Full_Version();
+```bash
+docker compose --env-file .env.server -f compose.yaml -f compose.server.yaml up -d
 ```
 
-소스 코드는 bind mount되어 React HMR과 FastAPI reload가 적용됩니다.
-`node_modules`는 Docker named volume에 저장해 macOS·Windows·Linux 네이티브 패키지가
-섞이지 않도록 했습니다. 의존성 변경 후에는 `docker compose up --build -d`를 다시 실행합니다.
-Windows/macOS 파일 변경 감지를 위해 기본 polling을 활성화했습니다.
+## 16. 배포 완료 체크리스트
 
-```sh
-docker compose logs -f
-docker compose exec frontend npm run build
-docker compose down
-```
+- [ ] Docker와 Docker Compose가 설치되어 있다.
+- [ ] 프로젝트 `develop` 브랜치를 받았다.
+- [ ] `.env.server`의 IP, 비밀번호, API 키를 설정했다.
+- [ ] `frontend/.env.local`에 VWorld 키를 설정했다.
+- [ ] `models/recommender/v1` 전체 모델 묶음을 복사했다.
+- [ ] `data/raw`, `data/processed` 등 서비스 입력 데이터를 복사했다.
+- [ ] Compose 설정 검사를 통과했다.
+- [ ] 전체 컨테이너를 빌드하고 실행했다.
+- [ ] SpotFit DB 테이블과 초기데이터를 생성하고 검증했다.
+- [ ] 모델 상태 API에서 모델 준비 상태를 확인했다.
+- [ ] 실제 화면에서 가격·점수·추천·상세 그래프를 확인했다.
+- [ ] Airflow에서 필요한 DAG를 활성화했다.
 
-`docker compose down`은 DB·MinIO 데이터를 보존합니다. `down -v`는 데이터 볼륨까지
-삭제하므로 초기화가 필요한 경우에만 사용합니다. 기존 DB 볼륨의 비밀번호는 `.env` 변경만으로
-갱신되지 않습니다.
+## 공개 운영 전 참고
 
-## MinIO로 학습 모델 관리
-
-모델 파일은 MinIO에, 모델명·버전·저장 위치·SHA-256이 담긴 JSON은 `model_registry/`에 저장합니다.
-로컬 저장소를 처음 준비할 때 실행합니다.
-
-```sh
-docker compose --profile tools build model-tools
-docker compose --profile tools run --rm model-tools init
-```
-
-업로드·다운로드 및 백엔드 연동은 [모델 저장 안내](docs/model-storage.md)를 참고하세요.
-공유 서버 개발 Compose는 Ubuntu MinIO를 사용합니다. 내부망 S3 API 접근과 제한된 계정 구성은 [개발 PC 서버 인프라 안내](docs/virtualbox-deployment.md#개발-pc에서-ubuntu-서버-인프라-사용)를 참고하세요. 로컬 전체 스택 구성은 PC별 저장소를 사용합니다.
-Git에는 manifest만 올라가고 모델 파일은 MinIO에 저장됩니다.
-
-일상적인 브랜치·커밋·Ubuntu 반영 절차, 패키지 추가 위치와 재빌드 명령, 모델을 Ubuntu MinIO에 등록하는 방법은 [개발 워크플로우](docs/development-workflow.md)를 참고하세요.
-
-## GitHub · macOS · Windows 협업
-
-- `.gitignore`는 OS 메타데이터, IDE 설정, 환경변수·개인 키, 의존성, 캐시, 데이터·모델 산출물을 제외합니다.
-- `.env.example`, `.env.dev.example`, `.env.server.example`, `frontend/package-lock.json`, Python 의존성 명세와 마이그레이션은 커밋합니다.
-- `.gitattributes`로 텍스트 파일은 LF, `.bat`·`.cmd`만 CRLF를 사용합니다.
-- 빈 폴더는 `.gitkeep` 또는 Python `__init__.py`로 유지합니다.
-- 파일명과 import의 대소문자를 정확히 맞춥니다. 대소문자만 다른 파일은 만들지 않습니다.
-  대소문자만 바꿀 때는 `git mv old_name temp_name` 후 `git mv temp_name NewName`을 사용합니다.
-- `node_modules`, 가상환경, DB 볼륨을 다른 OS에서 복사하지 않고 각 환경에서 재생성합니다.
-- 이미 추적된 파일에는 `.gitignore`가 소급 적용되지 않습니다. 초기 커밋 전에 `git status`로 확인합니다.
-
-이 초기 구성은 Git 저장소 초기화, 원격 저장소 연결, 커밋·push를 수행하지 않습니다.
-Linux 운영 배포에서 변경할 항목은 [배포 안내](docs/deployment.md)를 참고하세요.
-Windows PC의 VirtualBox Ubuntu VM에서 내부망 테스트 서버로 실행하려면
-[VirtualBox 배포 안내](docs/virtualbox-deployment.md)를 참고하세요. Ubuntu에서는
-`.env.server.example`을 `.env.server`로 복사해 VM 고정 IP와 서버 전용 비밀번호를 설정합니다.
-
-## 참고 문서
-
-- [Vite 시작하기](https://vite.dev/guide/): Node.js 버전 요구사항과 개발 서버
-- [FastAPI 컨테이너 배포](https://fastapi.tiangolo.com/deployment/docker/): Python 이미지 기반 빌드
-- [Compose 시작 순서](https://docs.docker.com/compose/how-tos/startup-order/): 의존 서비스와 상태 검사
+현재 Compose는 내부망 시연을 위한 HTTP·Vite 개발 서버 구성입니다. 인터넷에 공개하는 운영 서비스로 전환할 때는 HTTPS와 도메인, 정적 프런트엔드 빌드, 관리 포트 접근제어, 비밀키 관리, 데이터베이스·MinIO·모델 백업을 추가로 구성해야 합니다.
